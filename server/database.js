@@ -680,8 +680,10 @@ async function updatePaymentAccount(operator, fields) {
   const keys = Object.keys(fields).filter(k => ['phone','name','color'].includes(k));
   if (!keys.length) return getPaymentAccounts();
   const setQuery = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const colNames = keys.join(', ');
+  const colValues = keys.map((_, i) => `$${i + 1}`).join(', ');
   await query(
-    `INSERT INTO payment_accounts (operator) VALUES ($${keys.length + 1})
+    `INSERT INTO payment_accounts (operator, ${colNames}) VALUES ($${keys.length + 1}, ${colValues})
      ON CONFLICT (operator) DO UPDATE SET ${setQuery}`,
     [...keys.map(k => fields[k]), operator]
   );
