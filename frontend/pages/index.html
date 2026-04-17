@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <!-- EN-TÊTE -->
+  <header class="site-header">
+    <div class="site-header-inner">
+      <div class="site-header-text">
+        <span class="badge">🚀 Plateforme #1 Business Digital</span>
+        <h1>Développez votre <span>Business</span> en ligne avec Pagani Digital</h1>
+        <p>Formations en Crypto, Création de Contenu & Facebook — Générez des revenus passifs grâce à notre programme d'affiliation.</p>
+        <div class="site-header-btns">
+          <a href="formations.html" class="btn-primary">Voir les Formations</a>
+          <a href="affiliation.html" class="btn-outline">Programme Affiliation</a>
+        </div>
+      </div>
+      <div class="crypto-coin-anim">
+        <div class="coin-wrapper">
+          <div class="coin">
+            <div class="coin-face coin-front"><i class="fab fa-bitcoin"></i></div>
+            <div class="coin-face coin-back"><i class="fab fa-bitcoin"></i></div>
+          </div>
+          <div class="coin-glow"></div>
+          <div class="coin-particles">
+            <span></span><span></span><span></span>
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PLANS COMPACTS supprimés — voir plans.html -->
+
+  <!-- FEED SOCIAL -->
+  <section class="feed-section">
+    <div class="feed-layout">
+
+      <!-- COLONNE GAUCHE : infos communauté -->
+      <aside class="feed-sidebar">
+        <div class="sidebar-card">
+          <div class="sidebar-logo">Pagani<span>Digital</span></div>
+          <p>La communauté business digital : Crypto, Contenu & Facebook.</p>
+          <div class="sidebar-stats">
+            <div><strong>2 500+</strong><span>Membres</span></div>
+            <div><strong>80+</strong><span>Formations</span></div>
+          </div>
+          <a href="dashboard.html" class="btn-primary" style="width:100%;text-align:center;display:block;margin-top:1rem">Rejoindre</a>
+        </div>
+
+        <!-- POURQUOI NOUS CHOISIR dans la sidebar -->
+        <div class="sidebar-card sidebar-why">
+          <h3 class="sidebar-why-title"><i class="fas fa-star"></i> Pourquoi nous choisir ?</h3>
+          <div class="sidebar-why-list">
+            <div class="sidebar-why-item">
+              <i class="fas fa-play-circle"></i>
+              <div>
+                <strong>Formations Vidéo HD</strong>
+                <span>Du débutant à l'expert</span>
+              </div>
+            </div>
+            <div class="sidebar-why-item">
+              <i class="fas fa-link"></i>
+              <div>
+                <strong>Affiliation Rémunérée</strong>
+                <span>Jusqu'à 50% de commission</span>
+              </div>
+            </div>
+            <div class="sidebar-why-item">
+              <i class="fab fa-facebook"></i>
+              <div>
+                <strong>Facebook & Contenu</strong>
+                <span>Stratégies pro incluses</span>
+              </div>
+            </div>
+            <div class="sidebar-why-item">
+              <i class="fas fa-mobile-alt"></i>
+              <div>
+                <strong>Paiement Mobile Money</strong>
+                <span>MVola, Orange, Airtel</span>
+              </div>
+            </div>
+            <div class="sidebar-why-item">
+              <i class="fas fa-users"></i>
+              <div>
+                <strong>Communauté Active</strong>
+                <span>2 500+ membres</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA Tarifs discret -->
+        <div class="sidebar-card sidebar-cta">
+          <p>🚀 Accédez à toutes les formations et générez des revenus passifs.</p>
+          <a href="plans.html" class="sidebar-cta-btn">
+            <i class="fas fa-tag"></i> Voir les offres
+          </a>
+        </div>
+
+        <div class="sidebar-card" id="sidebarUser" style="display:none">
+          <div class="sidebar-user-info">
+            <div class="avatar-circle" id="sidebarAvatar"></div>
+            <div>
+              <strong id="sidebarName"></strong>
+              <span id="sidebarPlan" class="plan-badge" style="font-size:0.7rem;padding:0.15rem 0.6rem"></span>
+            </div>
+          </div>
+          <a href="dashboard.html" style="color:var(--accent);font-size:0.85rem;margin-top:0.8rem;display:block"><i class="fas fa-user"></i> Mon profil</a>
+        </div>
+      </aside>
+
+      <!-- COLONNE CENTRALE : fil de posts -->
+      <main class="feed-main">
+
+        <!-- PANNEAU PUBLICATION UTILISATEUR -->
+        <div id="userPostPanel" class="user-post-panel" style="display:none">
+          <div class="user-post-header">
+            <div class="avatar-circle avatar-sm" id="userPostAvatar"></div>
+            <textarea id="userPostContent" placeholder="Quoi de neuf ? Partagez avec la communauté..." rows="3" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
+          </div>
+          <div id="userPostImagePreview" class="post-image-preview" style="display:none">
+            <img id="userPostPreviewImg" src="" alt="" />
+            <button type="button" class="post-image-remove" onclick="removeUserPostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="user-post-actions">
+            <label class="admin-media-btn" for="userPostImageInput" title="Ajouter une photo">
+              <i class="fas fa-image"></i> Photo
+            </label>
+            <input type="file" id="userPostImageInput" accept="image/*" style="display:none" onchange="previewUserPostImage(this)" />
+            <span id="userPostCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
+            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitUserPost()" id="userPostBtn">
+              <i class="fas fa-paper-plane"></i> Publier
+            </button>
+          </div>
+          <div id="userPostStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
+        </div>
+
+        <!-- PANNEAU ADMIN -->
+        <div id="adminPanel" class="admin-panel" style="display:none">
+          <div class="admin-panel-header">
+            <div style="display:flex;align-items:center;gap:0.6rem">
+              <i class="fas fa-shield-alt"></i>
+              <h3>Publier une actualité</h3>
+            </div>
+            <div class="admin-panel-tabs">
+              <button type="button" class="admin-tab-btn active" onclick="switchEditorTab('write',this)"><i class="fas fa-pen"></i> Écrire</button>
+              <button type="button" class="admin-tab-btn" onclick="switchEditorTab('preview',this)"><i class="fas fa-eye"></i> Aperçu</button>
+            </div>
+          </div>
+
+          <form id="newsForm" onsubmit="publishNews(event)">
+            <!-- LIGNE TITRE + CATÉGORIE -->
+            <div class="admin-form-row">
+              <input type="text" id="newsTitle" placeholder="Titre du post..." required />
+              <select id="newsCategory">
+                <option value="Annonce">Annonce</option>
+                <option value="Formation">Formation</option>
+                <option value="Affiliation">Affiliation</option>
+                <option value="Crypto">Crypto</option>
+                <option value="Contenu">Contenu</option>
+                <option value="Facebook">Facebook</option>
+              </select>
+            </div>
+
+            <!-- ONGLET ÉCRIRE -->
+            <div id="editorWrite">
+              <!-- BARRE D'OUTILS -->
+              <div class="editor-toolbar">
+                <button type="button" class="editor-btn" onclick="editorFormat('bold')" title="Gras"><i class="fas fa-bold"></i></button>
+                <button type="button" class="editor-btn" onclick="editorFormat('italic')" title="Italique"><i class="fas fa-italic"></i></button>
+                <div class="editor-separator"></div>
+                <button type="button" class="editor-btn" onclick="editorInsertLink()" title="Insérer un lien"><i class="fas fa-link"></i> Lien</button>
+                <button type="button" class="editor-btn" onclick="editorInsertEmoji()" title="Emoji"><i class="fas fa-smile"></i></button>
+                <div class="editor-separator"></div>
+                <button type="button" class="editor-btn" onclick="editorInsertLine()" title="Séparateur"><i class="fas fa-minus"></i></button>
+              </div>
+
+              <!-- ZONE DE TEXTE -->
+              <div class="editor-wrap">
+                <textarea id="newsContent" placeholder="Écrivez votre publication...
+
+Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquable." rows="5" required
+                  oninput="updateEditorPreview()"></textarea>
+                <div class="editor-char-count" id="editorCharCount">0 caractères</div>
+              </div>
+
+              <!-- PHOTO -->
+              <div class="admin-media-row">
+                <label class="admin-media-btn" for="newsImageInput">
+                  <i class="fas fa-image"></i> Photo
+                </label>
+                <label class="admin-media-btn" for="newsLinkInput" onclick="toggleLinkInput()">
+                  <i class="fas fa-external-link-alt"></i> Bouton lien
+                </label>
+                <input type="file" id="newsImageInput" accept="image/*" style="display:none" onchange="previewPostImage(this)" />
+                <div id="newsImagePreview" class="post-image-preview" style="display:none">
+                  <img id="newsImagePreviewImg" src="" alt="" />
+                  <button type="button" class="post-image-remove" onclick="removePostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+                </div>
+              </div>
+
+              <!-- LIEN BOUTON (masqué par défaut) -->
+              <div class="admin-link-row" id="linkInputRow" style="display:none">
+                <i class="fas fa-link"></i>
+                <input type="url" id="newsLink" placeholder="https://..." />
+                <input type="text" id="newsLinkLabel" placeholder="Texte du bouton" />
+                <button type="button" class="editor-btn" onclick="toggleLinkInput()" style="padding:0.3rem 0.6rem"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+
+            <!-- ONGLET APERCu -->
+            <div id="editorPreview" style="display:none">
+              <div class="editor-preview-box" id="editorPreviewContent">
+                <p style="color:var(--text2);font-style:italic">Aperçu vide — écrivez quelque chose d'abord.</p>
+              </div>
+            </div>
+
+            <!-- MODAL LIEN -->
+            <div id="linkModal" class="link-modal" style="display:none">
+              <div class="link-modal-box">
+                <p><strong><i class="fas fa-link"></i> Insérer un lien</strong></p>
+                <input type="text" id="linkModalText" placeholder="Texte affiché (optionnel)" />
+                <input type="url" id="linkModalUrl" placeholder="https://..." />
+                <div style="display:flex;gap:0.6rem;margin-top:0.6rem">
+                  <button type="button" class="btn-primary" style="flex:1;padding:0.5rem" onclick="confirmInsertLink()"><i class="fas fa-check"></i> Insérer</button>
+                  <button type="button" class="editor-btn" style="flex:1;justify-content:center" onclick="closeLinkModal()"><i class="fas fa-times"></i> Annuler</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODAL EMOJI -->
+            <div id="emojiModal" class="link-modal" style="display:none">
+              <div class="link-modal-box emoji-grid">
+                <p style="grid-column:1/-1;margin:0 0 0.5rem"><strong>Choisir un emoji</strong></p>
+                <button type="button" onclick="insertEmoji(this)">🚀</button><button type="button" onclick="insertEmoji(this)">🎯</button>
+                <button type="button" onclick="insertEmoji(this)">💡</button><button type="button" onclick="insertEmoji(this)">💰</button>
+                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🔥</button>
+                <button type="button" onclick="insertEmoji(this)">🎯</button><button type="button" onclick="insertEmoji(this)">📈</button>
+                <button type="button" onclick="insertEmoji(this)">🎉</button><button type="button" onclick="insertEmoji(this)">👍</button>
+                <button type="button" onclick="insertEmoji(this)">💎</button><button type="button" onclick="insertEmoji(this)">🏆</button>
+                <button type="button" onclick="insertEmoji(this)">📢</button><button type="button" onclick="insertEmoji(this)">📈 </button>
+                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🌟</button>
+                <button type="button" class="editor-btn" style="grid-column:1/-1;justify-content:center" onclick="closeEmojiModal()">Fermer</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.6rem;flex-wrap:wrap">
+              <button type="submit" class="btn-primary" id="publishBtn"><i class="fas fa-paper-plane"></i> Publier</button>
+              <span id="publishStatus" style="font-size:0.82rem;color:var(--accent2)"></span>
+            </div>
+          </form>
+        </div>
+
+        <div id="feedPosts"></div>
+      </main>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    (async function init() {
+      // Sauvegarder ref + post depuis l'URL de partage Facebook
+      const _p = new URLSearchParams(window.location.search);
+      if (_p.get('ref')) sessionStorage.setItem('pd_ref', _p.get('ref'));
+      if (_p.get('post')) sessionStorage.setItem('pd_post', _p.get('post'));
+
+      const user = await refreshCurrentUser();
+      await renderFeed();
+      if (user && window.PaganiNotif) {
+        PaganiNotif.refreshBadge();
+        PaganiNotif.startPolling();
+      }
+      setInterval(_silentRefreshFeed, 30000);
+    })();
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarifs - Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html" class="active">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <h1>Choisissez votre <span>Plan</span></h1>
+    <p>Abonnement mensuel ou achat vidéo à l'unité. Paiement via Mobile Money en <strong style="color:var(--accent2)">Ariary (AR)</strong>.</p>
+  </div>
+
+  <!-- ACHAT À L'UNITÉ -->
+  <section style="padding:3rem 5%;background:var(--bg)">
+    <div style="max-width:900px;margin:0 auto">
+      <div style="text-align:center;margin-bottom:2rem">
+        <h2 style="font-size:1.8rem;font-weight:800;margin-bottom:0.5rem">
+          <i class="fas fa-film" style="color:var(--accent)"></i> Achat <span style="color:var(--accent)">vidéo à l'unité</span>
+        </h2>
+        <p style="color:var(--text2);max-width:560px;margin:0 auto">Pas envie de vous abonner ? Achetez uniquement la formation qui vous intéresse. Accès permanent, paiement unique.</p>
+      </div>
+
+      <div id="unitVideosGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.2rem">
+        <div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i> Chargement...</div>
+      </div>
+
+      <div style="margin-top:1.5rem;padding:1rem 1.4rem;background:var(--bg3);border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;gap:0.8rem;font-size:0.85rem;color:var(--text2)">
+        <i class="fas fa-info-circle" style="color:var(--accent);font-size:1.1rem;flex-shrink:0"></i>
+        <span>Chaque achat vous donne un accès <strong style="color:var(--text)">permanent</strong> à la vidéo. L'activation se fait sous <strong style="color:var(--text)">24h</strong> après vérification du paiement.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="plans" style="background:var(--bg)">
+    <h2 style="display:none"></h2>
+    <p class="plans-subtitle">Paiement via <strong>Mobile Money</strong> (MVola, Orange Money, Airtel Money) en <strong style="color:var(--accent2)">Ariary (AR)</strong></p>
+    <div class="plans-grid">
+
+      <div class="plan-card">
+        <h3>Starter</h3>
+        <div class="price">Gratuit</div>
+        <div class="price-note">Aucun paiement requis</div>
+        <ul>
+          <li><i class="fas fa-check"></i> 5 vidéos gratuites</li>
+          <li><i class="fas fa-check"></i> Accès communauté &amp; feed</li>
+          <li><i class="fas fa-check"></i> Lien d'affiliation (<span id="plansCommStarterAbo">20</span>%)</li>
+          <li><i class="fas fa-check"></i> Profil public</li>
+          <li class="disabled"><i class="fas fa-times"></i> Formations avancées</li>
+          <li class="disabled"><i class="fas fa-times"></i> Contenu &amp; Facebook</li>
+          <li class="disabled"><i class="fas fa-times"></i> Support prioritaire</li>
+        </ul>
+        <a href="dashboard.html" class="btn-outline">Commencer gratuitement</a>
+      </div>
+
+      <div class="plan-card featured">
+        <span class="popular">&#11088; Populaire</span>
+        <h3>Pro</h3>
+        <div class="price"><span id="plansPricePro">30 000</span> <span class="price-currency">AR</span><span>/mois</span></div>
+        <div class="price-note"><i class="fas fa-mobile-alt"></i> MVola &middot; Orange Money &middot; Airtel</div>
+        <ul>
+          <li><i class="fas fa-check"></i> Toutes les formations</li>
+          <li><i class="fas fa-check"></i> Crypto + Contenu + Facebook</li>
+          <li><i class="fas fa-check"></i> Commission affiliation <span id="plansCommProAbo">35</span>%</li>
+          <li><i class="fas fa-check"></i> Support prioritaire</li>
+          <li><i class="fas fa-check"></i> Mises à jour incluses</li>
+          <li><i class="fas fa-check"></i> Accès communauté complète</li>
+          <li class="disabled"><i class="fas fa-times"></i> Coaching 1-on-1</li>
+        </ul>
+        <button class="btn-primary" onclick="_openUpgradeFromPlans('Pro')">S'abonner au plan Pro</button>
+      </div>
+
+      <div class="plan-card">
+        <h3>Elite</h3>
+        <div class="price"><span id="plansPriceElite">90 000</span> <span class="price-currency">AR</span><span>/mois</span></div>
+        <div class="price-note"><i class="fas fa-mobile-alt"></i> MVola &middot; Orange Money &middot; Airtel</div>
+        <ul>
+          <li><i class="fas fa-check"></i> Tout le plan Pro</li>
+          <li><i class="fas fa-check"></i> Commission affiliation <span id="plansCommEliteAbo">50</span>%</li>
+          <li><i class="fas fa-check"></i> Coaching 1-on-1</li>
+          <li><i class="fas fa-check"></i> Accès VIP Discord</li>
+          <li><i class="fas fa-check"></i> Stratégie personnalisée</li>
+          <li><i class="fas fa-check"></i> Retrait prioritaire 24h</li>
+          <li><i class="fas fa-check"></i> Formations en avant-première</li>
+        </ul>
+        <button class="btn-outline" onclick="_openUpgradeFromPlans('Elite')">S'abonner au plan Elite</button>
+      </div>
+
+    </div>
+
+    <div class="payment-info">
+      <div class="payment-info-item">
+        <i class="fas fa-mobile-alt"></i>
+        <div>
+          <strong>Paiement Mobile Money</strong>
+          <span>MVola, Orange Money ou Airtel Money</span>
+        </div>
+      </div>
+      <div class="payment-info-item">
+        <i class="fas fa-shield-alt"></i>
+        <div>
+          <strong>Transaction sécurisée</strong>
+          <span>Activation du compte sous 24h</span>
+        </div>
+      </div>
+      <div class="payment-info-item">
+        <i class="fas fa-sync-alt"></i>
+        <div>
+          <strong>Renouvellement mensuel</strong>
+          <span>Annulez à tout moment</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="plans-faq">
+    <h2>Questions fréquentes</h2>
+    <div class="faq-grid">
+      <div class="faq-item">
+        <h3><i class="fas fa-question-circle"></i> Comment payer ?</h3>
+        <p>Via Mobile Money (MVola, Orange Money ou Airtel Money). Après paiement, votre compte est activé sous 24h.</p>
+      </div>
+      <div class="faq-item">
+        <h3><i class="fas fa-question-circle"></i> Puis-je annuler ?</h3>
+        <p>Oui, à tout moment. Votre accès reste actif jusqu'à la fin de la période payée.</p>
+      </div>
+      <div class="faq-item">
+        <h3><i class="fas fa-question-circle"></i> Comment fonctionne l'affiliation ?</h3>
+        <p>Partagez votre lien unique. Chaque filleul qui s'abonne vous rapporte une commission en AR versée sur votre Mobile Money.</p>
+      </div>
+      <div class="faq-item">
+        <h3><i class="fas fa-question-circle"></i> Starter est-il vraiment gratuit ?</h3>
+        <p>Oui, sans carte ni paiement. Vous accédez à 5 vidéos, la communauté et votre lien d'affiliation dès l'inscription.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>&copy; 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+
+      try {
+        const p = await PaganiAPI.getPricing();
+        const fmt = n => Number(n).toLocaleString('fr-FR');
+        const el = id => document.getElementById(id);
+        if (el('plansPricePro'))       el('plansPricePro').textContent       = fmt(p.pro   || 30000);
+        if (el('plansPriceElite'))     el('plansPriceElite').textContent     = fmt(p.elite || 90000);
+        if (el('plansCommStarterAbo')) el('plansCommStarterAbo').textContent = (p.commStarter?.abonnement ?? 20);
+        if (el('plansCommProAbo'))     el('plansCommProAbo').textContent     = (p.commPro?.abonnement    ?? 35);
+        if (el('plansCommEliteAbo'))   el('plansCommEliteAbo').textContent   = (p.commElite?.abonnement  ?? 50);
+      } catch(e) {}
+
+      // Charger les vidéos achetables à l'unité
+      _renderUnitVideos(user);
+    });
+
+    const UNIT_PAGE_SIZE = 6;
+    let _unitVideosShown = UNIT_PAGE_SIZE;
+    let _unitVideosList  = [];
+
+    async function _renderUnitVideos(user) {
+      const grid = document.getElementById('unitVideosGrid');
+      if (!grid) return;
+
+      let videos = [];
+      try {
+        if (window.PaganiAPI) {
+          const all = await PaganiAPI.getVideos();
+          if (all && all.length) videos = all;
+        }
+      } catch(e) {}
+      if (!videos.length) videos = (typeof COURSES !== 'undefined') ? COURSES : [];
+
+      _unitVideosList = videos.filter(v => !v.free && v.unitPrice);
+
+      if (!_unitVideosList.length) {
+        grid.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2);grid-column:1/-1"><i class="fas fa-film" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.5rem"></i>Aucune vidéo disponible à l\'unité pour le moment.</div>';
+        return;
+      }
+
+      _unitVideosShown = UNIT_PAGE_SIZE;
+      _renderUnitGrid(user);
+    }
+
+    function _buildUnitCard(v, user) {
+      const unlockedIds = user ? (user.unlockedCourses || []) : [];
+      const hasPro      = user && (user.plan === 'Pro' || user.plan === 'Elite');
+      const owned       = hasPro || unlockedIds.includes(v.id);
+      const price       = (v.unitPrice || 10000).toLocaleString('fr-FR');
+      const catColors   = { debutant:'#00d4aa', trading:'#f59e0b', defi:'#6c63ff', nft:'#ff4d6d', contenu:'#8b5cf6', facebook:'#4285f4' };
+      const catColor    = catColors[v.category] || 'var(--accent)';
+      return `
+        <div class="unit-video-card ${owned ? 'owned' : ''}">
+          <div class="unit-video-thumb" style="${v.thumbnail ? '' : 'background:linear-gradient(135deg,#1a2235,#0d1b2a)'}">
+            ${v.thumbnail ? `<img src="${v.thumbnail}" />` : `<i class="${v.icon || 'fas fa-play-circle'}" style="font-size:2.5rem;color:var(--accent);opacity:0.8"></i>`}
+            ${owned ? '<span class="unit-owned-badge"><i class="fas fa-check-circle"></i> Possédé</span>' : ''}
+          </div>
+          <div class="unit-video-info">
+            <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.5rem;flex-wrap:wrap">
+              <span style="background:${catColor}22;color:${catColor};padding:0.18rem 0.55rem;border-radius:5px;font-size:0.68rem;font-weight:700">${v.category.toUpperCase()}</span>
+              <span style="font-size:0.72rem;color:var(--text2)">${v.duration}</span>
+            </div>
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.3rem;line-height:1.4">${v.title}</h3>
+            <p style="font-size:0.8rem;color:var(--text2);line-height:1.5;margin-bottom:0.9rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${v.desc}</p>
+            ${owned
+              ? `<a href="formations.html" class="btn-primary" style="display:flex;align-items:center;justify-content:center;gap:0.4rem;padding:0.55rem;font-size:0.85rem;width:100%"><i class="fas fa-play"></i> Regarder</a>`
+              : `<button class="unit-buy-btn" data-vid="${v.id}" onclick="_buyUnitFromPlans(this)"><i class="fas fa-shopping-cart"></i><span>Acheter</span><strong>${price} AR</strong></button>`
+            }
+          </div>
+        </div>`;
+    }
+
+    function _renderUnitGrid(user) {
+      const grid    = document.getElementById('unitVideosGrid');
+      const wrapper = document.getElementById('unitVideosSection');
+      if (!grid) return;
+
+      const visible = _unitVideosList.slice(0, _unitVideosShown);
+      grid.innerHTML = visible.map(v => _buildUnitCard(v, user)).join('');
+
+      // Gérer le bouton voir plus / voir moins
+      let btn = document.getElementById('unitShowMoreBtn');
+      if (_unitVideosList.length <= UNIT_PAGE_SIZE) {
+        if (btn) btn.remove();
+        return;
+      }
+      if (!btn) {
+        btn = document.createElement('button');
+        btn.id = 'unitShowMoreBtn';
+        btn.className = 'unit-videos-showmore';
+        grid.parentNode.insertBefore(btn, grid.nextSibling);
+      }
+      const remaining = _unitVideosList.length - _unitVideosShown;
+      const isAll     = _unitVideosShown >= _unitVideosList.length;
+      btn.className   = 'unit-videos-showmore' + (isAll ? ' open' : '');
+      btn.innerHTML   = isAll
+        ? '<i class="fas fa-chevron-up"></i> Voir moins'
+        : `<i class="fas fa-chevron-down"></i> Voir ${Math.min(remaining, UNIT_PAGE_SIZE)} de plus (${remaining} restante${remaining > 1 ? 's' : ''})`;
+      btn.onclick = () => {
+        if (isAll) {
+          _unitVideosShown = UNIT_PAGE_SIZE;
+          grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          _unitVideosShown = Math.min(_unitVideosShown + UNIT_PAGE_SIZE, _unitVideosList.length);
+        }
+        _renderUnitGrid(user);
+      };
+    }
+
+    async function _buyUnitFromPlans(btn) {
+      const courseId = parseInt(btn.dataset.vid);
+      const user = await refreshCurrentUser();
+      if (!user) { window.location.href = 'dashboard.html'; return; }
+      const course = _unitVideosList.find(v => v.id === courseId);
+      if (!course) return;
+      await _showBuyVideoModal(user, course);
+    }
+
+    async function _openUpgradeFromPlans(plan) {
+      const user = await refreshCurrentUser();
+      if (!user) {
+        window.location.href = 'dashboard.html';
+        return;
+      }
+      if (user.plan === 'Pro' || user.plan === 'Elite') {
+        window.location.href = 'dashboard.html?tab=subscription';
+        return;
+      }
+      await _showUpgradeModal(user, 'Plan ' + plan);
+      // Auto-sélectionner le bon plan après ouverture de la modale
+      setTimeout(() => {
+        const btn = document.querySelector(plan === 'Elite' ? '.upgrade-plan-btn.elite' : '.upgrade-plan-btn:not(.elite)');
+        if (btn) btn.click();
+      }, 150);
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav active">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+  <!-- LOGIN FORM (affiché si non connecté) -->
+  <div id="loginSection" class="auth-section">
+    <div class="auth-card">
+      <a href="index.html" class="logo" style="font-size:1.8rem;margin-bottom:1rem">Pagani<span>Digital</span></a>
+      <h2>Connexion</h2>
+      <form onsubmit="login(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="votre@email.com" required />
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="loginPassword" placeholder="⬢⬢⬢⬢⬢⬢⬢⬢" required />
+        </div>
+        <p id="loginError" class="error-msg"></p>
+        <button type="submit" class="btn-primary" style="width:100%">Se connecter</button>
+      </form>
+      <p class="auth-switch">Pas de compte ? <a href="#" onclick="showRegister()">S'inscrire</a></p>
+    </div>
+  </div>
+  <!-- REGISTER FORM -->
+  <div id="registerSection" class="auth-section" style="display:none">
+    <div class="auth-card">
+      <a href="index.html" class="logo" style="font-size:1.8rem;margin-bottom:1rem">Pagani<span>Digital</span></a>
+      <h2>Inscription</h2>
+      <form onsubmit="register(event)">
+        <div class="form-group">
+          <label>Nom complet</label>
+          <input type="text" id="regName" placeholder="Votre nom" required />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="votre@email.com" required />
+        </div>
+        <div class="form-group">
+          <label>Mot de passe <small style="color:var(--text2)">(min. 6 caractères)</small></label>
+          <input type="password" id="regPassword" placeholder="⬢⬢⬢⬢⬢⬢⬢⬢" required />
+        </div>
+        <!-- MOBILE MONEY -->
+        <div class="mm-register-section">
+          <div class="mm-register-title">
+            <i class="fas fa-mobile-alt"></i>
+            <span>Compte Mobile Money</span>
+            <span class="mm-register-badge">Requis</span>
+          </div>
+          <p class="mm-register-hint">Ce numéro sera utilisé pour vos paiements d'abonnement et le versement de vos commissions. <strong>Non modifiable après inscription.</strong></p>
+          <div class="form-group">
+            <label>Opérateur</label>
+            <div class="mm-operator-select">
+              <label class="mm-op-option">
+                <input type="radio" name="regOperator" value="MVola" checked />
+                <span class="mm-op-btn"><i class="fas fa-mobile-alt" style="color:#e91e8c"></i> MVola</span>
+              </label>
+              <label class="mm-op-option">
+                <input type="radio" name="regOperator" value="Orange Money" />
+                <span class="mm-op-btn"><i class="fas fa-mobile-alt" style="color:#ff6600"></i> Orange</span>
+              </label>
+              <label class="mm-op-option">
+                <input type="radio" name="regOperator" value="Airtel Money" />
+                <span class="mm-op-btn"><i class="fas fa-mobile-alt" style="color:#e53935"></i> Airtel</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Numéro Mobile Money <span style="color:var(--red)">*</span></label>
+            <input type="tel" id="regMmPhone" placeholder="034 XX XXX XX" required />
+          </div>
+          <div class="form-group">
+            <label>Nom attaché au compte MM <span style="color:var(--red)">*</span></label>
+            <input type="text" id="regMmName" placeholder="Nom exact sur votre compte Mobile Money" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Code de parrainage <small style="color:var(--text2)">(optionnel)</small></label>
+          <input type="text" id="regRef" placeholder="PAG-XXXXXX" />
+        </div>
+        <p id="regError" class="error-msg"></p>
+        <button type="submit" class="btn-primary" style="width:100%">Créer mon compte</button>
+      </form>
+      <p class="auth-switch">Déjà un compte ? <a href="#" onclick="showLogin()">Se connecter</a></p>
+    </div>
+  </div>
+  <!-- DASHBOARD (affiché si connecté) -->
+  <div id="dashboardSection" style="display:none">
+    <div class="dashboard-header">
+      <div>
+        <h1>Bonjour, <span id="userName"></span> 👋</h1>
+        <p>Bienvenue sur votre espace membre</p>
+      </div>
+      <div class="user-plan">
+        <span id="userPlan" class="plan-badge"></span>
+        <button onclick="logout()" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">
+          <i class="fas fa-sign-out-alt"></i> Déconnexion
+        </button>
+      </div>
+    </div>
+    <!-- TABS DASHBOARD -->
+    <div class="dash-tabs">
+      <button class="dash-tab active" id="myPostsTabBtn" onclick="switchTab('myposts', this)"><i class="fas fa-newspaper"></i> Mes publications</button>
+      <button class="dash-tab" onclick="switchTab('overview', this)"><i class="fas fa-th-large"></i> Vue d'ensemble</button>
+      <button class="dash-tab" onclick="switchTab('profile', this)"><i class="fas fa-user"></i> Mon Profil</button>
+      <button class="dash-tab" onclick="switchTab('wallet', this)"><i class="fas fa-wallet"></i> Wallet</button>
+      <button class="dash-tab" id="subTabBtn" onclick="switchTab('subscription', this)"><i class="fas fa-id-card"></i> Abonnement</button>
+      <button class="dash-tab" id="myVideosTabBtn" onclick="switchTab('myvideos', this)" style="display:none"><i class="fas fa-film"></i> Mes Vidéos <span class="admin-subnav-badge" id="myVideosPendingBadge" style="display:none">!</span></button>
+      <button class="dash-tab admin-tab" id="adminTabBtn" onclick="switchTab('admin', this)" style="display:none"><i class="fas fa-shield-alt"></i> Admin</button>
+      <button class="dash-tab admin-tab" id="videosTabBtn" onclick="switchTab('videos', this)" style="display:none"><i class="fas fa-film"></i> Vidéos</button>
+    </div>
+    <!-- TAB : MES PUBLICATIONS -->
+    <div id="tab-myposts">
+      <div class="dash-section">
+        <div class="sub-user-header">
+          <div>
+            <h2><i class="fas fa-newspaper" style="color:var(--accent)"></i> Mes publications</h2>
+            <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Toutes vos publications dans la communauté.</p>
+          </div>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadMyPosts()">
+            <i class="fas fa-sync-alt"></i> Actualiser
+          </button>
+        </div>
+        <!-- Panneau de publication réutilisé -->
+        <div class="user-post-panel" id="myPostsPublishPanel" style="display:none">
+          <div class="user-post-header">
+            <div class="avatar-circle avatar-sm" id="myPostsAvatar"></div>
+            <textarea id="myPostsContent" placeholder="Quoi de neuf ? Partagez avec la communauté..." rows="3" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
+          </div>
+          <div id="myPostsImagePreview" class="post-image-preview" style="display:none">
+            <img id="myPostsPreviewImg" src="" alt="" />
+            <button type="button" class="post-image-remove" onclick="removeMyPostsImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="user-post-actions">
+            <label class="admin-media-btn" for="myPostsImageInput" title="Ajouter une photo">
+              <i class="fas fa-image"></i> Photo
+            </label>
+            <input type="file" id="myPostsImageInput" accept="image/*" style="display:none" onchange="previewMyPostsImage(this)" />
+            <span id="myPostsCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
+            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitMyPostsDashboard()" id="myPostsBtn">
+              <i class="fas fa-paper-plane"></i> Publier
+            </button>
+          </div>
+          <div id="myPostsStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
+        </div>
+        <div id="myPostsList"></div>
+      </div>
+    </div>
+    <!-- TAB : VUE D'ENSEMBLE -->
+    <div id="tab-overview" style="display:none">
+      <!-- STATS -->
+      <div class="dash-stats">
+        <div class="dash-stat"><i class="fas fa-play-circle"></i><div><strong id="coursesWatched">0</strong><span>Cours suivis</span></div></div>
+        <div class="dash-stat"><i class="fas fa-users"></i><div><strong id="dashRefs">0</strong><span>Filleuls</span></div></div>
+        <div class="dash-stat"><i class="fas fa-coins"></i><div><strong id="dashEarnings">0.00 ETH</strong><span>Commissions</span></div></div>
+        <div class="dash-stat"><i class="fas fa-trophy"></i><div><strong id="dashLevel">Débutant</strong><span>Niveau</span></div></div>
+      </div>
+      <div class="dash-section">
+        <h2>Ma Progression</h2>
+        <div class="progress-list" id="progressList"></div>
+      </div>
+      <div class="dash-section">
+        <h2>Accès Rapide</h2>
+        <div class="quick-links">
+          <a href="formations.html" class="quick-card"><i class="fas fa-play-circle"></i><span>Continuer les formations</span></a>
+          <a href="affiliation.html" class="quick-card"><i class="fas fa-link"></i><span>Mon lien d'affiliation</span></a>
+          <div class="quick-card" onclick="switchTab('wallet', document.querySelector('[onclick*=wallet]'))"><i class="fas fa-wallet"></i><span>Mon Wallet</span></div>
+        </div>
+      </div>
+    </div>
+    <!-- TAB : PROFIL -->
+    <div id="tab-profile" style="display:none">
+      <div class="profile-section">
+        <div class="profile-card">
+          <div class="profile-cover"></div>
+          <div class="profile-body">
+            <div class="profile-avatar-wrap">
+              <div class="avatar-photo-container" id="profileAvatarContainer" style="margin-top:-40px">
+                <img id="profileAvatarImg" src="" alt="" style="display:none;width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--bg3)" />
+                <div class="avatar-circle avatar-lg" id="profileAvatar"></div>
+                <label class="avatar-upload-overlay" for="avatarFileInput" title="Changer la photo">
+                  <i class="fas fa-camera"></i>
+                  <span>Modifier</span>
+                </label>
+                <input type="file" id="avatarFileInput" accept="image/*" style="display:none" onchange="uploadAvatarPhoto(this)" />
+              </div>
+            </div>
+            <div class="profile-info">
+              <div class="profile-name-row">
+                <h2 id="profileName"></h2>
+                <span id="profilePlanBadge" class="plan-badge"></span>
+              </div>
+              <p id="profileBio" class="profile-bio-display"></p>
+              <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;margin-top:0.5rem" onclick="toggleEditProfile()"><i class="fas fa-edit"></i> Modifier le profil</button>
+              <a id="btnViewPublicProfile" href="#" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;margin-top:0.5rem;display:inline-flex;align-items:center;gap:0.4rem"><i class="fas fa-eye"></i> Voir mon profil public</a>
+            </div>
+          </div>
+          <!-- FORMULAIRE ÉDITION -->
+          <div id="editProfileForm" class="edit-profile-form" style="display:none">
+            <div class="form-group">
+              <label>Nom affiché</label>
+              <input type="text" id="editName" placeholder="Votre nom" />
+            </div>
+            <div class="form-group">
+              <label>Bio</label>
+              <textarea id="editBio" rows="3" placeholder="Parlez de vous, votre activité..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Localisation</label>
+              <input type="text" id="editLocation" placeholder="Ville, Pays" />
+            </div>
+            <div class="form-group">
+              <label>Site web / réseau social</label>
+              <input type="text" id="editWebsite" placeholder="https://..." />
+            </div>
+            <div class="form-group">
+              <label>Téléphone Mobile Money</label>
+              <input type="tel" id="editPhone" placeholder="034 XX XXX XX" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-eye" style="color:var(--accent);margin-right:0.4rem"></i>Confidentialité des abonnements</label>
+              <select id="editFollowingPrivacy" style="width:100%;padding:0.6rem 0.8rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:0.9rem">
+                <option value="public">Public — tout le monde peut voir</option>
+                <option value="friends">Amis — abonnés mutuels uniquement</option>
+                <option value="private">Moi uniquement</option>
+              </select>
+            </div>
+            <div style="display:flex;gap:0.8rem;flex-wrap:wrap">
+              <button class="btn-primary" onclick="saveProfile()"><i class="fas fa-save"></i> Sauvegarder</button>
+              <button class="btn-outline" onclick="toggleEditProfile()">Annuler</button>
+            </div>
+          </div>
+          <!-- CHANGEMENT MOT DE PASSE -->
+          <div class="edit-profile-form" style="border-top:1px solid var(--border);margin-top:0">
+            <h3 style="font-size:1rem;margin-bottom:1rem"><i class="fas fa-lock" style="color:var(--accent);margin-right:0.4rem"></i>Changer le mot de passe</h3>
+            <form id="changePasswordForm" onsubmit="changePassword(event)">
+              <div class="form-group">
+                <label>Ancien mot de passe</label>
+                <input type="password" id="oldPassword" placeholder="⬢⬢⬢⬢⬢⬢⬢⬢" required />
+              </div>
+              <div class="form-group">
+                <label>Nouveau mot de passe</label>
+                <input type="password" id="newPassword" placeholder="⬢⬢⬢⬢⬢⬢⬢⬢" required />
+              </div>
+              <p id="passwordMsg" style="font-size:0.85rem;min-height:1.2rem;margin-bottom:0.5rem"></p>
+              <button type="submit" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem">
+                <i class="fas fa-key"></i> Mettre à jour
+              </button>
+            </form>
+          </div>
+          <div class="profile-stats">
+            <div class="profile-stat"><strong id="pStatCourses">0</strong><span>Cours suivis</span></div>
+            <div class="profile-stat"><strong id="pStatRefs">0</strong><span>Filleuls</span></div>
+            <div class="profile-stat"><strong id="pStatEarnings">0 ETH</strong><span>Gains</span></div>
+            <div class="profile-stat" style="cursor:pointer" onclick="openDashFollowModal('followers')" title="Voir mes followers">
+              <strong id="pStatFollowers">—</strong>
+              <span><i class="fas fa-users" style="color:var(--accent);font-size:0.75rem"></i> Followers</span>
+            </div>
+            <div class="profile-stat" style="cursor:pointer" onclick="openDashFollowModal('following')" title="Voir mes abonnements">
+              <strong id="pStatFollowing">—</strong>
+              <span><i class="fas fa-user-check" style="color:var(--accent2);font-size:0.75rem"></i> Abonnements</span>
+            </div>
+          </div>
+          <!-- INFOS SUPPLÉMENTAIRES -->
+          <div class="profile-details" id="profileDetails"></div>
+          <!-- COMPTES MOBILE MONEY -->
+          <div class="mm-accounts-section" id="mm-accounts">
+            <div class="mm-accounts-header">
+              <h3><i class="fas fa-mobile-alt"></i> Mes comptes Mobile Money</h3>
+              <span class="mm-accounts-hint">Verrouillés après ajout</span>
+            </div>
+            <div id="mmAccountsList"></div>
+          </div>
+          <!-- MODAL AJOUT COMPTE MM -->
+          <div id="mmAddModal" class="link-modal" style="display:none">
+            <div class="link-modal-box">
+              <p><strong><i class="fas fa-mobile-alt"></i> Ajouter un compte <span id="mmAddOperatorLabel"></span></strong></p>
+              <p style="font-size:0.78rem;color:var(--text2)">Ce numéro sera verrouillé définitivement après ajout.</p>
+              <input type="tel" id="mmAddPhone" class="upgrade-input" placeholder="034 XX XXX XX" />
+              <input type="text" id="mmAddName" class="upgrade-input" placeholder="Nom exact sur le compte" />
+              <p id="mmAddMsg" style="font-size:0.78rem;min-height:1rem;color:var(--red)"></p>
+              <div style="display:flex;gap:0.6rem;margin-top:0.4rem">
+                <button class="btn-primary" style="flex:1;padding:0.55rem" onclick="confirmAddMmAccount()"><i class="fas fa-lock"></i> Verrouiller et ajouter</button>
+                <button class="editor-btn" style="flex:1;justify-content:center" onclick="document.getElementById('mmAddModal').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- TAB : MES VIDÉOS ACHETÉES -->
+    <div id="tab-myvideos" style="display:none">
+      <div class="dash-section">
+        <div class="sub-user-header">
+          <div>
+            <h2><i class="fas fa-film" style="color:var(--accent)"></i> Mes Vidéos Achetées</h2>
+            <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Suivez vos demandes d'achat vidéo et leur statut en temps réel.</p>
+          </div>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="renderUserVideoPurchases()">
+            <i class="fas fa-sync-alt"></i> Actualiser
+          </button>
+        </div>
+        <div id="myVideosPurchaseList"></div>
+      </div>
+    </div>
+    <!-- TAB : ABONNEMENT UTILISATEUR -->
+    <div id="tab-subscription" style="display:none">
+      <div class="dash-section">
+        <!-- EN-TÊTE -->
+        <div class="sub-user-header">
+          <div>
+            <h2><i class="fas fa-id-card" style="color:var(--accent2)"></i> Mon Abonnement</h2>
+            <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Suivez vos demandes d'abonnement et leur statut en temps réel.</p>
+          </div>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="renderUserSubscriptions()">
+            <i class="fas fa-sync-alt"></i> Actualiser
+          </button>
+        </div>
+        <!-- PLAN ACTUEL -->
+        <div class="sub-current-plan" id="subCurrentPlan"></div>
+        <!-- LISTE DES DEMANDES -->
+        <div id="subUserList"></div>
+      </div>
+    </div>
+    <!-- TAB : WALLET -->
+    <div id="tab-wallet" style="display:none">
+      <div class="dash-section">
+        <h2>Mes Gains (AR)</h2>
+        <div class="wallet-box">
+          <div class="wallet-row">
+            <span><i class="fas fa-clock"></i> En attente de versement</span>
+            <strong id="walletAR" class="green">0 AR</strong>
+          </div>
+          <div class="wallet-row">
+            <span><i class="fas fa-check-circle"></i> Déjà versé</span>
+            <strong id="walletPaidAR">0 AR</strong>
+          </div>
+          <a href="affiliation.html" class="btn-primary" style="margin-top:1rem;display:inline-block">
+            <i class="fas fa-paper-plane"></i> Demander un retrait
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- TAB : ADMIN -->
+    <div id="tab-admin" style="display:none">
+      <div class="dash-section">
+        <!-- EN-TÊTE ADMIN -->
+        <div class="admin-section-header">
+          <h2><i class="fas fa-shield-alt"></i> Tableau de bord Admin</h2>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadAdminStats()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+        </div>
+        <!-- KPI COMPACTS -->
+        <div class="admin-kpi-grid" id="adminKpiGrid">
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(108,99,255,0.15)"><i class="fas fa-users" style="color:var(--accent)"></i></div><div><strong id="kpiTotal">—</strong><span>Membres</span></div></div>
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(0,212,170,0.12)"><i class="fas fa-fire" style="color:var(--accent2)"></i></div><div><strong id="kpiActive">—</strong><span>Actifs</span></div></div>
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(108,99,255,0.12)"><i class="fas fa-crown" style="color:var(--accent)"></i></div><div><strong id="kpiPro">—</strong><span>Pro</span></div></div>
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(245,158,11,0.12)"><i class="fas fa-gem" style="color:var(--gold)"></i></div><div><strong id="kpiElite">—</strong><span>Elite</span></div></div>
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(0,212,170,0.12)"><i class="fas fa-money-bill-wave" style="color:var(--green)"></i></div><div><strong id="kpiRevenue">—</strong><span>Commissions</span></div></div>
+          <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(255,77,109,0.12)"><i class="fas fa-clock" style="color:var(--red)"></i></div><div><strong id="kpiPending">—</strong><span>Retraits</span></div></div>
+          <div class="admin-kpi" style="display:none"><div><strong id="kpiCourse">—</strong></div></div>
+          <div class="admin-kpi" style="display:none"><div><strong id="kpiSubscribed">—</strong></div></div>
+        </div>
+        <!-- NAVIGATION INTERNE ADMIN -->
+        <div class="admin-subnav">
+          <button class="admin-subnav-btn active" onclick="switchAdminSection('users', this)">
+            <i class="fas fa-users"></i> Utilisateurs
+          </button>
+          <button class="admin-subnav-btn" id="adminSubnavSubs" onclick="switchAdminSection('subscriptions', this)">
+            <i class="fas fa-id-card"></i> Abonnements
+            <span class="admin-subnav-badge" id="subsPendingBadge" style="display:none">0</span>
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('payments', this)">
+            <i class="fas fa-mobile-alt"></i> Comptes de paiement
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('pricing', this)">
+            <i class="fas fa-tags"></i> Tarifs
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('videopurchases', this)">
+            <i class="fas fa-shopping-cart"></i> Achats vidéos
+            <span class="admin-subnav-badge" id="videoPurchasesBadge" style="display:none">0</span>
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('modulepurchases', this)">
+            <i class="fas fa-layer-group"></i> Achats modules
+            <span class="admin-subnav-badge" id="modulePurchasesBadge" style="display:none">0</span>
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('modules', this)">
+            <i class="fas fa-layer-group"></i> Modules
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('plans', this)">
+            <i class="fas fa-chart-pie"></i> Répartition des plans
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('navbarbtn', this)">
+            <i class="fas fa-external-link-alt"></i> Bouton Navbar
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('shares', this)">
+            <i class="fab fa-facebook" style="color:#1877f2"></i> Partages FB
+          </button>
+        </div>
+        <!-- SECTION : PARTAGES FACEBOOK -->
+        <div id="adminSection-shares" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fab fa-facebook" style="color:#1877f2"></i> Partages Facebook</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Membres qui ont partagé des posts avec leur code parrain.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminShares()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <!-- KPIs partages -->
+          <div id="sharesKpis" style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem"></div>
+          <!-- Tableau -->
+          <div class="video-admin-list" id="sharesTableWrap">
+            <div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>
+          </div>
+        </div>
+        <!-- SECTION : MODULES -->
+        <div id="adminSection-modules" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-layer-group" style="color:var(--accent)"></i> Modules vidéo</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Organisez vos vidéos en modules/collections. Chaque vidéo peut être assignée à un module.</p>
+            </div>
+            <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="openModuleModal()">
+              <i class="fas fa-plus"></i> Nouveau module
+            </button>
+          </div>
+          <div id="adminModulesList"></div>
+        </div>
+        <!-- SECTION : ABONNEMENTS -->
+        <div id="adminSection-subscriptions" class="admin-sub-section" style="display:none">
+          <!-- FILTRES -->
+          <div class="admin-users-toolbar">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.88rem;color:var(--text2)">
+              <i class="fas fa-id-card" style="color:var(--accent2)"></i>
+              <span>Demandes d'abonnement reçues</span>
+            </div>
+            <div class="admin-users-filters">
+              <button class="admin-filter-pill active" onclick="filterSubsByStatus('all', this)">Toutes</button>
+              <button class="admin-filter-pill" onclick="filterSubsByStatus('En attente', this)">
+                <i class="fas fa-clock" style="color:var(--gold)"></i> En attente
+              </button>
+              <button class="admin-filter-pill" onclick="filterSubsByStatus('Approuvé', this)">
+                <i class="fas fa-check-circle" style="color:var(--green)"></i> Approuvées
+              </button>
+              <button class="admin-filter-pill" onclick="filterSubsByStatus('Rejeté', this)">
+                <i class="fas fa-times-circle" style="color:var(--red)"></i> Rejetées
+              </button>
+            </div>
+          </div>
+          <!-- LISTE DES DEMANDES -->
+          <div id="adminSubsList"></div>
+        </div>
+        <!-- SECTION : UTILISATEURS -->
+        <div id="adminSection-users" class="admin-sub-section">
+          <div class="admin-users-toolbar">
+            <div class="admin-users-search">
+              <i class="fas fa-search"></i>
+              <input type="text" id="adminUserSearch" placeholder="Rechercher un membre..." oninput="filterAdminUsers(this.value)" />
+            </div>
+            <div class="admin-users-filters">
+              <button class="admin-filter-pill active" onclick="filterAdminUsersByPlan('all', this)">Tous</button>
+              <button class="admin-filter-pill" onclick="filterAdminUsersByPlan('Starter', this)">Starter</button>
+              <button class="admin-filter-pill" onclick="filterAdminUsersByPlan('Pro', this)">Pro</button>
+              <button class="admin-filter-pill" onclick="filterAdminUsersByPlan('Elite', this)">Elite</button>
+            </div>
+          </div>
+          <div class="admin-users-table">
+            <div class="admin-users-header admin-users-header-full">
+              <span>Membre</span><span>Plan</span><span>Commissions</span><span>Filleuls</span><span>Inscription</span><span>Statut</span><span>Actions</span>
+            </div>
+            <div id="adminAllUsers"></div>
+          </div>
+        </div>
+        <!-- SECTION : COMPTES DE PAIEMENT -->
+        <div id="adminSection-payments" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-mobile-alt" style="color:var(--accent2)"></i> Comptes de paiement (abonnements)</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Ces numéros sont affichés aux membres lors d'une demande d'abonnement Pro ou Elite.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem;white-space:nowrap" onclick="loadAdminPaymentAccounts()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <div id="adminPaymentAccounts"></div>
+          <p style="font-size:0.75rem;color:var(--text2);margin-top:0.8rem;display:flex;align-items:center;gap:0.4rem">
+            <i class="fas fa-info-circle" style="color:var(--accent)"></i>
+            Les modifications sont sauvegardées et synchronisées avec le serveur.
+          </p>
+        </div>
+        <!-- SECTION : TARIFS -->
+        <div id="adminSection-pricing" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-tags" style="color:var(--gold)"></i> Gestion des Tarifs</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Abonnements, prix par vidéo, prix par module et commissions.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem;white-space:nowrap" onclick="loadAdminPricing()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <!-- SOUS-ONGLETS TARIFS -->
+          <div class="pricing-tabs" id="pricingTabs">
+            <button class="pricing-tab active" onclick="switchPricingTab('subscriptions', this)">
+              <i class="fas fa-crown"></i> Abonnements
+            </button>
+            <button class="pricing-tab" onclick="switchPricingTab('videos', this)">
+              <i class="fas fa-film"></i> Prix par vidéo
+            </button>
+            <button class="pricing-tab" onclick="switchPricingTab('modules', this)">
+              <i class="fas fa-layer-group"></i> Prix par module
+            </button>
+            <button class="pricing-tab" onclick="switchPricingTab('commissions', this)">
+              <i class="fas fa-percent"></i> Commissions
+            </button>
+          </div>
+          <!-- ONGLET : ABONNEMENTS -->
+          <div id="pricingTab-subscriptions" class="pricing-tab-content">
+            <div id="adminPricingContent"></div>
+          </div>
+          <!-- ONGLET : PRIX PAR VIDÉO -->
+          <div id="pricingTab-videos" class="pricing-tab-content" style="display:none">
+            <div id="adminVideoPricingContent"></div>
+          </div>
+          <!-- ONGLET : PRIX PAR MODULE -->
+          <div id="pricingTab-modules" class="pricing-tab-content" style="display:none">
+            <div id="adminModulePricingContent"></div>
+          </div>
+          <!-- ONGLET : COMMISSIONS -->
+          <div id="pricingTab-commissions" class="pricing-tab-content" style="display:none">
+            <div id="adminCommissionContent"></div>
+          </div>
+        </div>
+        <!-- SECTION : ACHATS VIDÉOS -->
+        <div id="adminSection-videopurchases" class="admin-sub-section" style="display:none">
+          <div class="admin-users-toolbar">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.88rem;color:var(--text2)">
+              <i class="fas fa-shopping-cart" style="color:var(--gold)"></i>
+              <span>Demandes d'achat vidéo unitaire</span>
+            </div>
+            <div class="admin-users-filters">
+              <button class="admin-filter-pill active" onclick="filterVideoPurchases('all',this)">Toutes</button>
+              <button class="admin-filter-pill" onclick="filterVideoPurchases('En attente',this)">
+                <i class="fas fa-clock" style="color:var(--gold)"></i> En attente
+              </button>
+              <button class="admin-filter-pill" onclick="filterVideoPurchases('Approuvé',this)">
+                <i class="fas fa-check-circle" style="color:var(--green)"></i> Approuvées
+              </button>
+              <button class="admin-filter-pill" onclick="filterVideoPurchases('Rejeté',this)">
+                <i class="fas fa-times-circle" style="color:var(--red)"></i> Rejetées
+              </button>
+            </div>
+          </div>
+          <div id="adminVideoPurchasesList"></div>
+        </div>
+        <!-- SECTION : ACHATS MODULES -->
+        <div id="adminSection-modulepurchases" class="admin-sub-section" style="display:none">
+          <div class="admin-users-toolbar">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-size:0.88rem;color:var(--text2)">
+              <i class="fas fa-layer-group" style="color:var(--accent)"></i>
+              <span>Demandes d'achat de module</span>
+            </div>
+            <div class="admin-users-filters">
+              <button class="admin-filter-pill active" onclick="filterModulePurchases('all',this)">Toutes</button>
+              <button class="admin-filter-pill" onclick="filterModulePurchases('En attente',this)">
+                <i class="fas fa-clock" style="color:var(--gold)"></i> En attente
+              </button>
+              <button class="admin-filter-pill" onclick="filterModulePurchases('Approuvé',this)">
+                <i class="fas fa-check-circle" style="color:var(--green)"></i> Approuvées
+              </button>
+              <button class="admin-filter-pill" onclick="filterModulePurchases('Rejeté',this)">
+                <i class="fas fa-times-circle" style="color:var(--red)"></i> Rejetées
+              </button>
+            </div>
+          </div>
+          <div id="adminModulePurchasesList"></div>
+        </div>
+        <!-- SECTION : RÉPARTITION DES PLANS -->
+        <div id="adminSection-plans" class="admin-sub-section" style="display:none">
+          <div class="admin-plans-bar-section">
+            <h3>Répartition des plans</h3>
+            <div class="admin-plans-bar" id="adminPlansBar"></div>
+            <div class="admin-plans-legend" id="adminPlansLegend"></div>
+          </div>
+          <div class="admin-recent-section" style="margin-top:1.5rem">
+            <h3>Derniers membres inscrits</h3>
+            <div class="admin-users-table">
+              <div class="admin-users-header"><span>Membre</span><span>Plan</span><span>Inscription</span><span>Statut</span></div>
+              <div id="adminRecentUsers"></div>
+            </div>
+          </div>
+        </div>
+        <!-- SECTION : BOUTON NAVBAR -->
+        <div id="adminSection-navbarbtn" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1.2rem">
+            <div>
+              <h3><i class="fas fa-external-link-alt" style="color:var(--accent)"></i> Bouton Navbar personnalisé</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Affiche un bouton à gauche du bouton Messages dans la barre de navigation de toutes les pages.</p>
+            </div>
+          </div>
+          <div class="navbar-btn-admin-form">
+            <div class="form-group">
+              <label style="display:flex;align-items:center;gap:0.6rem">
+                <span>Activer le bouton</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="navBtnEnabled" onchange="_navBtnPreview()" />
+                  <span class="toggle-slider"></span>
+                </label>
+              </label>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-tag" style="color:var(--accent)"></i> Label (info-bulle)</label>
+              <input type="text" id="navBtnLabel" class="upgrade-input" placeholder="Ex: Rejoindre notre Discord" oninput="_navBtnPreview()" />
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-image" style="color:var(--accent)"></i> URL de l’icône</label>
+              <input type="url" id="navBtnIconUrl" class="upgrade-input" placeholder="https://... (PNG, SVG, JPG)" oninput="_navBtnPreview()" />
+              <p style="font-size:0.75rem;color:var(--text2);margin-top:0.3rem"><i class="fas fa-info-circle" style="color:var(--accent)"></i> Utilisez une URL d’image publique (logo Discord, WhatsApp, etc.)</p>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-link" style="color:var(--accent)"></i> Lien de destination</label>
+              <input type="url" id="navBtnLink" class="upgrade-input" placeholder="https://discord.gg/..." oninput="_navBtnPreview()" />
+            </div>
+            <!-- Aperçu -->
+            <div class="navbar-btn-preview" id="navBtnPreviewBox" style="display:none">
+              <span style="font-size:0.78rem;color:var(--text2);margin-bottom:0.5rem;display:block">Aperçu :</span>
+              <div class="navbar-btn-preview-inner">
+                <a id="navBtnPreviewEl" href="#" class="notif-bell" style="pointer-events:none">
+                  <img id="navBtnPreviewIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+                </a>
+              </div>
+            </div>
+            <p id="navBtnMsg" style="font-size:0.82rem;min-height:1rem"></p>
+            <button class="btn-primary" style="padding:0.55rem 1.4rem" onclick="saveNavbarButton()">
+              <i class="fas fa-save"></i> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL COMMISSIONS UTILISATEUR -->
+    <div id="userCommModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:560px;gap:0" onclick="event.stopPropagation()">
+        <div class="video-modal-header">
+          <h3 id="userCommModalTitle"><i class="fas fa-coins" style="color:var(--gold)"></i> Commissions</h3>
+          <button class="video-modal-close" onclick="document.getElementById('userCommModal').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="userCommModalBody" style="padding:1rem;max-height:60vh;overflow-y:auto"></div>
+      </div>
+    </div>
+    <!-- MODAL CHANGEMENT DE PLAN -->
+    <div id="userPlanModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:360px;text-align:center" onclick="event.stopPropagation()">
+        <h3 style="font-size:1rem;margin-bottom:1rem"><i class="fas fa-crown" style="color:var(--gold)"></i> Changer le plan</h3>
+        <p id="userPlanModalName" style="color:var(--text2);font-size:0.88rem;margin-bottom:1rem"></p>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1rem">
+          <button class="admin-plan-choice" onclick="confirmChangePlan('Starter')"><i class="fas fa-user"></i> Starter — Gratuit</button>
+          <button class="admin-plan-choice pro" onclick="confirmChangePlan('Pro')"><i class="fas fa-crown"></i> Pro — 30 000 AR</button>
+          <button class="admin-plan-choice elite" onclick="confirmChangePlan('Elite')"><i class="fas fa-gem"></i> Elite — 90 000 AR</button>
+        </div>
+        <button class="btn-outline" style="width:100%" onclick="document.getElementById('userPlanModal').style.display='none'">Annuler</button>
+      </div>
+    </div>
+    <!-- MODAL PREUVE DE PAIEMENT -->
+    <div id="proofModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:520px;gap:0" onclick="event.stopPropagation()">
+        <div class="video-modal-header" style="padding:1rem 1.2rem;border-bottom:1px solid var(--border)">
+          <h3 style="font-size:0.95rem"><i class="fas fa-camera" style="color:var(--accent2)"></i> Preuve de paiement</h3>
+          <button class="video-modal-close" onclick="document.getElementById('proofModal').style.display='none'"><i class="fas fa-times"></i></button>
+        </div>
+        <div style="padding:1rem">
+          <div id="proofModalInfo" style="margin-bottom:0.8rem;font-size:0.82rem;color:var(--text2)"></div>
+          <img id="proofModalImg" src="" alt="Preuve" style="width:100%;border-radius:10px;border:1px solid var(--border);display:block" />
+          <a id="proofModalDownload" href="" download="preuve_paiement.jpg" class="btn-outline" style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:0.8rem;padding:0.45rem 1rem;font-size:0.82rem">
+            <i class="fas fa-download"></i> Télécharger
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL TOGGLE PAIEMENT (désactiver / réactiver) -->
+    <div id="togglePayModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:400px;gap:1rem" onclick="event.stopPropagation()">
+        <h3 id="togglePayTitle" style="font-size:1rem"></h3>
+        <div id="togglePayReasonWrap">
+          <p style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem">
+            <i class="fas fa-info-circle" style="color:var(--accent)"></i>
+            Ce compte sera masqué aux membres lors du paiement. Indiquez la raison (optionnel) :
+          </p>
+          <div class="pay-reason-presets">
+            <button class="pay-reason-pill" onclick="_setPayReason('Panne réseau opérateur')">📈 Panne réseau</button>
+            <button class="pay-reason-pill" onclick="_setPayReason('Maintenance en cours')">💡 Maintenance</button>
+            <button class="pay-reason-pill" onclick="_setPayReason('Problème technique')">👍️ Problème technique</button>
+            <button class="pay-reason-pill" onclick="_setPayReason('Temporairement indisponible')">⏸ Indisponible</button>
+          </div>
+          <input type="text" id="togglePayReason" class="upgrade-input" placeholder="Raison personnalisée (optionnel)" style="margin-top:0.5rem" />
+        </div>
+        <div class="crop-actions">
+          <button class="btn-outline" onclick="document.getElementById('togglePayModal').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+          <button class="btn-primary" id="togglePayConfirmBtn" onclick="confirmTogglePayment()"></button>
+        </div>
+      </div>
+    </div>
+    <!-- MODAL SUPPRESSION NUMÉRO PAIEMENT -->
+    <div id="clearPayModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:360px;text-align:center;gap:1rem" onclick="event.stopPropagation()">
+        <div style="font-size:2.5rem">🗑️</div>
+        <h3 style="font-size:1rem">Supprimer ce numéro ?</h3>
+        <p style="color:var(--text2);font-size:0.88rem">Compte <strong id="clearPayName"></strong></p>
+        <p style="font-size:0.78rem;color:var(--red)">Le numéro sera effacé. Vous pourrez en ajouter un nouveau.</p>
+        <div class="crop-actions">
+          <button class="btn-outline" onclick="document.getElementById('clearPayModal').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+          <button class="btn-primary" style="background:var(--red);border:none" onclick="confirmClearPayment()"><i class="fas fa-trash"></i> Supprimer</button>
+        </div>
+      </div>
+    </div>
+    <div id="deleteUserModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+      <div class="crop-modal" style="max-width:360px;text-align:center;gap:1rem" onclick="event.stopPropagation()">
+        <div style="font-size:2.5rem">⚠️</div>
+        <h3 style="font-size:1rem">Supprimer cet utilisateur ?</h3>
+        <p id="deleteUserName" style="color:var(--text2);font-size:0.88rem"></p>
+        <p style="font-size:0.78rem;color:var(--red)">Cette action est irréversible.</p>
+        <div class="crop-actions">
+          <button class="btn-outline" onclick="document.getElementById('deleteUserModal').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+          <button class="btn-primary" style="background:var(--red);border:none" id="deleteUserConfirmBtn"><i class="fas fa-trash"></i> Supprimer</button>
+        </div>
+      </div>
+    </div>
+    <!-- TAB : VIDEOS (admin) -->
+    <div id="tab-videos" style="display:none">
+      <div class="dash-section">
+        <!-- EN-TÊTE -->
+        <div class="admin-section-header">
+          <h2><i class="fas fa-film"></i> Gestion des Vidéos</h2>
+          <button class="btn-primary" style="padding:0.45rem 1rem;font-size:0.82rem" onclick="openVideoModal()">
+            <i class="fas fa-plus"></i> Ajouter une vidéo
+          </button>
+        </div>
+        <!-- FILTRES -->
+        <div class="video-admin-filters">
+          <button class="filter-btn active" onclick="filterAdminVideos('all', this)">Toutes</button>
+          <button class="filter-btn" onclick="filterAdminVideos('free', this)">
+            <i class="fas fa-unlock" style="color:var(--green)"></i> Gratuites
+          </button>
+          <button class="filter-btn" onclick="filterAdminVideos('unit', this)">
+            <i class="fas fa-tag" style="color:var(--accent2)"></i> Achat unitaire
+          </button>
+          <button class="filter-btn" onclick="filterAdminVideos('pro', this)">
+            <i class="fas fa-crown" style="color:var(--gold)"></i> Abonnement Pro+
+          </button>
+          <button class="filter-btn" onclick="filterAdminVideos('debutant', this)">Débutant</button>
+          <button class="filter-btn" onclick="filterAdminVideos('trading', this)">Trading</button>
+          <button class="filter-btn" onclick="filterAdminVideos('defi', this)">DeFi</button>
+          <button class="filter-btn" onclick="filterAdminVideos('nft', this)">NFT</button>
+          <button class="filter-btn" onclick="filterAdminVideos('contenu', this)">Contenu</button>
+          <button class="filter-btn" onclick="filterAdminVideos('facebook', this)">Facebook</button>
+        </div>
+        <!-- STATS RAPIDES -->
+        <div class="video-admin-stats" id="videoAdminStats"></div>
+        <!-- LISTE DES VIDÉOS -->
+        <div class="video-admin-list" id="videoAdminList"></div>
+      </div>
+    </div>
+    <!-- MODAL FOLLOWERS/FOLLOWING DASHBOARD -->
+    <div id="dashFollowModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)closeDashFollowModal()">
+      <div class="crop-modal" style="max-width:420px;gap:0" onclick="event.stopPropagation()">
+        <div class="video-modal-header" style="padding:1rem 1.2rem;border-bottom:1px solid var(--border)">
+          <h3 id="dashFollowModalTitle" style="font-size:0.95rem"></h3>
+          <button class="video-modal-close" onclick="closeDashFollowModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="dashFollowModalList" style="padding:0.8rem;max-height:60vh;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div> <!-- fin dashboardSection -->
+  <!-- MODAL AJOUT / ÉDITION VIDÉO -->
+  <div id="videoModalOverlay" class="crop-modal-overlay" style="display:none" onclick="_closeVideoModalOutside(event)">
+    <div class="crop-modal video-modal" onclick="event.stopPropagation()">
+      <div class="video-modal-header">
+        <h3 id="videoModalTitle"><i class="fas fa-film"></i> Ajouter une vidéo</h3>
+        <button class="video-modal-close" onclick="closeVideoModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Titre <span style="color:var(--red)">*</span></label>
+        <input type="text" id="vTitle" placeholder="Ex: Analyse Technique Crypto" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="vDesc" rows="2" placeholder="Courte description de la vidéo..."></textarea>
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-align-left" style="color:var(--accent)"></i> Description détaillée <small style="color:var(--text2);font-weight:400">(visible par les utilisateurs, liens cliquables)</small></label>
+        <textarea id="vVideoDescription" rows="4" placeholder="Description complète, programme, liens utiles...
+Ex: Découvrez https://exemple.com dans cette formation."></textarea>
+      </div>
+      <div class="video-modal-grid">
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="vCategory" class="vselect">
+            <option value="debutant">Débutant</option>
+            <option value="trading">Trading</option>
+            <option value="defi">DeFi</option>
+            <option value="nft">NFT</option>
+            <option value="contenu">Contenu</option>
+            <option value="facebook">Facebook</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Niveau</label>
+          <select id="vLevel" class="vselect">
+            <option value="Débutant">Débutant</option>
+            <option value="Intermédiaire">Intermédiaire</option>
+            <option value="Avancé">Avancé</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Durée</label>
+          <input type="text" id="vDuration" placeholder="Ex: 45 min" />
+        </div>
+        <div class="form-group">
+          <label>Source vidéo</label>
+          <select id="vSource" class="vselect" onchange="_toggleSourceFields(this.value)">
+            <option value="youtube"><i class="fab fa-youtube"></i> YouTube</option>
+            <option value="drive">Google Drive (privé)</option>
+          </select>
+        </div>
+      </div>
+      <!-- Champs YouTube -->
+      <div id="vYoutubeFields" class="form-group">
+        <label><i class="fab fa-youtube" style="color:#ff4444"></i> ID YouTube
+          <span style="color:var(--text2);font-size:0.75rem;font-weight:400"> — depuis l'URL après ?v=</span>
+        </label>
+        <input type="text" id="vVideoId" placeholder="Ex: dQw4w9WgXcQ" />
+      </div>
+      <!-- Champs Google Drive -->
+      <div id="vDriveFields" class="form-group" style="display:none">
+        <label>
+          <img src="https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png" style="width:16px;height:16px;vertical-align:middle;margin-right:4px" />
+          Lien ou ID Google Drive
+          <span style="color:var(--text2);font-size:0.75rem;font-weight:400"> — vidéo privée Pro/Elite</span>
+        </label>
+        <input type="text" id="vDriveId" placeholder="https://drive.google.com/file/d/XXXXX/view" />
+        <p style="font-size:0.75rem;color:var(--text2);margin-top:0.4rem">
+          <i class="fas fa-info-circle" style="color:var(--accent)"></i>
+          Sur Drive : clic droit  ’ Partager  ’ « Toute personne avec le lien » peut voir
+        </p>
+      </div>
+      <!-- Miniature -->
+      <div class="form-group">
+        <label><i class="fas fa-image" style="color:var(--accent)"></i> Miniature (thumbnail)
+          <span style="color:var(--text2);font-size:0.75rem;font-weight:400"> — laissé vide = auto depuis YouTube</span>
+        </label>
+        <div class="thumbnail-input-wrap">
+          <div class="thumbnail-preview" id="vThumbnailPreview" style="display:none">
+            <img id="vThumbnailImg" src="" alt="" />
+            <button type="button" class="thumbnail-remove" onclick="removeThumbnail()"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="thumbnail-actions" id="vThumbnailActions">
+            <label class="admin-media-btn" for="vThumbnailFile">
+              <i class="fas fa-upload"></i> Uploader une image
+            </label>
+            <input type="file" id="vThumbnailFile" accept="image/*" style="display:none" onchange="uploadThumbnail(this)" />
+            <span style="color:var(--text2);font-size:0.8rem">ou</span>
+            <input type="url" id="vThumbnailUrl" placeholder="https://... (URL image)" oninput="previewThumbnailUrl(this.value)" style="flex:1;min-width:180px" />
+          </div>
+        </div>
+      </div>
+      <!-- Prévisualisation -->
+      <div id="vPreviewWrap" class="video-preview-wrap" style="display:none">
+        <iframe id="vPreviewFrame" src="" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px"></iframe>
+      </div>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+        <button id="vPreviewBtnYt" class="video-preview-btn" onclick="previewYoutube()">
+          <i class="fab fa-youtube"></i> Prévisualiser YouTube
+        </button>
+        <button id="vPreviewBtnDrive" class="video-preview-btn drive" onclick="previewDrive()" style="display:none">
+          <i class="fas fa-play-circle"></i> Prévisualiser Drive
+        </button>
+      </div>
+      <!-- Accès -->
+      <div class="video-access-toggle">
+        <span class="video-access-label">Accès</span>
+        <div class="video-access-options">
+          <label class="access-option">
+            <input type="radio" name="vAccess" id="vFree" value="free" checked onchange="_onAccessTypeChange('free')" />
+            <span class="access-btn free"><i class="fas fa-unlock"></i> Gratuit</span>
+          </label>
+          <label class="access-option">
+            <input type="radio" name="vAccess" id="vPaid" value="paid" onchange="_onAccessTypeChange('pro')" />
+            <span class="access-btn paid"><i class="fas fa-crown"></i> Abonnement Pro+</span>
+          </label>
+          <label class="access-option">
+            <input type="radio" name="vAccess" id="vUnit" value="unit" onchange="_onAccessTypeChange('unit')" />
+            <span class="access-btn" style="background:rgba(245,158,11,0.12);color:var(--gold);border:1.5px solid var(--gold)"><i class="fas fa-tag"></i> Achat unitaire</span>
+          </label>
+        </div>
+      </div>
+      <!-- Module -->
+      <div class="form-group">
+        <label><i class="fas fa-layer-group" style="color:var(--accent)"></i> Module <small style="color:var(--text2);font-weight:400">(optionnel)</small></label>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <select id="vModuleId" class="vselect" style="flex:1"></select>
+          <button type="button" class="editor-btn" onclick="openModuleModalFromVideo()" title="Créer un nouveau module" style="white-space:nowrap">
+            <i class="fas fa-plus"></i> Nouveau
+          </button>
+        </div>
+      </div>
+      <!-- Prix unitaire (visible seulement si achat unitaire) -->
+      <div class="form-group" id="vPriceGroup" style="display:none">
+        <label><i class="fas fa-tag" style="color:var(--gold)"></i> Prix unitaire <span style="color:var(--red)">*</span> <small style="color:var(--text2)">(AR) — laisser vide pour utiliser le prix global</small></label>
+        <input type="number" id="vPrice" placeholder="Ex: 5000" min="0" step="500" style="max-width:200px" />
+      </div>
+      <div class="crop-actions" style="margin-top:0.8rem">
+        <button class="btn-outline" onclick="closeVideoModal()"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" onclick="saveVideo()"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL CONFIRMATION SUPPRESSION -->
+  <div id="deleteVideoOverlay" class="crop-modal-overlay" style="display:none">
+    <div class="crop-modal" style="max-width:380px;text-align:center;gap:1.2rem">
+      <div style="font-size:2.5rem">🗑️</div>
+      <h3 style="font-size:1rem">Supprimer cette vidéo ?</h3>
+      <p id="deleteVideoName" style="color:var(--text2);font-size:0.88rem"></p>
+      <div class="crop-actions">
+        <button class="btn-outline" onclick="document.getElementById('deleteVideoOverlay').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" style="background:var(--red);border:none" id="deleteVideoConfirmBtn"><i class="fas fa-trash"></i> Supprimer</button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL VIDÉO -->
+  <div class="modal" id="videoModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+      <div class="video-container" id="videoContainer">
+        <div id="ytPlayer"></div>
+        <iframe id="driveFrame" src="" allowfullscreen allow="autoplay; fullscreen" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:none"></iframe>
+        <div id="videoError" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:1rem;background:var(--bg2);color:var(--text2);text-align:center;padding:2rem">
+          <i class="fas fa-lock" style="font-size:2.5rem;color:var(--accent);opacity:0.6"></i>
+          <p id="videoErrorMsg" style="font-size:0.95rem;max-width:320px;line-height:1.6"></p>
+        </div>
+      </div>
+      <div class="modal-info">
+        <h3 id="modalTitle"></h3>
+        <p id="modalDesc"></p>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL MODULE -->
+  <div id="moduleModalOverlay" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)closeModuleModal()">
+    <div class="crop-modal" style="max-width:420px" onclick="event.stopPropagation()">
+      <div class="video-modal-header">
+        <h3 id="moduleModalTitle"><i class="fas fa-layer-group"></i> Nouveau module</h3>
+        <button class="video-modal-close" onclick="closeModuleModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Titre <span style="color:var(--red)">*</span></label>
+        <input type="text" id="mTitle" placeholder="Ex: Crypto Débutant" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" id="mDesc" placeholder="Courte description..." />
+      </div>
+      <div class="video-modal-grid">
+        <div class="form-group">
+          <label>Icône FontAwesome</label>
+          <input type="text" id="mIcon" placeholder="fas fa-layer-group" />
+        </div>
+        <div class="form-group">
+          <label>Couleur</label>
+          <input type="color" id="mColor" value="#6c63ff" style="height:38px;padding:2px 4px" />
+        </div>
+        <div class="form-group">
+          <label>Position (ordre)</label>
+          <input type="number" id="mPosition" value="0" min="0" style="max-width:100px" />
+        </div>
+      </div>
+      <p id="moduleModalMsg" style="font-size:0.82rem;min-height:1rem;color:var(--red)"></p>
+      <div class="crop-actions">
+        <button class="btn-outline" onclick="closeModuleModal()"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" onclick="saveModule()"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL CONFIRMATION SUPPRESSION MODULE -->
+  <div id="deleteModuleOverlay" class="crop-modal-overlay" style="display:none">
+    <div class="crop-modal" style="max-width:360px;text-align:center;gap:1.2rem">
+      <div style="font-size:2.5rem">🗑️</div>
+      <h3 style="font-size:1rem">Supprimer ce module ?</h3>
+      <p id="deleteModuleName" style="color:var(--text2);font-size:0.88rem"></p>
+      <p style="font-size:0.78rem;color:var(--text2)">Les vidéos assignées ne seront pas supprimées.</p>
+      <div class="crop-actions">
+        <button class="btn-outline" onclick="document.getElementById('deleteModuleOverlay').style.display='none'"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" style="background:var(--red);border:none" id="deleteModuleConfirmBtn"><i class="fas fa-trash"></i> Supprimer</button>
+      </div>
+    </div>
+  </div>
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+  <!-- PANNEAU NOTIFICATIONS -->
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+  <!-- MODAL RECADRAGE AVATAR -->
+  <div id="cropModalOverlay" class="crop-modal-overlay" style="display:none">
+    <div class="crop-modal">
+      <h3><i class="fas fa-crop-alt"></i> Recadrer la photo</h3>
+      <div class="crop-canvas-wrap" id="cropWrap">
+        <img id="cropImg" src="" alt="" />
+        <div class="crop-circle-guide"></div>
+      </div>
+      <div class="crop-controls">
+        <label>
+          <i class="fas fa-search-plus"></i> Zoom
+          <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" oninput="updateCrop()" />
+        </label>
+      </div>
+      <div class="crop-actions">
+        <button class="btn-outline" onclick="closeCropModal()"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" onclick="applyCrop()"><i class="fas fa-check"></i> Appliquer</button>
+      </div>
+    </div>
+  </div>
+  <!-- MODALE CONFIRMATION ACHAT VIDÉO -->
+  <div id="vpConfirmModal">
+    <div class="vp-confirm-backdrop" onclick="_vpConfirmCancel()"></div>
+    <div class="vp-confirm-box" id="vpConfirmBox">
+      <div class="vp-confirm-icon" id="vpConfirmIcon"></div>
+      <h3 class="vp-confirm-title" id="vpConfirmTitle"></h3>
+      <p class="vp-confirm-subtitle" id="vpConfirmSubtitle"></p>
+      <div class="vp-confirm-user" id="vpConfirmUser"></div>
+      <div class="vp-confirm-btns">
+        <button class="vp-confirm-btn-cancel" onclick="_vpConfirmCancel()">
+          <i class="fas fa-times"></i> Annuler
+        </button>
+        <button class="vp-confirm-btn-ok" id="vpConfirmOkBtn">
+          <i class="fas fa-check"></i> <span id="vpConfirmOkLabel"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script src="https://www.youtube.com/iframe_api" referrerpolicy="strict-origin-when-cross-origin" defer></script>
+  <script>
+    // Pré-remplir le code parrain depuis le lien de partage Facebook
+    (function applyRefCode() {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref') || sessionStorage.getItem('pd_ref');
+      if (!ref) return;
+      sessionStorage.setItem('pd_ref', ref);
+      const input = document.getElementById('regRef');
+      if (input) {
+        input.value = ref;
+        input.readOnly = true;
+        input.style.background = 'rgba(0,212,170,0.08)';
+        input.style.borderColor = 'var(--accent2)';
+        input.style.color = 'var(--accent2)';
+        // Afficher un badge de parrainage
+        const label = input.closest('.form-group')?.querySelector('label');
+        if (label && !label.querySelector('.ref-badge')) {
+          const badge = document.createElement('span');
+          badge.className = 'ref-badge';
+          badge.style.cssText = 'margin-left:0.5rem;font-size:0.72rem;background:rgba(0,212,170,0.15);color:var(--accent2);padding:0.15rem 0.5rem;border-radius:50px;font-weight:700';
+          badge.textContent = '✓ Parrain détecté';
+          label.appendChild(badge);
+        }
+        // Basculer sur le formulaire d'inscription
+        showRegister();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Messages — Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body class="msg-page-body">
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn active" title="Messages" id="msgNavBtn">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <!-- Mur de connexion -->
+  <div id="msgLoginWall" class="mpx-login-wall" style="display:none">
+    <div class="mpx-login-card">
+      <div class="mpx-login-icon"><i class="fas fa-lock"></i></div>
+      <h2>Connexion requise</h2>
+      <p>Connectez-vous pour accéder à vos messages privés.</p>
+      <a href="dashboard.html" class="btn-primary">
+        <i class="fas fa-sign-in-alt"></i> Se connecter
+      </a>
+    </div>
+  </div>
+
+  <!-- App messagerie -->
+  <div id="msgApp" class="mpx-app" style="display:none">
+
+    <!-- ── Sidebar ── -->
+    <aside class="mpx-sidebar" id="mpxSidebar">
+
+      <div class="mpx-sidebar-head">
+        <div class="mpx-sidebar-title">
+          <i class="fas fa-comments"></i>
+          <span>Messages</span>
+        </div>
+        <button class="mpx-compose-btn" onclick="showNewMsgModal()" title="Nouveau message">
+          <i class="fas fa-edit"></i>
+        </button>
+      </div>
+
+      <!-- Barre de recherche conversations -->
+      <div class="mpx-conv-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="convSearchInput" placeholder="Rechercher..." oninput="filterConvList(this.value)" />
+      </div>
+
+      <div class="mpx-conv-list" id="convList"></div>
+
+    </aside>
+
+    <!-- ── Zone chat ── -->
+    <main class="mpx-chat" id="mpxChat">
+
+      <!-- En-tête chat -->
+      <div class="mpx-chat-header" id="chatHeader" style="display:none">
+        <button class="mpx-back-btn" onclick="closeChatMobile()" title="Retour">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div class="mpx-chat-avatar" id="chatHeaderAvatar"></div>
+        <div class="mpx-chat-info">
+          <div class="mpx-chat-name" id="chatHeaderName"></div>
+          <div class="mpx-chat-sub" id="chatHeaderSub">Membre Pagani Digital</div>
+        </div>
+        <a class="mpx-profile-btn" id="chatProfileLink" href="#" title="Voir le profil">
+          <i class="fas fa-user-circle"></i>
+        </a>
+      </div>
+
+      <!-- État vide -->
+      <div class="mpx-empty" id="chatEmpty">
+        <div class="mpx-empty-blob">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <h3>Vos messages privés</h3>
+        <p>Sélectionnez une conversation ou démarrez-en une nouvelle.</p>
+        <button class="btn-primary mpx-empty-btn" onclick="showNewMsgModal()">
+          <i class="fas fa-edit"></i> Nouveau message
+        </button>
+      </div>
+
+      <!-- Messages -->
+      <div class="mpx-messages" id="chatMessages" style="display:none"></div>
+
+      <!-- Bouton scroll vers le bas -->
+      <button class="mpx-scroll-down-btn" id="scrollDownBtn" onclick="scrollChatToBottom()" title="Aller en bas" style="display:none">
+        <i class="fas fa-chevron-down"></i>
+        <span class="mpx-scroll-down-badge" id="scrollDownBadge" style="display:none"></span>
+      </button>
+
+      <!-- Saisie -->
+      <div class="mpx-input-area" id="chatInputRow" style="display:none">
+        <!-- Prévisualisation image avant envoi -->
+        <div id="chatImagePreview" style="display:none;padding:0.4rem 0.8rem 0;">
+          <div style="position:relative;display:inline-block">
+            <img id="chatImagePreviewImg" src="" style="max-height:80px;border-radius:8px;border:2px solid var(--accent2)" />
+            <button onclick="_removeChatImage()" style="position:absolute;top:-6px;right:-6px;background:var(--red);border:none;color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:0.7rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <div class="mpx-input-box">
+          <label class="mpx-photo-btn" title="Envoyer une photo">
+            <i class="fas fa-image"></i>
+            <input type="file" id="chatImageInput" accept="image/*" style="display:none" onchange="_previewChatImage(this)" />
+          </label>
+          <input type="text" class="mpx-input" id="chatInput"
+            placeholder="Écrire un message..."
+            onkeydown="if(event.key==='Enter')sendChatMessage()" />
+          <button class="mpx-send-btn" onclick="sendChatMessage()" title="Envoyer">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Modal nouveau message -->
+  <div class="mpx-modal-overlay" id="newMsgModal" style="display:none" onclick="if(event.target===this)closeNewMsgModal()">
+    <div class="mpx-modal">
+      <div class="mpx-modal-head">
+        <h3><i class="fas fa-edit"></i> Nouveau message</h3>
+        <button class="mpx-modal-close" onclick="closeNewMsgModal()">&times;</button>
+      </div>
+      <div class="mpx-modal-body">
+        <div class="mpx-modal-search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="newMsgSearch" class="mpx-modal-search"
+            placeholder="Rechercher un membre..."
+            oninput="searchMembers(this.value)" autocomplete="off" />
+        </div>
+        <div class="mpx-modal-results" id="newMsgResults"></div>
+        <p class="mpx-modal-status" id="newMsgStatus"></p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    // Cache conversations pour le filtre local
+    let _allConvs = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+
+      if (!user) {
+        document.getElementById('msgLoginWall').style.display = 'flex';
+        return;
+      }
+
+      document.getElementById('msgApp').style.display = 'flex';
+      await loadConversations();
+
+      // Ouvrir depuis URL ?with=ID (refresh ou lien direct)
+      const params = new URLSearchParams(window.location.search);
+      const withId = params.get('with');
+      if (withId) {
+        // Chercher d'abord dans les conversations chargées
+        const existing = _allConvs.find(c => String(c.id) === String(withId));
+        if (existing) {
+          openChat(existing.id, existing.name, existing.avatarColor || '#6c63ff', existing.avatarPhoto || '');
+        } else {
+          // Charger le profil depuis le serveur
+          try {
+            const profile = await PaganiAPI.getPublicUser(withId);
+            if (profile) openChat(profile.id, profile.name, profile.avatarColor || '#6c63ff', profile.avatarPhoto || '');
+          } catch(e) {}
+        }
+      }
+
+      _updateMsgBadge();
+      setInterval(_updateMsgBadge, 15000);
+    });
+
+    // Filtre local sur la liste des conversations
+    function filterConvList(q) {
+      const list = document.getElementById('convList');
+      if (!list) return;
+      const items = list.querySelectorAll('.mpx-conv-item');
+      const query = q.toLowerCase().trim();
+      items.forEach(item => {
+        const name = item.dataset.name || '';
+        item.style.display = (!query || name.toLowerCase().includes(query)) ? '' : 'none';
+      });
+    }
+
+    // Modal nouveau message
+    function showNewMsgModal() {
+      const modal = document.getElementById('newMsgModal');
+      modal.style.display = 'flex';
+      document.getElementById('newMsgSearch').value = '';
+      document.getElementById('newMsgResults').innerHTML = '';
+      document.getElementById('newMsgStatus').textContent = '';
+      setTimeout(() => document.getElementById('newMsgSearch').focus(), 50);
+    }
+
+    function closeNewMsgModal() {
+      document.getElementById('newMsgModal').style.display = 'none';
+    }
+
+    let _searchTimer = null;
+    async function searchMembers(query) {
+      const results = document.getElementById('newMsgResults');
+      const status  = document.getElementById('newMsgStatus');
+      clearTimeout(_searchTimer);
+      if (!query || query.length < 2) { results.innerHTML = ''; status.textContent = ''; return; }
+      status.textContent = 'Recherche...';
+      _searchTimer = setTimeout(async () => {
+        try {
+          let users = [];
+          try { users = await PaganiAPI.admin.getUsers(); } catch(e) {}
+          const me = getUser();
+          const filtered = users
+            .filter(u => u.id !== (me && me.id))
+            .filter(u =>
+              u.name.toLowerCase().includes(query.toLowerCase()) ||
+              (u.email && u.email.toLowerCase().includes(query.toLowerCase()))
+            ).slice(0, 8);
+          status.textContent = '';
+          if (!filtered.length) {
+            results.innerHTML = '<div class="mpx-modal-empty"><i class="fas fa-user-slash"></i> Aucun membre trouvé</div>';
+            return;
+          }
+          results.innerHTML = filtered.map(u => {
+            const av = u.avatarPhoto
+              ? `<img src="${u.avatarPhoto}" class="mpx-result-avatar" />`
+              : `<div class="mpx-result-avatar mpx-result-initials" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+            const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+            return `
+              <div class="mpx-result-item" onclick="startNewChat(${u.id},'${u.name.replace(/'/g,"\\'")}','${u.avatarColor||'#6c63ff'}','${u.avatarPhoto||''}')">
+                ${av}
+                <div class="mpx-result-info">
+                  <span class="mpx-result-name">${u.name}</span>
+                  <span class="mpx-result-plan" style="color:${planColors[u.plan]||'var(--text2)'}">
+                    <i class="fas fa-circle" style="font-size:0.45rem;vertical-align:middle"></i> ${u.plan}
+                  </span>
+                </div>
+                <i class="fas fa-chevron-right mpx-result-arrow"></i>
+              </div>`;
+          }).join('');
+        } catch(e) {
+          status.textContent = 'Erreur de recherche';
+        }
+      }, 300);
+    }
+
+    function startNewChat(userId, userName, avatarColor, avatarPhoto) {
+      closeNewMsgModal();
+      openChat(userId, userName, avatarColor, avatarPhoto);
+    }
+  </script>
+</body>
+</html>

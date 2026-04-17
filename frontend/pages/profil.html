@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil �— Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="public-profile-page" id="profilePage">
+    <div class="profile-loading" id="profileLoading">
+      <div class="feed-loader"><span></span><span></span><span></span></div>
+    </div>
+    <div id="profileNotFound" class="profile-not-found" style="display:none">
+      <i class="fas fa-user-slash"></i>
+      <h2>Profil introuvable</h2>
+      <p>Ce membre n'existe pas ou a supprimé son compte.</p>
+      <a href="index.html" class="btn-outline" style="margin-top:1rem">Retour à l'accueil</a>
+    </div>
+    <div id="profileContent" style="display:none">
+      <div class="public-profile-card">
+        <div class="profile-cover"></div>
+        <div class="public-profile-header">
+          <div class="public-avatar-wrap">
+            <div class="avatar-photo-container" style="margin-top:-45px">
+              <img id="pubAvatarImg" src="" alt="" style="display:none;width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--bg3)" />
+              <div class="avatar-circle avatar-lg" id="pubAvatarCircle"></div>
+            </div>
+          </div>
+          <div class="public-profile-info">
+            <div class="public-name-row">
+              <h1 id="pubName"></h1>
+              <span id="pubPlanBadge" class="plan-badge" style="font-size:0.75rem;padding:0.2rem 0.7rem"></span>
+            </div>
+            <p id="pubBio" class="public-bio"></p>
+            <div class="public-meta" id="pubMeta"></div>
+          </div>
+        </div>
+
+        <div class="public-stats">
+          <div class="public-stat">
+            <strong id="pubStatPlan"></strong>
+            <span><i class="fas fa-crown"></i> Plan actuel</span>
+          </div>
+          <div class="public-stat">
+            <strong id="pubStatMember"></strong>
+            <span><i class="fas fa-calendar-alt"></i> Membre depuis</span>
+          </div>
+          <div class="public-stat">
+            <strong id="pubStatPosts">—</strong>
+            <span><i class="fas fa-newspaper"></i> Publications</span>
+          </div>
+          <div class="public-stat" style="cursor:pointer" onclick="showFollowModal('followers')" title="Voir les followers">
+            <strong id="pubStatFollowers">—</strong>
+            <span><i class="fas fa-users"></i> Followers</span>
+          </div>
+          <div class="public-stat" style="cursor:pointer" onclick="showFollowModal('following')" title="Voir les abonnements">
+            <strong id="pubStatFollowing">—</strong>
+            <span><i class="fas fa-user-check"></i> Abonnements <i id="followingPrivacyIcon" class="fas fa-globe" style="font-size:0.65rem;margin-left:0.3rem;opacity:0.6"></i></span>
+          </div>
+        </div>
+
+
+
+        <div class="public-actions">
+          <button id="btnFollow" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem;display:none" onclick="toggleFollow()">
+            <i class="fas fa-user-plus"></i> <span id="btnFollowLabel">Suivre</span>
+          </button>
+          <button id="btnSendMessage" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem;display:none" onclick="openMessageModal()">
+            <i class="fas fa-envelope"></i> Message
+          </button>
+          <a href="index.html" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem">
+            <i class="fas fa-arrow-left"></i> Retour
+          </a>
+        </div>
+      </div>
+
+      <!-- PUBLICATIONS DE L'UTILISATEUR -->
+      <div class="profile-posts-section">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;gap:0.5rem">
+          <i class="fas fa-newspaper" style="color:var(--accent)"></i> Publications
+        </h3>
+        <div id="profilePostsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <!-- Modal message privé -->
+  <div id="msgModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center">
+    <div style="background:var(--bg2,#1e1e2e);border-radius:12px;padding:1.5rem;width:min(420px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0;font-size:1rem"><i class="fas fa-envelope" style="color:var(--accent,#6c63ff)"></i> Envoyer un message</h3>
+        <button onclick="closeMsgModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <p id="msgModalTo" style="margin:0 0 0.8rem;font-size:0.85rem;color:var(--text2)"></p>
+      <textarea id="msgModalContent" rows="4" placeholder="Votre message..." style="width:100%;box-sizing:border-box;background:var(--bg3,#2a2a3e);border:1px solid var(--border,#333);border-radius:8px;color:var(--text,#fff);padding:0.7rem;font-size:0.9rem;resize:vertical"></textarea>
+      <div style="display:flex;gap:0.5rem;margin-top:0.8rem;justify-content:flex-end">
+        <button onclick="closeMsgModal()" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem">Annuler</button>
+        <button onclick="submitMessage()" class="btn-primary" style="padding:0.4rem 1rem;font-size:0.85rem"><i class="fas fa-paper-plane"></i> Envoyer</button>
+      </div>
+      <p id="msgModalStatus" style="margin:0.5rem 0 0;font-size:0.82rem;text-align:center"></p>
+    </div>
+  </div>
+
+  <!-- Modal followers/following -->
+  <div id="followModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeFollowModal()">
+    <div style="background:var(--bg2);border-radius:16px;width:min(420px,92vw);max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:1.2rem 1.4rem;border-bottom:1px solid var(--border)">
+        <h3 id="followModalTitle" style="margin:0;font-size:1rem"></h3>
+        <button onclick="closeFollowModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <div id="followModalList" style="overflow-y:auto;padding:0.8rem"></div>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get('id');
+
+      if (!userId) { showNotFound(); return; }
+
+      try {
+        let profile = null;
+        try { profile = await PaganiAPI.getPublicUser(userId); } catch(e) {}
+        if (!profile) { showNotFound(); return; }
+        renderPublicProfile(profile);
+        _profilePrivacy = profile.followingPrivacy || 'public';
+
+        // Charger les publications de cet utilisateur
+        await loadUserPostsForProfile(profile.id);
+
+        // Bouton message si connecté et pas son propre profil
+        if (user && user.id !== profile.id) {
+          document.getElementById('btnSendMessage').style.display = 'inline-flex';
+          window._msgTargetId   = profile.id;
+          window._msgTargetName = profile.name;
+        }
+
+        // Bouton follow + compteurs
+        await loadFollowData(profile.id, user);
+
+      } catch(e) { showNotFound(); }
+    });
+
+    // — Follow —
+    let _profileId = null;
+    let _isFollowing = false;
+    let _profileIsAdmin = false;
+    let _profilePrivacy = 'public';
+
+    async function loadFollowData(profileId, user) {
+      _profileId = profileId;
+      // Compteurs (publics)
+      try {
+        const stats = await PaganiAPI.getFollowStats(profileId);
+        document.getElementById('pubStatFollowers').textContent = stats.followers;
+        document.getElementById('pubStatFollowing').textContent = stats.following;
+        // Icone confidentialite
+        const privIcon = document.getElementById('followingPrivacyIcon');
+        if (privIcon) {
+          const icons = { public: 'fa-globe', friends: 'fa-user-friends', private: 'fa-lock' };
+          privIcon.className = 'fas ' + (icons[_profilePrivacy] || 'fa-globe');
+        }
+      } catch(e) {}
+
+      // Bouton follow (connecté + pas son propre profil)
+      if (!user || user.id === profileId) return;
+      const btn = document.getElementById('btnFollow');
+      btn.style.display = 'inline-flex';
+      try {
+        const status = await PaganiAPI.getFollowStatus(profileId);
+        _isFollowing    = status.following;
+        _profileIsAdmin = status.isAdmin || false;
+        _updateFollowBtn();
+      } catch(e) {}
+    }
+
+    function _updateFollowBtn() {
+      const btn   = document.getElementById('btnFollow');
+      const label = document.getElementById('btnFollowLabel');
+      const icon  = btn.querySelector('i');
+
+      if (_isFollowing && _profileIsAdmin) {
+        // Admin suivi : bouton verrouillé, non cliquable
+        btn.className = 'btn-primary';
+        btn.style.cssText = 'padding:0.5rem 1.2rem;font-size:0.85rem;opacity:0.7;cursor:not-allowed';
+        btn.disabled = true;
+        btn.title = 'Vous ne pouvez pas vous désabonner de l\'administrateur';
+        icon.className = 'fas fa-lock';
+        label.textContent = 'Suivi';
+      } else if (_isFollowing) {
+        btn.className = 'btn-primary';
+        btn.style.cssText = 'padding:0.5rem 1.2rem;font-size:0.85rem';
+        btn.disabled = false;
+        btn.title = '';
+        icon.className = 'fas fa-user-check';
+        label.textContent = 'Suivi';
+      } else {
+        btn.className = 'btn-outline';
+        btn.style.cssText = 'padding:0.5rem 1.2rem;font-size:0.85rem';
+        btn.disabled = false;
+        btn.title = '';
+        icon.className = 'fas fa-user-plus';
+        label.textContent = 'Suivre';
+      }
+    }
+
+    async function toggleFollow() {
+      if (!_profileId) return;
+      // Bloquer si c'est un admin déjà suivi
+      if (_isFollowing && _profileIsAdmin) return;
+
+      const btn = document.getElementById('btnFollow');
+      btn.disabled = true;
+      try {
+        const res = await PaganiAPI.toggleFollow(_profileId);
+        _isFollowing = res.following;
+        _updateFollowBtn();
+        // Mettre à jour le compteur
+        const stats = await PaganiAPI.getFollowStats(_profileId);
+        document.getElementById('pubStatFollowers').textContent = stats.followers;
+      } catch(e) {
+        if (e.message === 'CANNOT_UNFOLLOW_ADMIN') {
+          // Sécurité supplémentaire : forcer l'état suivi
+          _isFollowing    = true;
+          _profileIsAdmin = true;
+          _updateFollowBtn();
+        }
+      }
+      if (!btn.disabled || !(_isFollowing && _profileIsAdmin)) btn.disabled = false;
+    }
+
+    // — Modal followers/following —
+    async function showFollowModal(type) {
+      if (!_profileId) return;
+      const modal = document.getElementById('followModal');
+      const title = document.getElementById('followModalTitle');
+      const list  = document.getElementById('followModalList');
+      const currentUser = window._currentUser || null;
+      const isOwner = currentUser && currentUser.id === _profileId;
+      if (type === 'following' && isOwner) {
+        const privLabels = { public: 'Public', friends: 'Amis', private: 'Moi uniquement' };
+        const privIcons  = { public: 'fa-globe', friends: 'fa-user-friends', private: 'fa-lock' };
+        const cur = _profilePrivacy || 'public';
+        title.innerHTML = '<i class="fas fa-user-check" style="color:var(--accent)"></i> Abonnements'
+          + '<select id="privacySelect" onchange="saveFollowingPrivacy(this.value)" style="margin-left:auto;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.78rem;padding:0.2rem 0.5rem;cursor:pointer">'
+          + '<option value="public"'  + (cur==='public'  ? ' selected':'')+'>&#127760; Public</option>'
+          + '<option value="friends"' + (cur==='friends' ? ' selected':'')+'>&#128101; Amis</option>'
+          + '<option value="private"' + (cur==='private' ? ' selected':'')+'>&#128274; Moi uniquement</option>'
+          + '</select>';
+      } else {
+        title.innerHTML = type === 'followers'
+          ? '<i class="fas fa-users" style="color:var(--accent)"></i> Followers'
+          : '<i class="fas fa-user-check" style="color:var(--accent)"></i> Abonnements';
+      }
+      list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+      modal.style.display = 'flex';
+      try {
+        const users = type === 'followers'
+          ? await PaganiAPI.getFollowers(_profileId)
+          : await PaganiAPI.getFollowing(_profileId);
+        if (!users.length) {
+          list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text2);font-size:0.85rem">Aucun membre pour le moment.</div>';
+          return;
+        }
+        list.innerHTML = users.map(u => {
+          const av = u.avatarPhoto
+            ? `<img src="${u.avatarPhoto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+            : `<div class="avatar-circle" style="width:40px;height:40px;min-width:40px;font-size:0.8rem;background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+          const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+          return `
+            <div onclick="window.location.href='profil.html?id=${u.id}'"
+              style="display:flex;align-items:center;gap:0.8rem;padding:0.65rem 0.5rem;border-radius:10px;cursor:pointer;transition:background 0.15s"
+              onmouseover="this.style.background='rgba(108,99,255,0.08)'" onmouseout="this.style.background='transparent'">
+              ${av}
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:600;font-size:0.9rem">${u.name}</div>
+                <div style="font-size:0.72rem;color:${planColors[u.plan]||'var(--text2)'}">${u.plan}</div>
+              </div>
+              <i class="fas fa-chevron-right" style="color:var(--text2);font-size:0.75rem;opacity:0.4"></i>
+            </div>`;
+        }).join('');
+      } catch(e) {
+        list.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--red);font-size:0.85rem">Erreur de chargement</div>';
+      }
+    }
+
+
+
+    async function saveFollowingPrivacy(value) {
+      try {
+        await PaganiAPI.updateProfile({ following_privacy: value });
+        _profilePrivacy = value;
+        // Mettre a jour l'icone sur le bouton
+        const icons = { public: 'fa-globe', friends: 'fa-user-friends', private: 'fa-lock' };
+        const ic = document.getElementById('followingPrivacyIcon');
+        if (ic) ic.className = 'fas ' + (icons[value] || 'fa-globe');
+        // Mettre a jour _currentUser
+        if (window._currentUser) window._currentUser.followingPrivacy = value;
+      } catch(e) { console.error('Erreur sauvegarde confidentialite', e); }
+    }
+
+    function closeFollowModal() {
+      document.getElementById('followModal').style.display = 'none';
+    }
+
+    function openMessageModal() {
+      if (!window._msgTargetId) return;
+      document.getElementById('msgModalTo').textContent = `À : ${window._msgTargetName}`;
+      document.getElementById('msgModalContent').value = '';
+      document.getElementById('msgModalStatus').textContent = '';
+      document.getElementById('msgModal').style.display = 'flex';
+      setTimeout(() => document.getElementById('msgModalContent').focus(), 50);
+    }
+
+    function closeMsgModal() {
+      document.getElementById('msgModal').style.display = 'none';
+    }
+
+    async function submitMessage() {
+      const content = document.getElementById('msgModalContent').value.trim();
+      const status  = document.getElementById('msgModalStatus');
+      if (!content) { status.textContent = 'Le message ne peut pas être vide.'; status.style.color = '#e74c3c'; return; }
+      try {
+        await PaganiAPI.sendMessage(window._msgTargetId, content);
+        status.textContent = 'Message envoyé !';
+        status.style.color = '#2ecc71';
+        setTimeout(closeMsgModal, 1200);
+      } catch(e) {
+        status.textContent = e.message === 'NON_AUTHENTIFIE' ? 'Connectez-vous pour envoyer un message.' : 'Erreur lors de l\'envoi.';
+        status.style.color = '#e74c3c';
+      }
+    }
+
+    function showNotFound() {
+      document.getElementById('profileLoading').style.display = 'none';
+      document.getElementById('profileNotFound').style.display = 'flex';
+    }
+
+    function renderPublicProfile(u) {
+      document.getElementById('profileLoading').style.display = 'none';
+      document.getElementById('profileContent').style.display = 'block';
+      document.title = u.name + ' �— Pagani Digital';
+
+      // Avatar
+      const img    = document.getElementById('pubAvatarImg');
+      const circle = document.getElementById('pubAvatarCircle');
+      if (u.avatarPhoto) {
+        img.src = u.avatarPhoto;
+        img.style.display = 'block';
+        circle.style.display = 'none';
+      } else {
+        circle.textContent = getInitials(u.name);
+        circle.style.background = u.avatarColor || '#6c63ff';
+      }
+
+      document.getElementById('pubName').textContent = u.name;
+      document.getElementById('pubPlanBadge').textContent = 'Plan ' + u.plan;
+      document.getElementById('pubBio').textContent = u.bio || 'Aucune bio renseignée.';
+
+      // Stats publiques
+      const planLabels = { Starter: 'Starter', Pro: 'Pro ⭐', Elite: 'Elite 👑' };
+      document.getElementById('pubStatPlan').textContent = planLabels[u.plan] || u.plan;
+      document.getElementById('pubStatMember').textContent =
+        new Date(u.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      // followers/following chargés séparément via loadFollowData
+
+      // Méta
+      const meta = [];
+      if (u.location) meta.push(`<span><i class="fas fa-map-marker-alt"></i> ${u.location}</span>`);
+      if (u.website)  meta.push(`<span><i class="fas fa-link"></i> <a href="${u.website}" target="_blank">${u.website}</a></span>`);
+      document.getElementById('pubMeta').innerHTML = meta.join('');
+    }
+  </script>
+</body>
+</html>
+

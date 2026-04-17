@@ -1,0 +1,34 @@
+# Fichiers de patch et fix temporaires
+fix_*.js
+fix_*.ps1
+fix_*.py
+patch_*.js
+patch_*.ps1
+patch*.js
+insert_*.js
+insert_*.ps1
+verify_*.js
+debug_*.js
+check_*.js
+migrate_*.js
+
+# Fichiers texte de debug
+*.txt
+*.log
+sample.txt
+bad_lines.txt
+api_backup.txt
+block_extract.txt
+fix_mojibake_result.txt
+fix_result*.txt
+patch_result.txt
+
+# Fichiers bizarres
+-1
+{
+console.log(p
+2026-04-15
+
+# Node
+node_modules/
+.env

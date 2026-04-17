@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Affiliation - Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="affiliation.html" class="active">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <h1>Programme <span>Parrainage</span></h1>
+    <p>Recommandez Pagani Digital et recevez vos commissions en <strong style="color:var(--accent2)">Ariary (AR)</strong></p>
+  </div>
+
+  <section class="affiliation-section">
+
+    <!-- COMMENT CA MARCHE -->
+    <div class="how-it-works">
+      <h2>Comment ca marche ?</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <i class="fas fa-user-plus"></i>
+          <h3>Inscrivez-vous</h3>
+          <p>Creez votre compte et obtenez votre lien de parrainage unique.</p>
+        </div>
+        <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <i class="fas fa-share-alt"></i>
+          <h3>Partagez</h3>
+          <p>Partagez votre lien a vos contacts, sur les reseaux ou par WhatsApp.</p>
+        </div>
+        <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <i class="fas fa-money-bill-wave"></i>
+          <h3>Gagnez en AR</h3>
+          <p>Recevez vos commissions en Ariary des qu'un filleul s'abonne ou debloque une formation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CE QUI GENERE UNE COMMISSION -->
+    <div class="commission-triggers">
+      <h2>Quand gagnez-vous une commission ?</h2>
+      <div class="triggers-grid">
+        <div class="trigger-card">
+          <div class="trigger-icon"><i class="fas fa-id-card"></i></div>
+          <h3>Abonnement Plan Pro</h3>
+          <p>Votre filleul souscrit au plan Pro mensuel.</p>
+          <div class="trigger-rates">
+            <span class="rate-row"><span>Starter</span><strong class="green" id="trigStarterAbo">20%</strong></span>
+            <span class="rate-row"><span>Pro</span><strong class="green" id="trigProAbo">35%</strong></span>
+            <span class="rate-row"><span>Elite</span><strong class="green" id="trigEliteAbo">50%</strong></span>
+          </div>
+        </div>
+        <div class="trigger-card">
+          <div class="trigger-icon"><i class="fas fa-crown"></i></div>
+          <h3>Abonnement Plan Elite</h3>
+          <p>Votre filleul souscrit au plan Elite mensuel.</p>
+          <div class="trigger-rates">
+            <span class="rate-row"><span>Starter</span><strong class="green" id="trigStarterAbo2">20%</strong></span>
+            <span class="rate-row"><span>Pro</span><strong class="green" id="trigProAbo2">35%</strong></span>
+            <span class="rate-row"><span>Elite</span><strong class="green" id="trigEliteAbo2">50%</strong></span>
+          </div>
+        </div>
+        <div class="trigger-card">
+          <div class="trigger-icon"><i class="fas fa-play-circle"></i></div>
+          <h3>Formation debloquee</h3>
+          <p>Votre filleul achete l'acces a une formation payante a l'unite.</p>
+          <div class="trigger-rates">
+            <span class="rate-row"><span>Starter</span><strong class="green" id="trigStarterForm">15%</strong></span>
+            <span class="rate-row"><span>Pro</span><strong class="green" id="trigProForm">25%</strong></span>
+            <span class="rate-row"><span>Elite</span><strong class="green" id="trigEliteForm">40%</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLEAU DES COMMISSIONS EN AR -->
+    <div class="commission-table-section">
+      <h2>Tableau des Commissions <span style="color:var(--accent2);font-size:0.9rem">(en AR)</span></h2>
+      <div class="commission-table">
+        <div class="comm-header">
+          <span>Votre Plan</span>
+          <span>Abonnement Pro filleul</span>
+          <span>Abonnement Elite filleul</span>
+          <span>Formation debloquee</span>
+          <span>Delai paiement</span>
+        </div>
+        <div class="comm-row">
+          <span><i class="fas fa-star"></i> Starter</span>
+          <span class="green" id="affCommStarterPro">20% <small>(~6 000 AR)</small></span>
+          <span class="green" id="affCommStarterElite">20% <small>(~18 000 AR)</small></span>
+          <span class="green" id="affCommStarterForm">15% <small>(~1 500 AR)</small></span>
+          <span>7 jours</span>
+        </div>
+        <div class="comm-row highlight">
+          <span><i class="fas fa-fire"></i> Pro</span>
+          <span class="green" id="affCommProPro">35% <small>(~10 500 AR)</small></span>
+          <span class="green" id="affCommProElite">35% <small>(~31 500 AR)</small></span>
+          <span class="green" id="affCommProForm">25% <small>(~2 500 AR)</small></span>
+          <span>3 jours</span>
+        </div>
+        <div class="comm-row">
+          <span><i class="fas fa-crown"></i> Elite</span>
+          <span class="green" id="affCommElitePro">50% <small>(~15 000 AR)</small></span>
+          <span class="green" id="affCommEliteElite">50% <small>(~45 000 AR)</small></span>
+          <span class="green" id="affCommEliteForm">40% <small>(~4 000 AR)</small></span>
+          <span>24h</span>
+        </div>
+      </div>
+      <p class="comm-note" id="affCommNote"><i class="fas fa-info-circle"></i> Tarifs de reference : Plan Pro = 30 000 AR/mois &middot; Plan Elite = 90 000 AR/mois &middot; Formation unitaire = 10 000 AR &middot; Paiement via Mobile Money (MVola, Orange Money, Airtel)</p>
+    </div>
+
+    <!-- MON LIEN DE PARRAINAGE + SECTIONS PRIVÉES -->
+    <div id="affPrivateSections" style="display:none">
+
+    <!-- MON LIEN DE PARRAINAGE -->
+    <div class="affiliate-link-section">
+      <h2>Mon Lien de Parrainage</h2>
+      <div class="link-box">
+        <input type="text" id="affiliateLink" value="https://paganidigital.com/ref/USER123" readonly />
+        <button onclick="copyLink()"><i class="fas fa-copy"></i> Copier</button>
+      </div>
+      <p id="copyMsg" class="copy-msg"></p>
+      <div class="share-btns">
+        <a href="#" target="_blank" rel="noopener" class="share-btn twitter"><i class="fab fa-twitter"></i> Twitter</a>
+        <a href="#" target="_blank" rel="noopener" class="share-btn telegram"><i class="fab fa-telegram"></i> Telegram</a>
+        <a id="whatsappShareBtn" href="#" target="_blank" rel="noopener" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      </div>
+    </div>
+
+    <!-- STATS PARRAINAGE -->
+    <div class="aff-stats">
+      <div class="aff-stat-card">
+        <i class="fas fa-users"></i>
+        <strong id="totalRefs">0</strong>
+        <span>Filleuls actifs</span>
+      </div>
+      <div class="aff-stat-card">
+        <i class="fas fa-money-bill-wave"></i>
+        <strong id="totalEarned">0 AR</strong>
+        <span>Gains totaux</span>
+      </div>
+      <div class="aff-stat-card">
+        <i class="fas fa-clock"></i>
+        <strong id="pendingPay">0 AR</strong>
+        <span>En attente</span>
+      </div>
+      <div class="aff-stat-card">
+        <i class="fas fa-check-circle"></i>
+        <strong id="paidOut">0 AR</strong>
+        <span>Deja verse</span>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE DES COMMISSIONS -->
+    <div class="commission-history-section">
+      <h2>Historique des Commissions</h2>
+      <div class="history-table">
+        <div class="history-header">
+          <span>Date</span><span>Filleul</span><span>Type</span><span>Montant</span><span>Statut</span>
+        </div>
+        <div id="commissionHistory"></div>
+      </div>
+    </div>
+
+    <!-- RETRAIT -->
+    <div class="withdraw-section">
+      <h2>Demander un Retrait</h2>
+      <div class="withdraw-box">
+        <div class="withdraw-balance">
+          <span>Solde disponible</span>
+          <strong id="withdrawBalance">0 AR</strong>
+        </div>
+        <form onsubmit="requestWithdrawAR(event)" class="withdraw-form">
+          <div class="form-group">
+            <label>Montant a retirer (AR)</label>
+            <input type="number" id="withdrawAmount" placeholder="Ex: 10000" min="5000" />
+          </div>
+          <div class="form-group">
+            <label>Compte Mobile Money de reception</label>
+            <div id="withdrawMmSelector" class="withdraw-mm-selector"></div>
+            <p id="withdrawMmNone" class="withdraw-mm-none" style="display:none">
+              <i class="fas fa-exclamation-triangle"></i>
+              Aucun compte Mobile Money enregistre.
+              <a href="dashboard.html?tab=profile#mm-accounts">Ajoutez-en un dans votre profil.</a>
+            </p>
+          </div>
+          <input type="hidden" id="withdrawPhone" />
+          <input type="hidden" id="withdrawOperator" />
+          <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Envoyer la demande</button>
+        </form>
+        <p id="withdrawMsg" class="copy-msg" style="margin-top:0.8rem"></p>
+      </div>
+    </div>
+    <!-- FIN SECTIONS PRIVÉES -->
+    </div>
+
+    <!-- MUR DE CONNEXION (visiteurs non connectés) -->
+    <div id="affLoginWall" style="display:none">
+      <div class="aff-login-wall">
+        <div class="aff-login-wall-icon"><i class="fas fa-lock"></i></div>
+        <h2>Connectez-vous pour accéder</h2>
+        <p>Votre lien de parrainage, vos stats et votre historique de commissions sont réservés aux membres connectés.</p>
+        <div class="aff-login-wall-btns">
+          <a href="dashboard.html" class="btn-primary" style="padding:0.75rem 2rem;font-size:1rem">
+            <i class="fas fa-sign-in-alt"></i> Se connecter
+          </a>
+          <a href="dashboard.html" class="btn-outline" style="padding:0.75rem 2rem;font-size:1rem">
+            <i class="fas fa-user-plus"></i> Créer un compte
+          </a>
+        </div>
+        <p style="font-size:0.82rem;color:var(--text2);margin-top:1rem">
+          <i class="fas fa-gift" style="color:var(--accent2)"></i>
+          Inscription gratuite &mdash; obtenez votre lien de parrainage immédiatement.
+        </p>
+      </div>
+    </div>
+
+  </section>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>&copy; 2025 Pagani Digital. Tous droits reserves.</p>
+      <div class="social-links">
+        <a href="#"><i class="fab fa-twitter"></i></a>
+        <a href="#"><i class="fab fa-telegram"></i></a>
+        <a href="#"><i class="fab fa-discord"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+
+      // Afficher les sections selon la connexion
+      const privateSections = document.getElementById('affPrivateSections');
+      const loginWall       = document.getElementById('affLoginWall');
+      if (user) {
+        if (privateSections) privateSections.style.display = 'block';
+        if (loginWall)       loginWall.style.display       = 'none';
+        await updateAffiliateStats(user);
+      } else {
+        if (privateSections) privateSections.style.display = 'none';
+        if (loginWall)       loginWall.style.display       = 'block';
+      }
+
+      const refLink = user ? `https://paganidigital.com/ref/${user.refCode}` : 'https://paganidigital.com';
+      const msg = encodeURIComponent(`Rejoignez Pagani Digital et developpez votre business en ligne ! ${refLink}`);
+      const wa = document.getElementById('whatsappShareBtn');
+      if (wa) wa.href = `https://wa.me/?text=${msg}`;
+      const tw = document.querySelector('.share-btn.twitter');
+      if (tw) tw.href = `https://twitter.com/intent/tweet?text=${msg}`;
+      const tg = document.querySelector('.share-btn.telegram');
+      if (tg) tg.href = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Rejoignez Pagani Digital !')}`;
+
+      // Charger les tarifs dynamiques
+      try {
+        const p = await PaganiAPI.getPricing();
+        const fmt = n => Number(n).toLocaleString('fr-FR');
+        const el = id => document.getElementById(id);
+        const cs = p.commStarter || {}, cp = p.commPro || {}, ce = p.commElite || {};
+        const pro = p.pro || 30000, elite = p.elite || 90000, video = p.video || 10000;
+        const r = (pct, base) => `${pct}% <small>(~${fmt(Math.round(base * pct / 100))} AR)</small>`;
+
+        // Cartes triggers
+        if (el('trigStarterAbo'))  el('trigStarterAbo').textContent  = (cs.abonnement ?? 20) + '%';
+        if (el('trigProAbo'))      el('trigProAbo').textContent      = (cp.abonnement ?? 35) + '%';
+        if (el('trigEliteAbo'))    el('trigEliteAbo').textContent    = (ce.abonnement ?? 50) + '%';
+        if (el('trigStarterAbo2')) el('trigStarterAbo2').textContent = (cs.abonnement ?? 20) + '%';
+        if (el('trigProAbo2'))     el('trigProAbo2').textContent     = (cp.abonnement ?? 35) + '%';
+        if (el('trigEliteAbo2'))   el('trigEliteAbo2').textContent   = (ce.abonnement ?? 50) + '%';
+        if (el('trigStarterForm')) el('trigStarterForm').textContent = (cs.formation ?? 15) + '%';
+        if (el('trigProForm'))     el('trigProForm').textContent     = (cp.formation ?? 25) + '%';
+        if (el('trigEliteForm'))   el('trigEliteForm').textContent   = (ce.formation ?? 40) + '%';
+
+        // Tableau commissions
+        if (el('affCommStarterPro'))   el('affCommStarterPro').innerHTML   = r(cs.abonnement ?? 20, pro);
+        if (el('affCommStarterElite')) el('affCommStarterElite').innerHTML = r(cs.abonnement ?? 20, elite);
+        if (el('affCommStarterForm'))  el('affCommStarterForm').innerHTML  = r(cs.formation ?? 15, video);
+        if (el('affCommProPro'))       el('affCommProPro').innerHTML       = r(cp.abonnement ?? 35, pro);
+        if (el('affCommProElite'))     el('affCommProElite').innerHTML     = r(cp.abonnement ?? 35, elite);
+        if (el('affCommProForm'))      el('affCommProForm').innerHTML      = r(cp.formation ?? 25, video);
+        if (el('affCommElitePro'))     el('affCommElitePro').innerHTML     = r(ce.abonnement ?? 50, pro);
+        if (el('affCommEliteElite'))   el('affCommEliteElite').innerHTML   = r(ce.abonnement ?? 50, elite);
+        if (el('affCommEliteForm'))    el('affCommEliteForm').innerHTML    = r(ce.formation ?? 40, video);
+        if (el('affCommNote'))         el('affCommNote').innerHTML = `<i class="fas fa-info-circle"></i> Tarifs de reference : Plan Pro = ${fmt(pro)} AR/mois &middot; Plan Elite = ${fmt(elite)} AR/mois &middot; Formation unitaire = ${fmt(video)} AR &middot; Paiement via Mobile Money (MVola, Orange Money, Airtel)`;
+      } catch(e) {}
+    });
+  </script>
+</body>
+</html>
+
