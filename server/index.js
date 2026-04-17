@@ -951,29 +951,13 @@ app.get('*', (req, res) => {
     res.status(404).json({ error: 'ROUTE_INTROUVABLE' });
   }
 });
-// Migration automatique au démarrage
+// Migrations automatiques au démarrage
 const { Pool } = require('pg');
 const _migPool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
   : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
 
-async function runMigrations() {
-  try {
-    await _migPool.query(`
-      CREATE TABLE IF NOT EXISTS social_links (
-        id       INTEGER PRIMARY KEY DEFAULT 1,
-        facebook TEXT    DEFAULT '',
-        tiktok   TEXT    DEFAULT '',
-        telegram TEXT    DEFAULT '',
-        youtube  TEXT    DEFAULT ''
-      )
-    `);
-    await _migPool.query(`INSERT INTO social_links (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
-    console.log('[Migration] social_links : OK');
-  } catch(e) {
-    console.error('[Migration] Erreur :', e.message);
-  }
-}
+async function runMigrations() { await require('./migrations').runMigrations(_migPool); }
 
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();
