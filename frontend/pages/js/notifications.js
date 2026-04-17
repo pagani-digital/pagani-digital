@@ -57,6 +57,9 @@ async function getNotifications(userId, limit = 40) {
           if (n.type === 'SUB_CANCELLED' && (!link || link === 'dashboard.html')) {
             link = 'dashboard.html?tab=subscription';
           }
+          if (n.type === 'NEW_USER') {
+            link = 'dashboard.html?tab=admin&section=users';
+          }
           if (n.type === 'NEW_FORMATION' && (!link || link === 'dashboard.html')) {
             link = 'dashboard.html?tab=admin&section=videopurchases';
           }
