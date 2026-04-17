@@ -163,7 +163,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
       message: `Bienvenue sur Pagani Digital, ${name.split(' ')[0]} ! Votre espace est pret.`,
       link: 'dashboard.html' });
     await db.createNotification({ userId: 0, type: 'NEW_USER',
-      message: `${name} vient de s'inscrire.`, link: 'dashboard.html' });
+      message: `${name} vient de s'inscrire.`, link: 'dashboard.html?tab=admin&section=users' });
     // Auto-follow : le nouvel utilisateur suit l'admin par défaut
     try {
       const admins = (await db.getAllUsers()).filter(u => u.role === 'admin');

@@ -32,3 +32,8 @@ console.log(p
 # Node
 node_modules/
 .env
+
+# Fichiers locaux — ne jamais commiter
+frontend/pages/js/config.local.js
+frontend/pages/js/config.prod.js
+start-local.bat

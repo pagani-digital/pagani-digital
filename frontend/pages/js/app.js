@@ -1219,6 +1219,16 @@ function showDashboard(user) {
     window.location.href = 'messages.html' + (withParam ? '?with=' + withParam : '');
     return;
   }
+  if (tabParam === 'admin' && user.role === 'admin') {
+    const sectionParam = urlParams.get('section');
+    switchTab('admin', document.getElementById('adminTabBtn'));
+    if (sectionParam) {
+      setTimeout(() => {
+        const btn = document.querySelector(`.admin-subnav-btn[onclick*="'${sectionParam}'"]`);
+        if (btn) btn.click();
+      }, 300);
+    }
+  }
   renderProgress();
   updateAffiliateStats(user);
   renderProfile(user);
