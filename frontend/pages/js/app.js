@@ -1191,6 +1191,10 @@ function showDashboard(user) {
     const myVideosTabBtn = document.getElementById('myVideosTabBtn');
     if (myVideosTabBtn) myVideosTabBtn.style.display = 'none';
     switchTab('admin', adminTabBtn);
+    setTimeout(() => {
+      const usersBtn = document.querySelector(".admin-subnav-btn[onclick*=\'users\']");
+      if (usersBtn) usersBtn.click();
+    }, 300);
   } else {
     if (overviewTab) overviewTab.style.display = "flex";
     if (walletTab)   walletTab.style.display   = "flex";
