@@ -313,7 +313,7 @@
       if (!filterBtns) return;
       filterBtns.querySelectorAll('.filter-btn-module').forEach(b => b.remove());
       try {
-        const modules = await fetch('/api/video-modules').then(r => r.json());
+        const modules = await fetch(API_URL + '/video-modules').then(r => r.json());
         if (!modules || !modules.length) return;
         _modulesData = modules;
         modules.forEach(m => {
@@ -454,7 +454,7 @@
 
       // Charger les comptes admin si pas encore en cache
       if (!_paymentAccountsCache.length) {
-        try { _paymentAccountsCache = await fetch('/api/payment-accounts').then(r => r.json()); } catch(e) {}
+        try { _paymentAccountsCache = await fetch(API_URL + '/payment-accounts').then(r => r.json()); } catch(e) {}
       }
 
       // Remplir l'en-tête

@@ -1,16 +1,8 @@
 // ============================================================
-//  config.js — Détection automatique local / production
-//  Local  : localhost, 127.0.0.1, 192.168.x.x → serveur Node local
-//  Prod   : tout autre domaine (Netlify) → Render
+//  config.local.js — Configuration LOCAL uniquement
+//  Utilisé pour tester en local avec le serveur Node.js local
 // ============================================================
 
-(function () {
-  const host = window.location.hostname;
-  const isLocal = host === 'localhost' || host === '127.0.0.1' || /^192\.168\./.test(host);
-
-  window.PaganiConfig = {
-    API_BASE_URL: isLocal
-      ? 'http://' + host + ':3001/api'
-      : 'https://pagani-digital.onrender.com/api',
-  };
-})();
+window.PaganiConfig = {
+  API_BASE_URL: 'https://pagani-digital.onrender.com/api',
+};
