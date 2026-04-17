@@ -404,6 +404,16 @@ app.put('/api/admin/navbar-button', requireAuth, requireAdmin, async (req, res) 
     res.json({ ok: true });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
+app.get('/api/social-links', async (req, res) => {
+  try { res.json(await db.getSocialLinks()); }
+  catch(e) { res.json({ facebook: '', tiktok: '', telegram: '', youtube: '' }); }
+});
+app.put('/api/admin/social-links', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await db.setSocialLinks(req.body);
+    res.json({ ok: true });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
 // ══════════════════════════════════════════════════════════
 //  NOTIFICATIONS
 // ══════════════════════════════════════════════════════════

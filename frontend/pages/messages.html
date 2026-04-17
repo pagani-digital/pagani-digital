@@ -163,9 +163,10 @@
       <a href="index.html" class="logo">Pagani<span>Digital</span></a>
       <p>© 2025 Pagani Digital. Tous droits réservés.</p>
       <div class="social-links">
-        <a href="#"><i class="fab fa-twitter"></i></a>
-        <a href="#"><i class="fab fa-telegram"></i></a>
-        <a href="#"><i class="fab fa-discord"></i></a>
+        <a id="footerFacebook" href="#" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a>
+        <a id="footerTiktok" href="#" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
+        <a id="footerTelegram" href="#" target="_blank" rel="noopener"><i class="fab fa-telegram"></i></a>
+        <a id="footerYoutube" href="#" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
       </div>
     </div>
   </footer>
@@ -185,6 +186,7 @@
       const user = await refreshCurrentUser();
       updateNavbar(user);
       if (window.PaganiNotif) PaganiNotif.startPolling();
+      loadFooterSocialLinks();
 
       if (!user) {
         document.getElementById('msgLoginWall').style.display = 'flex';

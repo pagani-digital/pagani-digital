@@ -996,6 +996,20 @@ async function getShareStats() {
 // NAVBAR BUTTON
 // ═══════════════════════════════════════════════
 
+async function getSocialLinks() {
+  const res = await query('SELECT * FROM social_links WHERE id = 1');
+  return res.rows[0] || { facebook: '', tiktok: '', telegram: '', youtube: '' };
+}
+
+async function setSocialLinks({ facebook, tiktok, telegram, youtube }) {
+  await query(
+    `INSERT INTO social_links (id, facebook, tiktok, telegram, youtube)
+     VALUES (1, $1, $2, $3, $4)
+     ON CONFLICT (id) DO UPDATE SET facebook=$1, tiktok=$2, telegram=$3, youtube=$4`,
+    [facebook || '', tiktok || '', telegram || '', youtube || '']
+  );
+}
+
 async function getNavbarButton() {
   const res = await query('SELECT * FROM navbar_button WHERE id = 1');
   return res.rows[0] || { enabled: false, label: '', icon_url: '', link: '' };
@@ -1104,6 +1118,9 @@ module.exports = {
 
   getNavbarButton,
   setNavbarButton,
+
+  getSocialLinks,
+  setSocialLinks,
 
   recordShare,
   getShareStats,

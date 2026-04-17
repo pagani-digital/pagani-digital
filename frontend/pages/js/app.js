@@ -3383,6 +3383,18 @@ async function requestWithdrawAR(e) {
   }
   setTimeout(() => msg.textContent = "", 6000);
 }
+// ===== LIENS SOCIAUX FOOTER =====
+async function loadFooterSocialLinks() {
+  try {
+    const data = await fetch(API_URL + '/social-links').then(r => r.json());
+    const map = { facebook: 'footerFacebook', tiktok: 'footerTiktok', telegram: 'footerTelegram', youtube: 'footerYoutube' };
+    Object.entries(map).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && data[key]) el.href = data[key];
+    });
+  } catch(e) {}
+}
+
 // ===== NAVBAR DYNAMIQUE =====
 function updateNavbar(user) {
   const navLinks = document.querySelector(".nav-links");
@@ -3473,6 +3485,41 @@ async function loadNavbarBtnAdmin() {
     if (lk) lk.value   = data.link     || '';
     _navBtnPreview();
   } catch(e) {}
+}
+
+async function loadSocialLinksAdmin() {
+  try {
+    const r = await fetch(API_URL + '/social-links');
+    const data = await r.json();
+    const el = id => document.getElementById(id);
+    if (el('socialFacebook')) el('socialFacebook').value = data.facebook || '';
+    if (el('socialTiktok'))   el('socialTiktok').value   = data.tiktok   || '';
+    if (el('socialTelegram')) el('socialTelegram').value = data.telegram  || '';
+    if (el('socialYoutube'))  el('socialYoutube').value  = data.youtube   || '';
+  } catch(e) {}
+}
+
+async function saveSocialLinks() {
+  const msg = document.getElementById('socialLinksMsg');
+  const payload = {
+    facebook: document.getElementById('socialFacebook')?.value.trim() || '',
+    tiktok:   document.getElementById('socialTiktok')?.value.trim()   || '',
+    telegram: document.getElementById('socialTelegram')?.value.trim() || '',
+    youtube:  document.getElementById('socialYoutube')?.value.trim()  || '',
+  };
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const r = await fetch(API_URL + '/admin/social-links', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '✅ Sauvegardé !' : (data.error || 'Erreur'); }
+    setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
+  } catch(e) {
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur réseau'; }
+  }
 }
 
 async function loadAdminShares() {
@@ -4710,7 +4757,8 @@ function switchAdminSection(section, btn) {
   if (section === 'videopurchases')  renderAdminVideoPurchases();
   if (section === 'modules')         renderAdminModules();
   if (section === 'modulepurchases') renderAdminModulePurchases();
-    if (section === 'navbarbtn') loadNavbarBtnAdmin();
+  if (section === 'navbarbtn') loadNavbarBtnAdmin();
+  if (section === 'sociallinks') loadSocialLinksAdmin();
   if (section === 'shares')          loadAdminShares();
 }
 // ===== TARIFS ADMIN â€” ONGLETS =====
