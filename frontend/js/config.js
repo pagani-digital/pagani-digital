@@ -3,5 +3,5 @@
 // ============================================================
 
 window.PaganiConfig = {
-  API_BASE_URL: window.location.protocol + '//' + window.location.hostname + ':3001/api',
+  API_BASE_URL: 'https://pagani-digital.onrender.com/api',
 };
