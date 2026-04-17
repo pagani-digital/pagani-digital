@@ -51,14 +51,6 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
-// Rediriger les requêtes HTTPS vers HTTP (réseau local sans certificat SSL)
-app.use((req, res, next) => {
-  if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
-    return res.redirect(301, 'http://' + req.headers.host + req.url);
-  }
-  next();
-});
-
 const localIPForCSP = localIP ? `http://${localIP}:${process.env.PORT || 3001}` : null;
 
 app.use(helmet({
@@ -71,7 +63,7 @@ app.use(helmet({
       fontSrc:        ["'self'", "https://cdnjs.cloudflare.com"],
       imgSrc:         ["'self'", "data:", "blob:", "https:"],
       frameSrc:       ["https://www.youtube.com", "https://drive.google.com"],
-      connectSrc:     ["'self'", "http://localhost:3001", "http://127.0.0.1:3001", ...(localIPForCSP ? [localIPForCSP] : [])],
+      connectSrc:     ["'self'", "http://localhost:3001", "http://127.0.0.1:3001", "https://pagani-digital.onrender.com", ...(localIPForCSP ? [localIPForCSP] : [])],
       objectSrc:      ["'none'"],
       baseUri:        ["'self'"],
       formAction:     ["'self'"],
@@ -83,7 +75,7 @@ app.use(helmet({
 // Remplacer le CSP de helmet par un CSP sans upgrade-insecure-requests
 app.use((req, res, next) => {
   const ip = localIP ? `http://${localIP}:${process.env.PORT || 3001}` : null;
-  const connectSrc = ["'self'", "http://localhost:3001", "http://127.0.0.1:3001", ...(ip ? [ip] : [])].join(' ');
+  const connectSrc = ["'self'", "http://localhost:3001", "http://127.0.0.1:3001", "https://pagani-digital.onrender.com", ...(ip ? [ip] : [])].join(' ');
   res.setHeader('Content-Security-Policy',
     `default-src 'self'; ` +
     `script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.youtube.com https://s.ytimg.com; ` +
