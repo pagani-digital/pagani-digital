@@ -232,6 +232,16 @@ CREATE TABLE IF NOT EXISTS follows (
   UNIQUE(follower_id, following_id)
 );
 
+-- ── SOCIAL LINKS ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS social_links (
+  id       INTEGER PRIMARY KEY DEFAULT 1,
+  facebook TEXT    DEFAULT '',
+  tiktok   TEXT    DEFAULT '',
+  telegram TEXT    DEFAULT '',
+  youtube  TEXT    DEFAULT ''
+);
+INSERT INTO social_links (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
 -- ── NAVBAR BUTTON ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS navbar_button (
   id       INTEGER PRIMARY KEY DEFAULT 1,
