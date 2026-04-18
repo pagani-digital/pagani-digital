@@ -1150,6 +1150,7 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
           const user = await PaganiAPI.getMe();
           if (user) {
             window._currentUser = user;
+            _startPresencePing();
             showDashboard(user);
             loadFooterSocialLinks();
             return;

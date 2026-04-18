@@ -84,7 +84,7 @@
         <div class="mpx-chat-avatar" id="chatHeaderAvatar"></div>
         <div class="mpx-chat-info">
           <div class="mpx-chat-name" id="chatHeaderName"></div>
-          <div class="mpx-chat-sub" id="chatHeaderSub">Membre Pagani Digital</div>
+          <div class="mpx-chat-sub" id="chatHeaderSub"></div>
         </div>
         <a class="mpx-profile-btn" id="chatProfileLink" href="#" title="Voir le profil">
           <i class="fas fa-user-circle"></i>
@@ -203,12 +203,12 @@
         // Chercher d'abord dans les conversations chargées
         const existing = _allConvs.find(c => String(c.id) === String(withId));
         if (existing) {
-          openChat(existing.id, existing.name, existing.avatarColor || '#6c63ff', existing.avatarPhoto || '');
+          openChat(existing.id, existing.name, existing.avatarColor || '#6c63ff', existing.avatarPhoto || '', existing.plan || '');
         } else {
           // Charger le profil depuis le serveur
           try {
             const profile = await PaganiAPI.getPublicUser(withId);
-            if (profile) openChat(profile.id, profile.name, profile.avatarColor || '#6c63ff', profile.avatarPhoto || '');
+            if (profile) openChat(profile.id, profile.name, profile.avatarColor || '#6c63ff', profile.avatarPhoto || '', profile.plan || '');
           } catch(e) {}
         }
       }
@@ -291,7 +291,7 @@
 
     function startNewChat(userId, userName, avatarColor, avatarPhoto) {
       closeNewMsgModal();
-      openChat(userId, userName, avatarColor, avatarPhoto);
+      openChat(userId, userName, avatarColor, avatarPhoto, '');
     }
   </script>
 </body>

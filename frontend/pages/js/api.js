@@ -1,5 +1,5 @@
-ï»¿// ============================================================
-//  api.js ï¿½ Client HTTP vers le serveur Pagani Digital
+// ============================================================
+//  api.js ? Client HTTP vers le serveur Pagani Digital
 // ============================================================
 
 const API_URL = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'http://localhost:3001/api';
@@ -19,7 +19,7 @@ function _setToken(t) {
 async function _fetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (_token) headers['Authorization'] = 'Bearer ' + _token;
-  // Utiliser 'cors' mode pour les requÃªtes cross-origin (file:// ou autre domaine)
+  // Utiliser 'cors' mode pour les requêtes cross-origin (file:// ou autre domaine)
   const fetchOptions = {
     ...options,
     headers,
@@ -32,7 +32,7 @@ async function _fetch(path, options = {}) {
   return data;
 }
 
-// ï¿½ï¿½ï¿½ï¿½ AUTH ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? AUTH ??????????????????????????????????????????????????????????????????????????????????????????????????????
 async function apiRegister({ name, email, password, refCode, mmPhone, mmOperator, mmName }) {
   const d = await _fetch('/auth/register', { method: 'POST', body: JSON.stringify({ name, email, password, refCode, mmPhone, mmOperator, mmName }) });
   _setToken(d.token);
@@ -45,7 +45,7 @@ async function apiLogin(email, password) {
   return d.user;
 }
 
-// Sync silencieux aprÃ¨s login PaganiDB
+// Sync silencieux après login PaganiDB
 async function apiSyncLogin(email, password) {
   try { return await apiLogin(email, password); } catch { return null; }
 }
@@ -56,7 +56,7 @@ async function apiGetMe() {
   if (!_token) return null;
   try {
     const data = await _fetch('/auth/me');
-    // Le serveur retourne un token rafraÃ®chi si le plan a changÃ©
+    // Le serveur retourne un token rafraîchi si le plan a changé
     if (data._token) _setToken(data._token);
     return data;
   }
@@ -74,12 +74,12 @@ async function apiUpdateProfile(fields) {
 async function apiChangePassword(oldPassword, newPassword) { return _fetch('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }); }
 async function apiAddMmAccount(operator, phone, name) { return _fetch('/auth/mm-account', { method: 'POST', body: JSON.stringify({ operator, phone, name }) }); }
 
-// ï¿½ï¿½ï¿½ï¿½ VIDEOS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? VIDEOS ??????????????????????????????????????????????????????????????????????????????????????????????????
 async function apiGetVideos()              { return _fetch('/videos'); }
 async function apiGetVideoToken(videoId)   { return _fetch(`/videos/${videoId}/token`); }
 async function apiResolveVideoToken(token) { return _fetch(`/videos/resolve/${token}`); }
 
-// ï¿½ï¿½ï¿½ï¿½ POSTS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? POSTS ????????????????????????????????????????????????????????????????????????????????????????????????????
 async function apiGetPosts()         { return _fetch('/posts'); }
 async function apiCreatePost(data)   { return _fetch('/posts', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiCreateUserPost(data) { return _fetch('/user-posts', { method: 'POST', body: JSON.stringify(data) }); }
@@ -92,16 +92,16 @@ async function apiAddComment(postId, text) { return _fetch(`/posts/${postId}/com
 async function apiAddReply(postId, commentId, text, replyTo) { return _fetch(`/posts/${postId}/comments/${commentId}/replies`, { method: 'POST', body: JSON.stringify({ text, replyTo }) }); }
 async function apiRecordShare(postId) { return _fetch(`/posts/${postId}/share`, { method: 'POST' }); }
 
-// ï¿½ï¿½ï¿½ï¿½ NOTIFICATIONS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? NOTIFICATIONS ????????????????????????????????????????????????????????????????????????????????????
 async function apiGetNotifications()    { return _fetch('/notifications'); }
 async function apiGetUnreadCount()      { return _fetch('/notifications/unread-count'); }
 async function apiMarkAllRead()         { return _fetch('/notifications/read-all', { method: 'POST' }); }
 
-// ï¿½ï¿½ï¿½ï¿½ COMMISSIONS & RETRAITS ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? COMMISSIONS & RETRAITS ??????????????????????????????????????????????????????????????????
 async function apiGetCommissions()      { return _fetch('/commissions'); }
 async function apiRequestWithdraw(data) { return _fetch('/withdraws', { method: 'POST', body: JSON.stringify(data) }); }
 
-// ï¿½ï¿½ï¿½ï¿½ ACHATS VIDï¿½0O UNITAIRES ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? ACHATS VID?0O UNITAIRES ????????????????????????????????????????????????????????????????????????????????????
 async function apiBuyVideo(data)                  { return _fetch('/video-purchase', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiGetMyVideoPurchases()            { return _fetch('/my-video-purchases'); }
 async function apiAdminGetVideoPurchases()         { return _fetch('/admin/video-purchases'); }
@@ -112,7 +112,7 @@ async function apiGetMyModulePurchases()             { return _fetch('/my-module
 async function apiAdminGetModulePurchases()          { return _fetch('/admin/module-purchases'); }
 async function apiAdminUpdateModulePurchase(id, d)   { return _fetch('/admin/module-purchases/' + id, { method: 'PUT', body: JSON.stringify(d) }); }
 async function apiAdminGetShares()                   { return _fetch('/admin/shares'); }
-// ï¿½ï¿½ï¿½ï¿½ ADMIN ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? ADMIN ????????????????????????????????????????????????????????????????????????????????????????????????????
 async function apiAdminGetVideos()        { return _fetch('/admin/videos'); }
 async function apiAdminCreateVideo(data)  { return _fetch('/admin/videos',       { method: 'POST',   body: JSON.stringify(data) }); }
 async function apiAdminUpdateVideo(id, d) { return _fetch(`/admin/videos/${id}`, { method: 'PUT',    body: JSON.stringify(d) }); }
@@ -140,7 +140,12 @@ async function apiGetFollowStats(userId)    { return _fetch(`/users/${userId}/fo
 async function apiGetFollowers(userId)      { return _fetch(`/users/${userId}/followers`); }
 async function apiGetFollowing(userId)      { return _fetch(`/users/${userId}/following`); }
 
-//  MESSAGES PRIVÃ‰S
+//  PRÉSENCE
+async function apiPresencePing()           { return _fetch('/presence/ping', { method: 'POST' }); }
+async function apiGetPresence(userId)      { return _fetch(`/presence/${userId}`); }
+async function apiPresenceBatch(userIds)   { return _fetch('/presence/batch', { method: 'POST', body: JSON.stringify({ ids: userIds }) }); }
+
+//  MESSAGES PRIVÉS
 async function apiGetConversations()           { return _fetch('/messages/conversations'); }
 async function apiGetMessages(userId, limit, before) {
   let url = `/messages/${userId}?limit=${limit || 30}`;
@@ -151,7 +156,7 @@ async function apiSendMessage(userId, content, image) { return _fetch(`/messages
 async function apiGetUnreadMessages()          { return _fetch('/messages/unread-count'); }
 async function apiMarkMessagesRead(userId)      { return _fetch(`/messages/${userId}/read`, { method: 'PATCH' }); }
 
-// ï¿½ï¿½ï¿½ï¿½ Export ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+// ???? Export ??????????????????????????????????????????????????????????????????????????????????????????????????
 window.PaganiAPI = {
   // Auth
   register:        apiRegister,
@@ -185,7 +190,7 @@ window.PaganiAPI = {
   // Commissions
   getCommissions:  apiGetCommissions,
   requestWithdraw: apiRequestWithdraw,
-  // Achats vidÃ©o unitaires
+  // Achats vidéo unitaires
   buyVideo:              apiBuyVideo,
   getMyVideoPurchases:   apiGetMyVideoPurchases,
   // Achats module
@@ -220,12 +225,16 @@ window.PaganiAPI = {
   getPostsByUser:  apiGetPostsByUser,
   // Tarifs
   getPricing: apiGetPricing,
-  // Messages privÃ©s
+  // Messages privés
   getConversations:  apiGetConversations,
   getMessages:       apiGetMessages,
   sendMessage:       apiSendMessage,
   getUnreadMessages: apiGetUnreadMessages,
   markMessagesRead:  apiMarkMessagesRead,
+  // Presence
+  presencePing:  apiPresencePing,
+  getPresence:   apiGetPresence,
+  presenceBatch: apiPresenceBatch,
   // Follows
   toggleFollow:    apiToggleFollow,
   getFollowStatus: apiGetFollowStatus,

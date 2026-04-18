@@ -977,6 +977,35 @@ app.patch('/api/messages/:userId/read', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  FALLBACK SPA
 // ══════════════════════════════════════════════════════════
+
+// ======================================================
+//  PRESENCE EN LIGNE
+// ======================================================
+const _presenceMap = new Map();
+const PRESENCE_TTL = 45000;
+
+app.post('/api/presence/ping', requireAuth, (req, res) => {
+  _presenceMap.set(req.user.id, Date.now());
+  res.json({ ok: true });
+});
+
+app.get('/api/presence/:userId', requireAuth, (req, res) => {
+  const targetId = parseId(req.params.userId);
+  if (!targetId) return res.status(400).json({ error: 'ID_INVALIDE' });
+  const last = _presenceMap.get(targetId);
+  const online = !!last && (Date.now() - last) < PRESENCE_TTL;
+  res.json({ online, lastSeen: last || null });
+});
+
+app.post('/api/presence/batch', requireAuth, (req, res) => {
+  const ids = Array.isArray(req.body.ids) ? req.body.ids.map(Number).filter(Boolean) : [];
+  var result = {};
+  ids.forEach(function(id) {
+    var last = _presenceMap.get(id);
+    result[id] = !!last && (Date.now() - last) < PRESENCE_TTL;
+  });
+  res.json(result);
+});
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));
