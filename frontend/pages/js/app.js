@@ -498,7 +498,23 @@ function buildPostCard(post, user, isAdmin) {
       </div>
       <div class="post-header-right">
         <span class="news-tag tag-${post.category.toLowerCase()}">${post.category}</span>
-        ${isAdmin ? `<button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>` : ""}
+        ${isAdmin && post.authorId === user.id ? `
+          <div class="post-owner-menu" style="position:relative">
+            <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
+            <div class="post-menu-dropdown" id="post-menu-${post.id}" style="display:none">
+              <button onclick="openEditPostModal(${post.id})"><i class="fas fa-edit"></i> Modifier</button>
+              <button onclick="deletePost(${post.id})" style="color:var(--red)"><i class="fas fa-trash"></i> Supprimer</button>
+            </div>
+          </div>` : ""}
+        ${isAdmin && post.authorId !== user.id ? `<button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>` : ""}
+        ${(!isAdmin && user && post.authorId === user.id) ? `
+          <div class="post-owner-menu" style="position:relative">
+            <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
+            <div class="post-menu-dropdown" id="post-menu-${post.id}" style="display:none">
+              <button onclick="openEditPostModal(${post.id})"><i class="fas fa-edit"></i> Modifier</button>
+              <button onclick="deleteUserPost(${post.id})" style="color:var(--red)"><i class="fas fa-trash"></i> Supprimer</button>
+            </div>
+          </div>` : ""}
       </div>
     </div>
     <div class="post-body">
@@ -951,9 +967,160 @@ async function deletePost(id) {
   if (!confirm('Supprimer ce post ?')) return;
   try {
     await PaganiAPI.deletePost(id);
-    await _loadPosts();
-    renderFeed();
+    _postsCache = _postsCache.filter(p => p.id !== id);
+    document.getElementById('post-' + id)?.remove();
   } catch(e) { alert('Erreur serveur : ' + e.message); }
+}
+
+function togglePostMenu(postId) {
+  const menu = document.getElementById('post-menu-' + postId);
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
+  if (isOpen) return;
+  menu.style.display = 'block';
+  setTimeout(() => {
+    document.addEventListener('click', function close(e) {
+      if (!menu.closest('.post-owner-menu').contains(e.target)) {
+        menu.style.display = 'none';
+        document.removeEventListener('click', close);
+      }
+    });
+  }, 10);
+}
+
+let _editPostImageBase64 = null; // null = pas de changement, '' = supprimée, 'data:...' = nouvelle
+
+function openEditPostModal(postId) {
+  document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
+  const pid = Number(postId);
+  const post = _postsCache.find(p => Number(p.id) === pid);
+  if (!post) return;
+  _editPostImageBase64 = null;
+  document.getElementById('editPostId').value      = pid;
+  document.getElementById('editPostContent').value = post.content || '';
+  document.getElementById('editPostMsg').textContent = '';
+  // Afficher la photo actuelle si elle existe
+  const photoWrap = document.getElementById('editPostCurrentPhoto');
+  const photoImg  = document.getElementById('editPostCurrentImg');
+  const photoLabel = document.getElementById('editPostPhotoLabel');
+  const fileInput  = document.getElementById('editPostImageInput');
+  if (fileInput) fileInput.value = '';
+  if (post.image && post.image !== '__HAS_IMAGE__') {
+    if (photoImg)  photoImg.src = post.image;
+    if (photoWrap) photoWrap.style.display = 'block';
+    if (photoLabel) photoLabel.textContent = 'Changer la photo';
+  } else if (post.image === '__HAS_IMAGE__') {
+    // Charger l'image depuis le serveur
+    const url = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3001/api') + '/posts/' + pid + '/image';
+    fetch(url).then(r => r.json()).then(d => {
+      if (d.image) {
+        if (photoImg)  photoImg.src = d.image;
+        if (photoWrap) photoWrap.style.display = 'block';
+        if (photoLabel) photoLabel.textContent = 'Changer la photo';
+        const p = _postsCache.find(x => Number(x.id) === pid);
+        if (p) p.image = d.image;
+      }
+    }).catch(() => {});
+  } else {
+    if (photoWrap) photoWrap.style.display = 'none';
+    if (photoLabel) photoLabel.textContent = 'Ajouter une photo';
+  }
+  document.getElementById('editPostModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('editPostContent').focus(), 50);
+}
+
+function previewEditPostImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    _editPostImageBase64 = e.target.result;
+    const photoWrap = document.getElementById('editPostCurrentPhoto');
+    const photoImg  = document.getElementById('editPostCurrentImg');
+    const photoLabel = document.getElementById('editPostPhotoLabel');
+    if (photoImg)  photoImg.src = _editPostImageBase64;
+    if (photoWrap) photoWrap.style.display = 'block';
+    if (photoLabel) photoLabel.textContent = 'Changer la photo';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeEditPostImage() {
+  _editPostImageBase64 = '';
+  const photoWrap  = document.getElementById('editPostCurrentPhoto');
+  const photoImg   = document.getElementById('editPostCurrentImg');
+  const photoLabel = document.getElementById('editPostPhotoLabel');
+  const fileInput  = document.getElementById('editPostImageInput');
+  if (photoWrap) photoWrap.style.display = 'none';
+  if (photoImg)  photoImg.src = '';
+  if (photoLabel) photoLabel.textContent = 'Ajouter une photo';
+  if (fileInput) fileInput.value = '';
+}
+
+function closeEditPostModal() {
+  document.getElementById('editPostModal').style.display = 'none';
+  _editPostImageBase64 = null;
+}
+
+async function submitEditPost() {
+  const id      = Number(document.getElementById('editPostId').value);
+  const content = document.getElementById('editPostContent').value.trim();
+  const msg     = document.getElementById('editPostMsg');
+  if (!content) { msg.textContent = 'Le contenu ne peut pas être vide.'; return; }
+  msg.textContent = '';
+  const user = getUser();
+  const isAdmin = user && user.role === 'admin';
+  // Construire le payload : image seulement si modifiée
+  const payload = { content };
+  if (_editPostImageBase64 !== null) payload.image = _editPostImageBase64;
+  try {
+    if (isAdmin) {
+      await PaganiAPI.editPost(id, payload);
+    } else {
+      await PaganiAPI.editUserPost(id, payload);
+    }
+    const post = _postsCache.find(p => Number(p.id) === id);
+    if (post) {
+      post.content = content;
+      if (_editPostImageBase64 !== null) post.image = _editPostImageBase64;
+    }
+    const el = document.getElementById('post-' + id);
+    if (el) {
+      const contentEl = el.querySelector('.post-content');
+      if (contentEl) contentEl.innerHTML = formatPostContent(content);
+      // Mettre à jour l'image dans le DOM
+      if (_editPostImageBase64 !== null) {
+        const wrap = el.querySelector('.post-image-wrap');
+        if (_editPostImageBase64 === '') {
+          if (wrap) wrap.remove();
+        } else {
+          if (wrap) {
+            const img = wrap.querySelector('img');
+            if (img) img.src = _editPostImageBase64;
+          } else {
+            const body = el.querySelector('.post-body');
+            if (body) body.insertAdjacentHTML('beforeend',
+              `<div class="post-image-wrap"><img src="${_editPostImageBase64}" class="post-image" alt="" /></div>`);
+          }
+        }
+      }
+    }
+    closeEditPostModal();
+    if (document.getElementById('myPostsList')) loadMyPosts();
+  } catch(e) { msg.textContent = 'Erreur : ' + e.message; }
+}
+
+async function deleteUserPost(postId) {
+  if (!confirm('Supprimer cette publication ?')) return;
+  try {
+    await PaganiAPI.deleteUserPost(postId);
+    _postsCache = _postsCache.filter(p => p.id !== postId);
+    document.getElementById('post-' + postId)?.remove();
+    // Rafraîchir la liste dashboard si on y est
+    if (document.getElementById('myPostsList')) loadMyPosts();
+  } catch(e) { alert('Erreur : ' + e.message); }
 }
 async function _loadPostImage(postId, imgEl) {
   try {
@@ -6545,6 +6712,9 @@ async function loadMyPosts() {
         date:     post.date || post.createdAt  || new Date().toISOString(),
       };
       const el = buildPostCard(normalized, user, user.role === 'admin');
+      // Fusionner dans _postsCache pour que openEditPostModal trouve le post
+      const cIdx = _postsCache.findIndex(p => Number(p.id) === Number(normalized.id));
+      if (cIdx === -1) _postsCache.push(normalized); else _postsCache[cIdx] = normalized;
       container.appendChild(el);
       _observeLazyImages(el);
     });

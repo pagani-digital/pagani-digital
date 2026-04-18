@@ -309,6 +309,31 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
 
+  <!-- MODAL MODIFIER POST -->
+  <div id="editPostModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;padding:1rem">
+    <div style="background:var(--bg);border-radius:16px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <strong style="font-size:1rem"><i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la publication</strong>
+        <button onclick="closeEditPostModal()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.1rem"><i class="fas fa-times"></i></button>
+      </div>
+      <input type="hidden" id="editPostId" />
+      <textarea id="editPostContent" rows="4" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.75rem;color:var(--text);font-family:inherit;font-size:0.9rem;resize:vertical" placeholder="Contenu..."></textarea>
+      <div id="editPostCurrentPhoto" style="display:none;margin-top:0.8rem;position:relative">
+        <img id="editPostCurrentImg" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1px solid var(--border);display:block" />
+        <button onclick="removeEditPostImage()" style="position:absolute;top:0.4rem;right:0.4rem;background:rgba(0,0,0,0.65);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center" title="Supprimer la photo"><i class="fas fa-times"></i></button>
+      </div>
+      <div style="margin-top:0.7rem">
+        <label class="admin-media-btn" for="editPostImageInput"><i class="fas fa-image"></i> <span id="editPostPhotoLabel">Changer la photo</span></label>
+        <input type="file" id="editPostImageInput" accept="image/*" style="display:none" onchange="previewEditPostImage(this)" />
+      </div>
+      <p id="editPostMsg" style="font-size:0.82rem;color:var(--red);min-height:1rem;margin-top:0.4rem"></p>
+      <div style="display:flex;gap:0.6rem;margin-top:0.8rem">
+        <button class="btn-primary" style="flex:1;padding:0.6rem" onclick="submitEditPost()"><i class="fas fa-save"></i> Enregistrer</button>
+        <button onclick="closeEditPostModal()" style="flex:1;padding:0.6rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;cursor:pointer;color:var(--text);font-family:inherit">Annuler</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
   <script src="/js/api.js"></script>

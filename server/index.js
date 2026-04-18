@@ -91,13 +91,13 @@ app.use((req, res, next) => {
   );
   next();
 });
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, '../frontend/pages')));
 app.use('/js',     express.static(path.join(__dirname, '../frontend/js')));
 app.use('/css',    express.static(path.join(__dirname, '../frontend/css')));
 app.use('/assets', express.static(path.join(__dirname, '../frontend/assets')));
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-app.use(express.json({ limit: '15mb' }));
 // Gestionnaire d'erreur CORS — renvoie 403 au lieu de planter le serveur
 app.use((err, req, res, next) => {
   if (err.message === 'CORS_ORIGIN_NON_AUTORISEE') {
@@ -289,6 +289,31 @@ app.get('/api/posts/:id/image', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // Publication par un utilisateur connecté (non-admin)
+app.put('/api/user-posts/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const post = await db.getPostById(id);
+    if (!post) return res.status(404).json({ error: 'INTROUVABLE' });
+    if (post.authorId !== req.user.id) return res.status(403).json({ error: 'INTERDIT' });
+    const { content, image } = req.body;
+    const fields = { content };
+    if (image !== undefined) fields.image = image;
+    const updated = await db.updatePost(id, fields);
+    res.json(updated);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.delete('/api/user-posts/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const post = await db.getPostById(id);
+    if (!post) return res.status(404).json({ error: 'INTROUVABLE' });
+    if (post.authorId !== req.user.id) return res.status(403).json({ error: 'INTERDIT' });
+    await db.deletePost(id);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 app.post('/api/user-posts', requireAuth, async (req, res) => {
   try {
     const user = await db.getUserById(req.user.id);
@@ -324,6 +349,14 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     }
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/posts/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const updated = await db.updatePost(id, req.body);
+    res.json(updated);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 app.delete('/api/posts/:id', requireAuth, requireAdmin, async (req, res) => {
   try {

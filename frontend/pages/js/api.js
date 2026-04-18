@@ -84,6 +84,9 @@ async function apiGetPosts()         { return _fetch('/posts'); }
 async function apiCreatePost(data)   { return _fetch('/posts', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiCreateUserPost(data) { return _fetch('/user-posts', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiDeletePost(id)     { return _fetch(`/posts/${id}`, { method: 'DELETE' }); }
+async function apiEditPost(id, data)  { return _fetch(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+async function apiEditUserPost(id, data)   { return _fetch(`/user-posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }); }
+async function apiDeleteUserPost(id)       { return _fetch(`/user-posts/${id}`, { method: 'DELETE' }); }
 async function apiToggleLike(postId) { return _fetch(`/posts/${postId}/like`, { method: 'POST' }); }
 async function apiAddComment(postId, text) { return _fetch(`/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }); }
 async function apiAddReply(postId, commentId, text, replyTo) { return _fetch(`/posts/${postId}/comments/${commentId}/replies`, { method: 'POST', body: JSON.stringify({ text, replyTo }) }); }
@@ -167,7 +170,10 @@ window.PaganiAPI = {
   getPosts:       apiGetPosts,
   createPost:     apiCreatePost,
   createUserPost: apiCreateUserPost,
-  deletePost:   apiDeletePost,
+  deletePost:     apiDeletePost,
+  editPost:       apiEditPost,
+  editUserPost:   apiEditUserPost,
+  deleteUserPost: apiDeleteUserPost,
   toggleLike:   apiToggleLike,
   addComment:   apiAddComment,
   addReply:     apiAddReply,

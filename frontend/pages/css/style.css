@@ -7967,3 +7967,48 @@ ul { list-style: none; }
   align-items: center;
   justify-content: center;
 }
+
+/* ===== MENU OPTIONS POST (modifier/supprimer) ===== */
+.post-owner-menu { position: relative; }
+.post-menu-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.post-menu-btn:hover { background: rgba(108,99,255,0.12); color: var(--accent); }
+.post-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  z-index: 200;
+  min-width: 160px;
+  overflow: hidden;
+  animation: fadeIn 0.12s ease;
+}
+.post-menu-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  padding: 0.6rem 1rem;
+  font-size: 0.83rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.post-menu-dropdown button:hover { background: rgba(108,99,255,0.1); }
+.post-menu-dropdown button + button { border-top: 1px solid var(--border); }

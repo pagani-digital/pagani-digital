@@ -283,6 +283,18 @@ async function deletePost(id) {
   await query('DELETE FROM posts WHERE id = $1', [id]);
 }
 
+async function updatePost(id, { title, content, category, image, link, linkLabel }) {
+  const fields = { title, content, category, image, link, link_label: linkLabel };
+  const keys = Object.keys(fields).filter(k => fields[k] !== undefined);
+  if (!keys.length) return getPostById(id);
+  const setQuery = keys.map((k, i) => `${k} = $${i + 1}`).join(', ');
+  const res = await query(
+    `UPDATE posts SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...keys.map(k => fields[k]), id]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
 async function toggleLike(postId, userEmail) {
   // Opération atomique : lecture + modification + écriture en une seule requête SQL
   // Élimine la race condition entre deux likes simultanés sur le même post
@@ -1055,6 +1067,7 @@ module.exports = {
   getPostsByUser,
   getPostById,
   deletePost,
+  updatePost,
   toggleLike,
   addComment,
   addReply,
