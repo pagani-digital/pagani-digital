@@ -1,14 +1,14 @@
-﻿// ===== DONN�ES COURS =====
-// IMPORTANT : videoId est volontairement absent ici pour les vid�os payantes.
-// Les IDs sont stock�s s�par�ment dans _getSecureVideoId() et ne sont jamais
-// inject�s dans le DOM. Seules les vid�os gratuites ont leur videoId ici.
+﻿// ===== DONNES COURS =====
+// IMPORTANT : videoId est volontairement absent ici pour les videos payantes.
+// Les IDs sont stockes separment dans _getSecureVideoId() et ne sont jamais
+// injectes dans le DOM. Seules les videos gratuites ont leur videoId ici.
 const COURSES = [];
-// ===== CHIFFREMENT L�GER DES IDS PRIV�S =====
+// ===== CHIFFREMENT LGER DES IDS PRIVS =====
 const _ENC_KEY = 'pagani2025secure';
 function _encode(str) {
   if (!str) return '';
   try {
-    // Pr�fixe pour d�tecter un ID d�j� chiffr�
+    // Prefixe pour detecter un ID deja chiffre
     const prefixed = 'ENC:' + str;
     return btoa(prefixed.split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
@@ -21,35 +21,35 @@ function _decode(str) {
     const decoded = atob(str).split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
     ).join('');
-    // V�rifier le pr�fixe
+    // Verifier le prefixe
     if (decoded.startsWith('ENC:')) return decoded.slice(4);
-    // Pas de pr�fixe = ID en clair (ancien format), retourner tel quel
+    // Pas de prefixe = ID en clair (ancien format), retourner tel quel
     return str;
   } catch {
-    // �chec du d�chiffrement = ID en clair (ancien format)
+    // echec du dechiffrement = ID en clair (ancien format)
     return str;
   }
 }
 /**
- * V�rifie l'acc�s et retourne { source, id } pour lire la vid�o.
+ * Verifie l'acces et retourne { source, id } pour lire la video.
  * source : 'youtube' | 'drive'
- * id     : l'identifiant d�chiffr� en m�moire — JAMAIS expos� dans le DOM.
- * Retourne null si acc�s refus�.
+ * id     : l'identifiant dechiffre en memoire — JAMAIS expose dans le DOM.
+ * Retourne null si acces refus.
  */
 function _getSecureVideo(course, user) {
   const stored = getVideos().find(v => v.id === course.id) || course;
-  // Vid�o gratuite : accessible � tous
+  // Video gratuite : accessible a tous
   if (course.free) {
     const src = stored.videoSource || 'youtube';
     const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
     return id ? { source: src, id } : null;
   }
-  // Vid�o payante : Pro, Elite, ou achat unitaire valid�
+  // Video payante : Pro, Elite, ou achat unitaire valide
   if (!user) return null;
   const hasPlan     = user.plan === 'Pro' || user.plan === 'Elite';
   const hasUnlocked = (user.unlockedCourses || []).includes(course.id);
   if (!hasPlan && !hasUnlocked) return null;
-  // Acc�s valid� : d�chiffrer l\'ID en m�moire uniquement
+  // Acces valide : dechiffrer l\'ID en memoire uniquement
   const src = stored.videoSource || 'youtube';
   const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
   return id ? { source: src, id } : null;
@@ -60,17 +60,17 @@ const COMMISSION_RATES = {
   Pro:     { abonnement: 0.35, formation: 0.25 },
   Elite:   { abonnement: 0.50, formation: 0.40 },
 };
-// Prix de r�f�rence en AR
+// Prix de reference en AR
 const PRICES_AR = {
   pro:       30000,
   elite:     90000,
   formation: 10000,
 };
-// Donn�es de d�mo supprim�es — credentials g�r�s via config.js
+// Donnes de dmo supprimes — credentials grs via config.js
 
 // ===== UTILITAIRES =====
 function getUser() {
-  // Compatibilit� sync pour les fonctions non-async (feed, etc.)
+  // Compatibilit sync pour les fonctions non-async (feed, etc.)
   return window._currentUser || null;
 }
 // ===== PRESENCE PING =====
@@ -92,7 +92,7 @@ async function refreshCurrentUser() {
     try { user = await PaganiAPI.getMe(); } catch(e) { user = null; }
   }
   window._currentUser = user;
-  // Mettre � jour le badge messages navbar si l'utilisateur est connect�
+  // Mettre a jour le badge messages navbar si l'utilisateur est connect
   if (user) setTimeout(_updateMsgBadge, 500);
   if (user) _startPresencePing(); else _stopPresencePing();
   return user;
@@ -107,7 +107,7 @@ function esc(str) {
 function getAvatarColor(user) {
   return (user && user.avatarColor) ? user.avatarColor : "#6c63ff";
 }
-// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respect�s
+// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respects
 function formatPostContent(text) {
   if (!text) return "";
   const markdownLink = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
@@ -130,8 +130,8 @@ function formatPostContent(text) {
       // 2. Gras et italique
       line = line.replace(markdownBold, (_, t) => `<strong>${t}</strong>`);
       line = line.replace(markdownItal, (_, t) => `<em>${t}</em>`);
-      // 3. URLs brutes — uniquement celles PAS d�j� dans un attribut href
-      // On d�coupe la ligne en segments texte/balise et on ne traite que le texte
+      // 3. URLs brutes — uniquement celles PAS deja dans un attribut href
+      // On dcoupe la ligne en segments texte/balise et on ne traite que le texte
       line = line.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
         if (tag) return tag; // laisser les balises intactes
         return txt.replace(urlRegex, url => {
@@ -164,7 +164,7 @@ function _presenceTimeAgo(ts) {
   if (days < 30)    return 'Il y a ' + Math.floor(days / 7) + ' sem';
   return 'Il y a ' + Math.floor(days / 30) + ' mois';
 }
-// Met � jour le compteur de stats d'un post dans le DOM
+// Met a jour le compteur de stats d'un post dans le DOM
 function _updatePostStats(postId, post) {
   const el = document.getElementById('post-' + postId);
   if (!el) return;
@@ -177,7 +177,7 @@ function _updatePostStats(postId, post) {
 // ===== EMOJI PICKER COMMENTAIRES =====
 const COMMENT_EMOJIS = ['😊','😂','❤️','👍','🔥','🎉','😍','🙏','💪','😎','🤔','😢','😡','👏','🚀','✅','⭐','💡','💰','📈'];
 function toggleCommentEmoji(inputId, btn) {
-  // Fermer tout picker d�j� ouvert
+  // Fermer tout picker deja ouvert
   document.querySelectorAll('.comment-emoji-picker').forEach(p => {
     if (p.dataset.for !== inputId) p.remove();
   });
@@ -217,7 +217,7 @@ let _feedPage = 0;
 let _feedLoading = false;
 let _feedObserver = null;
 const DEFAULT_NEWS = [];
-// Cache local des posts (mis � jour depuis le serveur)
+// Cache local des posts (mis a jour depuis le serveur)
 let _postsCache = [];
 let _feedRendering = false; // verrou anti-race condition
 let _pendingComments = new Map(); // postId -> [commentaires en attente de confirmation serveur]
@@ -227,10 +227,10 @@ function getNews() {
 function saveNews(news) {
   _postsCache = news;
 }
-// Rafra�chissement silencieux du feed (sans reset du scroll)
+// Rafraechissement silencieux du feed (sans reset du scroll)
 async function _silentRefreshFeed() {
   if (!window.PaganiAPI) return;
-  // Fonctionne pour tous (connect�s ou non)
+  // Fonctionne pour tous (connects ou non)
   try {
     const fresh = await PaganiAPI.getPosts();
     if (!fresh || !fresh.length) return;
@@ -241,11 +241,11 @@ async function _silentRefreshFeed() {
     // Ne JAMAIS retirer un post du cache ici.
     const freshMap = new Map(fresh.map(p => [p.id, p]));
     // 1. Mettre a jour les posts existants dans le cache
-    // Ne pas �craser un post qui a des commentaires en attente de confirmation
+    // Ne pas ecraser un post qui a des commentaires en attente de confirmation
     _postsCache = _postsCache.map(p => {
       if (!freshMap.has(p.id)) return p;
       if (_pendingComments.has(p.id)) {
-        // Garder les commentaires locaux, mettre � jour le reste
+        // Garder les commentaires locaux, mettre a jour le reste
         const fresh = freshMap.get(p.id);
         return { ...fresh, comments: p.comments };
       }
@@ -288,7 +288,7 @@ async function _silentRefreshFeed() {
       const commSection = el.querySelector('.comments-section');
       const commList    = el.querySelector('#comments-list-' + post.id);
       if (commSection && commSection.style.display !== 'none' && commList) {
-        // Ne pas �craser si des commentaires sont en attente de confirmation serveur
+        // Ne pas ecraser si des commentaires sont en attente de confirmation serveur
         if (_pendingComments.has(post.id)) return;
         const isGuest = !user;
         commList.innerHTML = (post.comments||[]).length === 0
@@ -301,7 +301,7 @@ async function _silentRefreshFeed() {
 async function _loadPosts() {
   try {
     const remote = await PaganiAPI.getPosts();
-    // Ne remplacer le cache que si le serveur retourne des donn�es valides
+    // Ne remplacer le cache que si le serveur retourne des donnes valides
     if (remote && remote.length) _postsCache = remote;
     else if (!_postsCache.length) _postsCache = DEFAULT_NEWS;
   } catch(e) {
@@ -309,9 +309,9 @@ async function _loadPosts() {
   }
   return _postsCache;
 }
-// Rendu initial du feed (reset + 1�re page)
+// Rendu initial du feed (reset + 1re page)
 async function renderFeed() {
-  if (_feedRendering) return; // ignorer les appels simultan�s
+  if (_feedRendering) return; // ignorer les appels simultans
   _feedRendering = true;
   const container = document.getElementById('feedPosts');
   if (!container) { _feedRendering = false; return; }
@@ -357,7 +357,7 @@ async function renderFeed() {
   container.innerHTML = renderSkeletons(3);
   // Charger les posts depuis le serveur
   try { await _loadPosts(); } catch(e) {}
-  // Pas de setTimeout : on remplace les skeletons imm�diatement
+  // Pas de setTimeout : on remplace les skeletons immdiatement
   container.innerHTML = '';
   if (_postsCache.length === 0) {
     container.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication pour le moment.</p></div>';
@@ -373,7 +373,7 @@ async function renderFeed() {
 // Charge la prochaine tranche de posts — lit toujours _postsCache en direct
 function _loadMorePosts(container, user, isAdmin) {
   if (_feedLoading) return;
-  const news  = _postsCache; // r�f�rence directe, jamais de snapshot
+  const news  = _postsCache; // reference directe, jamais de snapshot
   const start = _feedPage * POSTS_PER_PAGE;
   const slice = news.slice(start, start + POSTS_PER_PAGE);
   if (slice.length === 0) return;
@@ -381,7 +381,7 @@ function _loadMorePosts(container, user, isAdmin) {
   const oldLoader = document.getElementById("feedLoader");
   if (oldLoader) oldLoader.remove();
   slice.forEach((post, i) => {
-    // Ne pas re-rendre un post d�j� pr�sent dans le DOM (ex: inject� par publishNews)
+    // Ne pas re-rendre un post deja prsent dans le DOM (ex: injecte par publishNews)
     if (document.getElementById('post-' + post.id)) return;
     const el = buildPostCard(post, user, isAdmin);
     el.style.animationDelay = `${i * 60}ms`;
@@ -410,14 +410,14 @@ function _loadMorePosts(container, user, isAdmin) {
     container.appendChild(end);
   }
 }
-// IntersectionObserver pour d�tecter quand la sentinelle est visible
+// IntersectionObserver pour detecter quand la sentinelle est visible
 function _setupInfiniteScroll(container, user, isAdmin) {
   _feedObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !_feedLoading) {
         const sentinel = document.getElementById("feedSentinel");
         if (sentinel) sentinel.remove();
-        // Charger imm�diatement si d�j� visible (pas de d�lai artificiel)
+        // Charger immdiatement si deja visible (pas de dlai artificiel)
         _loadMorePosts(container, user, isAdmin);
       }
     });
@@ -461,7 +461,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
       </div>
       <div class="comment-input-wrap">
         <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('reply-input-${cid}', this)" title="Emoji"><i class="fas fa-smile"></i></button>
-        <input type="text" id="reply-input-${cid}" placeholder="R�pondre � ${esc(c.author)}..."
+        <input type="text" id="reply-input-${cid}" placeholder="Repondre  ${esc(c.author)}..."
           onkeydown="if(event.key==='Enter') submitReply(${postId}, '${cid}')" />
         <button onclick="submitReply(${postId}, '${cid}')"><i class="fas fa-paper-plane"></i></button>
       </div>
@@ -477,7 +477,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
           <p>${esc(c.text)}</p>
           <div class="comment-footer">
             <span class="comment-time">${timeAgo(c.date)}</span>
-            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> R�pondre</button>` : ""}
+            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> Repondre</button>` : ""}
           </div>
         </div>
         ${replies ? `<div class="replies-list">${replies}</div>` : ""}
@@ -541,7 +541,7 @@ function buildPostCard(post, user, isAdmin) {
     </div>
     <div class="post-actions">
       ${isGuest ? `
-        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour r�agir">
+        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour reagir">
           <i class="fas fa-heart"></i>
           <span class="reaction-label">J'adore</span>
         </a>
@@ -586,7 +586,7 @@ function buildPostCard(post, user, isAdmin) {
              </div>
              <div class="comment-input-wrap">
                <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('comment-input-'+${post.id}, this)" title="Emoji"><i class="fas fa-smile"></i></button>
-               <input type="text" id="comment-input-${post.id}" placeholder="�crire un commentaire..."
+               <input type="text" id="comment-input-${post.id}" placeholder="ecrire un commentaire..."
                  onkeydown="if(event.key==='Enter') submitComment(${post.id})" />
                <button onclick="submitComment(${post.id})"><i class="fas fa-paper-plane"></i></button>
              </div>
@@ -598,13 +598,13 @@ function buildPostCard(post, user, isAdmin) {
 async function toggleLike(postId) {
   const user = getUser();
   if (!user) { window.location.href = 'dashboard.html'; return; }
-  // Mise � jour optimiste locale
+  // Mise a jour optimiste locale
   const post = _postsCache.find(p => p.id === postId) || _profilePostsCache.find(p => p.id === postId);
   if (post) {
     const idx = post.likes.indexOf(user.email);
     if (idx === -1) post.likes.push(user.email); else post.likes.splice(idx, 1);
     _updatePostStats(postId, post);
-    // Mettre � jour le bouton like
+    // Mettre a jour le bouton like
     const el = document.getElementById('post-' + postId);
     if (el) {
       const liked = post.likes.includes(user.email);
@@ -627,7 +627,7 @@ function shareOnFacebook(postId) {
   const url  = base + '?post=' + postId + (ref ? '&ref=' + encodeURIComponent(ref) : '') + '#post-' + postId;
   const fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
   window.open(fbUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
-  // Tracker le partage si connect�
+  // Tracker le partage si connect
   if (user && window.PaganiAPI) {
     PaganiAPI.recordShare(postId).catch(() => {});
   }
@@ -667,7 +667,7 @@ async function submitComment(postId) {
   if (section) section.style.display = 'block';
   const post = _postsCache.find(p => p.id === pid);
   if (post) { post.comments.push(newComment); _updatePostStats(pid, post); }
-  // Marquer ce commentaire comme "en attente" pour bloquer l'�crasement par _silentRefreshFeed
+  // Marquer ce commentaire comme "en attente" pour bloquer l'ecrasement par _silentRefreshFeed
   if (!_pendingComments.has(pid)) _pendingComments.set(pid, []);
   _pendingComments.get(pid).push(newComment.id);
   if (window.PaganiAPI) {
@@ -679,14 +679,14 @@ async function submitComment(postId) {
         if (idx !== -1) post.comments[idx] = { ...newComment, ...saved };
       }
     } catch(e) {
-      // �chec serveur : retirer le commentaire temporaire du cache et du DOM
+      // echec serveur : retirer le commentaire temporaire du cache et du DOM
       if (post) post.comments = post.comments.filter(c => c.id !== newComment.id);
       const cid = String(newComment.id).replace(/[^a-zA-Z0-9_-]/g, '_');
       document.getElementById('comment-' + cid)?.remove();
       _updatePostStats(pid, post);
 
     } finally {
-      // Retirer le verrou apr�s un court d�lai pour laisser le DOM se stabiliser
+      // Retirer le verrou aprs un court dlai pour laisser le DOM se stabiliser
       setTimeout(() => {
         const pending = _pendingComments.get(pid);
         if (pending) {
@@ -734,7 +734,7 @@ async function submitReply(postId, commentId) {
   if (window.PaganiAPI) {
     try { await PaganiAPI.addReply(pid, commentId, text, replyTo); }
     catch(e) {
-      // �chec serveur : retirer la r�ponse temporaire du cache et re-render
+      // echec serveur : retirer la rponse temporaire du cache et re-render
       if (comment) comment.replies = comment.replies.filter(r => r.id !== newReply.id);
       if (listEl && post) listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
       if (post) _updatePostStats(pid, post);
@@ -742,7 +742,7 @@ async function submitReply(postId, commentId) {
     }
   }
 }
-// ===== �DITEUR ADMIN =====
+// ===== DITEUR ADMIN =====
 function switchEditorTab(tab, btn) {
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -761,7 +761,7 @@ function updateEditorPreview(force) {
   if (!box) return;
   box.innerHTML =
     (title ? `<h3 style="margin:0 0 0.6rem;font-size:1rem">${title}</h3>` : '') +
-    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">Aper�u vide.</p>');
+    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">Apercu vide.</p>');
 }
 function editorFormat(type) {
   const ta = document.getElementById('newsContent');
@@ -854,7 +854,7 @@ document.addEventListener('keydown', e => {
     if (lm && lm.style.display !== 'none') { e.preventDefault(); confirmInsertLink(); }
   }
 });
-// ===== GESTION THUMBNAIL VID�O =====
+// ===== GESTION THUMBNAIL VIDEO =====
 let _thumbnailBase64 = '';
 function uploadThumbnail(input) {
   const file = input.files[0];
@@ -950,7 +950,7 @@ async function publishNews(e) {
           el.classList.add('post-animate');
           container.insertBefore(el, container.firstChild);
         }
-        // Mettre � jour la sentinelle/fin selon le nouvel �tat du cache
+        // Mettre a jour la sentinelle/fin selon le nouvel etat du cache
         const oldEnd = container.querySelector('.feed-end');
         if (oldEnd) oldEnd.remove();
         const renderedCount = container.querySelectorAll('.post-card:not(.skeleton-card)').length;
@@ -999,7 +999,7 @@ function togglePostMenu(postId) {
   }, 10);
 }
 
-let _editPostImageBase64 = null; // null = pas de changement, '' = supprim�e, 'data:...' = nouvelle
+let _editPostImageBase64 = null; // null = pas de changement, '' = supprime, 'data:...' = nouvelle
 
 function openEditPostModal(postId) {
   document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
@@ -1082,7 +1082,7 @@ async function submitEditPost() {
   msg.textContent = '';
   const user = getUser();
   const isAdmin = user && user.role === 'admin';
-  // Construire le payload : image seulement si modifi�e
+  // Construire le payload : image seulement si modifiee
   const payload = { content };
   if (_editPostImageBase64 !== null) payload.image = _editPostImageBase64;
   try {
@@ -1100,7 +1100,7 @@ async function submitEditPost() {
     if (el) {
       const contentEl = el.querySelector('.post-content');
       if (contentEl) contentEl.innerHTML = formatPostContent(content);
-      // Mettre � jour l'image dans le DOM
+      // Mettre a jour l'image dans le DOM
       if (_editPostImageBase64 !== null) {
         const wrap = el.querySelector('.post-image-wrap');
         if (_editPostImageBase64 === '') {
@@ -1128,7 +1128,7 @@ async function deleteUserPost(postId) {
     await PaganiAPI.deleteUserPost(postId);
     _postsCache = _postsCache.filter(p => p.id !== postId);
     document.getElementById('post-' + postId)?.remove();
-    // Rafra�chir la liste dashboard si on y est
+    // Rafraechir la liste dashboard si on y est
     if (document.getElementById('myPostsList')) loadMyPosts();
   } catch(e) { alert('Erreur : ' + e.message); }
 }
@@ -1235,7 +1235,7 @@ async function openPublicProfileByName(name) {
     if (found) window.location.href = `profil.html?id=${found.id}`;
   } catch(e) {}
 }
-// D�filement vers un post cible depuis une notification (ancre #post-ID)
+// Dfilement vers un post cible depuis une notification (ancre #post-ID)
 function scrollToTargetPost(retries) {
   if (retries === undefined) retries = 10;
   const hash = window.location.hash;
@@ -1286,11 +1286,11 @@ async function login(e) {
     showDashboard(user);
   } catch (ex) {
     const msgs = {
-      USER_NOT_FOUND:   "Aucun compte trouv� avec cet email.",
+      USER_NOT_FOUND:   "Aucun compte trouve avec cet email.",
       WRONG_PASSWORD:   "Mot de passe incorrect.",
-      ACCOUNT_DISABLED: "Ce compte a �t� d�sactiv�.",
+      ACCOUNT_DISABLED: "Ce compte a t desactive.",
     };
-    err.textContent = msgs[ex.message] || "Erreur de connexion. V�rifiez que le serveur est d�marr�.";
+    err.textContent = msgs[ex.message] || "Erreur de connexion. Verifiez que le serveur est demarr.";
   }
 }
 async function register(e) {
@@ -1306,15 +1306,15 @@ async function register(e) {
   const err = document.getElementById("regError");
   if (err) err.textContent = "";
   if (pass.length < 6) {
-    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caract�res.";
+    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractres.";
     return;
   }
   if (!mmPhone) {
-    if (err) err.textContent = "Le num�ro Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le numero Mobile Money est obligatoire.";
     return;
   }
   if (!mmName) {
-    if (err) err.textContent = "Le nom attach� au compte Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le nom attach au compte Mobile Money est obligatoire.";
     return;
   }
   try {
@@ -1323,8 +1323,8 @@ async function register(e) {
     if (window.PaganiNotif) await PaganiNotif.newUser(name);
     window.location.href = 'index.html';
   } catch (ex) {
-    const msgs = { EMAIL_TAKEN: "Cet email est d�j� utilis�.", MM_PHONE_REQUIS: "Le num�ro Mobile Money est obligatoire." };
-    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. V�rifiez que le serveur est d�marr�.";
+    const msgs = { EMAIL_TAKEN: "Cet email est deja utilise.", MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire." };
+    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";
   }
 }
 async function logout() {
@@ -1352,7 +1352,7 @@ function showDashboard(user) {
   document.getElementById("dashEarnings").textContent = formatAR(user.earningsAR || 0);
   document.getElementById("coursesWatched").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("dashLevel").textContent = _getUserLevel(user);
-  // Afficher les onglets selon le r�le
+  // Afficher les onglets selon le rle
   const adminTabBtn  = document.getElementById("adminTabBtn");
   const videosTabBtn = document.getElementById("videosTabBtn");
   const subTabBtn    = document.getElementById("subTabBtn");
@@ -1390,14 +1390,14 @@ function showDashboard(user) {
     PaganiNotif.refreshBadge();
     PaganiNotif.startPolling();
   }
-  // Polling admin pour les badges en temps r�el
+  // Polling admin pour les badges en temps rel
   if (user.role === 'admin') _startAdminPolling();
-  // V�rifier si on doit ouvrir l'onglet messages depuis une notification
+  // Verifier si on doit ouvrir l'onglet messages depuis une notification
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam  = urlParams.get('tab');
   const withParam = urlParams.get('with');
   if (tabParam === 'messages') {
-    // Rediriger vers la page d�di�e
+    // Rediriger vers la page ddie
     window.location.href = 'messages.html' + (withParam ? '?with=' + withParam : '');
     return;
   }
@@ -1452,7 +1452,7 @@ function _renderWithdrawMmSelector(user) {
         </span>
       </label>`;
   }).join('');
-  // S�lectionner le premier par d�faut
+  // Slectionner le premier par defaut
   if (filled.length) _selectWithdrawMm(filled[0].operator, filled[0].phone);
 }
 function _selectWithdrawMm(operator, phone) {
@@ -1469,10 +1469,10 @@ let _mmAddingOperator = null;
 function renderMmAccounts(user) {
   const list = document.getElementById('mmAccountsList');
   if (!list) return;
-  // Construire la liste compl�te des 3 op�rateurs
+  // Construire la liste complte des 3 operateurs
   // en fusionnant avec les comptes existants dans mmAccounts
   let savedAccounts = user.mmAccounts || [];
-  // Migration : si mmAccounts est vide mais mmPhone existe, l'int�grer
+  // Migration : si mmAccounts est vide mais mmPhone existe, l'intgrer
   if (!savedAccounts.length && user.mmPhone) {
     savedAccounts = [{
       operator: user.mmOperator || 'MVola',
@@ -1481,7 +1481,7 @@ function renderMmAccounts(user) {
       locked: true
     }];
   }
-  // Toujours afficher les 3 op�rateurs, remplis ou non
+  // Toujours afficher les 3 operateurs, remplis ou non
   const accounts = MM_OPERATORS.map(op => {
     const saved = savedAccounts.find(a => a.operator === op.key);
     return saved
@@ -1580,7 +1580,7 @@ function renderProfile(user) {
   const pubLink = document.getElementById("btnViewPublicProfile");
   if (pubLink) pubLink.href = "profil.html?id=" + user.id;
   document.getElementById("profilePlanBadge").textContent = "Plan " + user.plan;
-  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseign�e.";
+  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignee.";
   document.getElementById("pStatCourses").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("pStatRefs").textContent = user.refs || 0;
   document.getElementById("pStatEarnings").textContent = formatAR(user.earningsAR || 0);
@@ -1640,7 +1640,7 @@ const _crop = {
 };
 function uploadAvatarPhoto(input) {
   const file = input.files[0];
-  input.value = ""; // reset pour permettre re-s�lection
+  input.value = ""; // reset pour permettre re-slection
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { alert("Image trop grande (max 5 Mo)."); return; }
   const reader = new FileReader();
@@ -1684,7 +1684,7 @@ function updateCrop() {
   const s = baseScale * _crop.scale;
   const w = naturalW * s;
   const h = naturalH * s;
-  // Limiter le d�placement pour ne pas sortir du cadre
+  // Limiter le dplacement pour ne pas sortir du cadre
   const maxX = 0;
   const minX = wrapSize - w;
   const maxY = 0;
@@ -1766,10 +1766,10 @@ async function changePassword(e) {
   const newPass = document.getElementById("newPassword").value;
   const msg     = document.getElementById("passwordMsg");
   if (!user) return;
-  if (newPass.length < 6) { msg.textContent = "Minimum 6 caract�res."; msg.style.color="var(--red)"; return; }
+  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractres."; msg.style.color="var(--red)"; return; }
   try {
     await PaganiAPI.changePassword(oldPass, newPass);
-    msg.textContent = "? Mot de passe modifi� avec succ�s.";
+    msg.textContent = "? Mot de passe modifie avec succs.";
     msg.style.color = "var(--green)";
     document.getElementById("changePasswordForm").reset();
   } catch(ex) {
@@ -1813,7 +1813,7 @@ async function loadAdminStats() {
   document.getElementById("kpiElite").textContent      = stats.eliteMembers;
   document.getElementById("kpiRevenue").textContent    = formatAR(stats.totalRevenueAR);
   document.getElementById("kpiPending").textContent    = formatAR(stats.pendingWithdraws);
-  // Barre de r�partition des plans
+  // Barre de rpartition des plans
   const total = stats.totalMembers || 1;
   const plans = [
     { label: "Starter", count: stats.starterMembers,  color: "var(--text2)" },
@@ -1893,7 +1893,7 @@ async function loadAdminPaymentAccounts() {
     const isOff   = !!acc.disabled;
     return `
     <div class="admin-payment-row" id="pay-row-${key}">
-      <!-- Op�rateur -->
+      <!-- Operateur -->
       <div class="admin-payment-op">
         <span class="admin-payment-icon" style="background:${op.color}22;color:${op.color}">
           <i class="fas fa-mobile-alt"></i>
@@ -1928,7 +1928,7 @@ async function loadAdminPaymentAccounts() {
           </button>`
         }
       </div>
-      <!-- Formulaire inline �dition -->
+      <!-- Formulaire inline dition -->
       <div class="admin-payment-edit-form" id="pay-edit-${key}" style="display:none">
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;width:100%">
           <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="Numero ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
@@ -1960,7 +1960,7 @@ function cancelPaymentEdit(operator) {
   document.getElementById(`pay-fields-${key}`).style.display = 'flex';
   document.getElementById(`pay-edit-${key}`).style.display   = 'none';
 }
-// ===== TOGGLE D�SACTIVER / R�ACTIVER COMPTE PAIEMENT =====
+// ===== TOGGLE DSACTIVER / RACTIVER COMPTE PAIEMENT =====
 let _togglePayTarget = null;
 function openTogglePayment(operator, isCurrentlyDisabled) {
   _togglePayTarget = { operator, isCurrentlyDisabled };
@@ -2003,7 +2003,7 @@ async function confirmTogglePayment() {
   } catch(e) { alert('Erreur : ' + e.message); }
   _togglePayTarget = null;
 }
-// ===== SUPPRIMER NUM�RO COMPTE PAIEMENT =====
+// ===== SUPPRIMER NUMRO COMPTE PAIEMENT =====
 let _clearPayTarget = null;
 function openClearPayment(operator) {
   _clearPayTarget = operator;
@@ -2041,7 +2041,7 @@ async function savePaymentAccount(operator) {
   await loadAdminPaymentAccounts();
 }
 // ===== DASHBOARD =====
-// Calcule le niveau textuel d'un utilisateur selon ses cours d�bloqu�s et son plan
+// Calcule le niveau textuel d'un utilisateur selon ses cours debloqus et son plan
 function _getUserLevel(user) {
   const unlocked = (user.unlockedCourses || []).length;
   if (user.plan === 'Elite' || unlocked >= 8) return 'Expert';
@@ -2060,7 +2060,7 @@ function renderProgress() {
     .filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
     .slice(0, 5);
   if (!toShow.length) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commenc�e.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commencee.</p></div>';
     return;
   }
   list.innerHTML = toShow.map(v => {
@@ -2074,19 +2074,19 @@ function renderProgress() {
 }
 
 function requestWithdraw() {
-  alert("Demande de retrait envoy�e ! Vous recevrez vos fonds sous 24-72h.");
+  alert("Demande de retrait envoyee ! Vous recevrez vos fonds sous 24-72h.");
 }
 // ===== FORMATIONS =====
-// Table de correspondance cours -> index DOM (jamais l\'ID r�el en attribut HTML)
+// Table de correspondance cours -> index DOM (jamais l\'ID rel en attribut HTML)
 let _courseIndexMap = [];
 function renderCourses(filter = "all") {
   const grid = document.getElementById("coursesGrid");
   if (!grid) return;
-  const videos   = getVideos(); // source de v�rit� (localStorage ou COURSES)
+  const videos   = getVideos(); // source de vrit (localStorage ou COURSES)
   const all      = videos;
   const filtered = filter === "all" ? all : all.filter(c => c.category === filter);
   const user     = getUser();
-  // Construire la map index -> id r�el (jamais expos�e dans le HTML)
+  // Construire la map index -> id rel (jamais exposee dans le HTML)
   _courseIndexMap = filtered.map(c => c.id);
   grid.innerHTML = filtered.map((c, idx) => {
     const hasAccess = c.free || (user && (user.plan === 'Pro' || user.plan === 'Elite')) || (user && (user.unlockedCourses||[]).includes(c.id));
@@ -2128,7 +2128,7 @@ function _applyFiltersAndSearch() {
   const videos = getVideos();
   const activeBtn = document.querySelector('.filter-btn.active');
   const activeCat = activeBtn ? (activeBtn.onclick ? '' : '') : 'all';
-  // Lire la cat�gorie depuis le bouton actif
+  // Lire la catgorie depuis le bouton actif
   let cat = 'all';
   document.querySelectorAll('.filter-btn').forEach(b => {
     if (b.classList.contains('active')) {
@@ -2201,7 +2201,7 @@ function setView(view, btn) {
     grid.classList.add('courses-grid-view');
   }
 }
-// Met � jour les stats hero de la page formations
+// Met a jour les stats hero de la page formations
 function updateFormationsStats() {
   const videos = getVideos();
   const total = videos.length;
@@ -2214,22 +2214,22 @@ function updateFormationsStats() {
   if (elFree)  elFree.textContent  = free;
   if (elPaid)  elPaid.textContent  = paid;
 }
-// ===== PLAYER VID�O (YouTube IFrame API + Google Drive) =====
+// ===== PLAYER VIDEO (YouTube IFrame API + Google Drive) =====
 let _ytPlayer     = null;
 let _ytApiReady   = false;
 let _ytPendingId  = null;
-// Callback appel� automatiquement par l'API YouTube quand elle est charg�e
+// Callback appel automatiquement par l'API YouTube quand elle est charge
 function onYouTubeIframeAPIReady() {
   _ytApiReady = true;
   if (_ytPendingId) { _loadYT(_ytPendingId); _ytPendingId = null; }
 }
 function _loadYT(videoId) {
   _showVideoSlot('youtube');
-  // D�truire l\'ancien player s'il existe pour repartir propre
+  // Dtruire l\'ancien player s'il existe pour repartir propre
   if (_ytPlayer) {
     try { _ytPlayer.destroy(); } catch(e) {}
     _ytPlayer = null;
-    // Recr�er le div cible (destroy() le vide)
+    // Recreeer le div cible (destroy() le vide)
     const container = document.getElementById('videoContainer');
     if (container && !document.getElementById('ytPlayer')) {
       const div = document.createElement('div');
@@ -2259,10 +2259,10 @@ function _loadDrive(driveId) {
   const frame = document.getElementById('driveFrame');
   if (!frame) return;
   frame.src = `https://drive.google.com/file/d/${driveId}/preview`;
-  // D�tecter si Drive ouvre un nouvel onglet et le fermer imm�diatement
+  // Detecter si Drive ouvre un nouvel onglet et le fermer immdiatement
   const onBlur = () => {
     setTimeout(() => {
-      // Si la fen�tre a perdu le focus � cause d'un nouvel onglet Drive
+      // Si la fenetre a perdu le focus  cause d'un nouvel onglet Drive
       if (document.hidden) return;
       // Tenter de fermer le dernier onglet ouvert
       try {
@@ -2300,7 +2300,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
     <div class="upgrade-modal" id="upgradeModalBox">
       <!-- Header -->
       <div class="upgrade-modal-header">
-        <div class="upgrade-lock-icon">??</div>
+        <div class="upgrade-lock-icon">🔒</div>
         <h2>${isGuest ? 'Connectez-vous pour acceder' : 'Passez a un plan superieur'}</h2>
         <p>${isGuest
           ? (isFree
@@ -2354,7 +2354,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </button>
           </div>
         </div>
-        <!-- Formulaire paiement (masqu� par d�faut) -->
+        <!-- Formulaire paiement (masqu par defaut) -->
         <div class="upgrade-payment" id="upgradePayment" style="display:none">
           <div class="upgrade-payment-header">
             <button class="upgrade-back-btn" onclick="_backToPlans()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -2383,7 +2383,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                 <strong>Confirmez votre envoi</strong>
                 <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous apres avoir effectue le transfert :</p>
                 <div class="upgrade-form">
-                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="R�f�rence transaction (optionnel)" />
+                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="Reference transaction (optionnel)" />
                   <!-- PREUVE DE PAIEMENT -->
                   <div id="upgradeProofWrap" style="margin-top:0.6rem">
                     <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
@@ -2400,7 +2400,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     onmouseover="this.style.borderColor='var(--accent)'"
                     onmouseout="this.style.borderColor=document.getElementById('upgradeProofImg').src?'var(--accent2)':'var(--border)'">
                       <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'�cran</span>
+                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'ecran</span>
                       <input type="file" id="upgradeProofInput" accept="image/*" style="display:none"
                         onchange="_previewUpgradeProof(this)" />
                     </label>
@@ -2427,7 +2427,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </div>
           </div>
         </div>
-        <!-- Succ�s -->
+        <!-- Succs -->
         <div class="upgrade-success" id="upgradeSuccess" style="display:none">
           <div style="font-size:3rem">?</div>
           <h3>Demande envoyee !</h3>
@@ -2457,7 +2457,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
 let _selectedPlan     = null;
 let _selectedAmount   = 0;
 let _adminPayAccounts = [];
-// Charge les comptes admin UNE SEULE FOIS et met � jour le cache
+// Charge les comptes admin UNE SEULE FOIS et met a jour le cache
 async function _loadAdminPayAccounts() {
   try {
     const data = await PaganiAPI.getPaymentAccounts ? PaganiAPI.getPaymentAccounts() : fetch(API_URL + '/payment-accounts').then(r => r.json());
@@ -2499,11 +2499,11 @@ async function _selectUpgradePlan(plan, amount) {
 }
 /**
  * Construit toute la vue de paiement :
- * - R�cup�re les comptes MM de l\'utilisateur
- * - Filtre les op�rateurs admin disponibles
- * - Si l\'utilisateur a plusieurs comptes → s�lecteur de cartes
+ * - Rcupre les comptes MM de l\'utilisateur
+ * - Filtre les operateurs admin disponibles
+ * - Si l\'utilisateur a plusieurs comptes → slecteur de cartes
  * - Si un seul → affichage direct
- * - Quand l\'utilisateur choisit un op�rateur → affiche le num�ro admin correspondant
+ * - Quand l\'utilisateur choisit un operateur → affiche le numero admin correspondant
  */
 function _buildPaymentView(user, adminAccounts) {
   const adminConfigured = adminAccounts.filter(a => a.phone);
@@ -2516,18 +2516,18 @@ function _buildPaymentView(user, adminAccounts) {
       userAccounts = [{ operator: user.mmOperator || 'MVola', phone: user.mmPhone, name: user.mmName || user.name }];
     }
   }
-  // Trouver les op�rateurs en commun (user a le compte ET admin a le num�ro)
+  // Trouver les operateurs en commun (user a le compte ET admin a le numero)
   const commonOps = userAccounts.filter(ua =>
     adminConfigured.some(aa => aa.operator === ua.operator)
   );
-  // Construire le s�lecteur utilisateur
+  // Construire le slecteur utilisateur
   _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured);
-  // Afficher le num�ro admin du premier op�rateur commun par d�faut
+  // Afficher le numero admin du premier operateur commun par defaut
   if (commonOps.length) {
     _showAdminTargetFor(commonOps[0].operator, adminConfigured);
     _setUpgradeFields(commonOps[0].operator, commonOps[0].phone);
   } else if (userAccounts.length) {
-    // L'utilisateur a des comptes mais aucun op�rateur admin correspondant
+    // L'utilisateur a des comptes mais aucun operateur admin correspondant
     _showAdminTargetFor(null, adminConfigured);
     _setUpgradeFields(userAccounts[0].operator, userAccounts[0].phone);
   } else {
@@ -2538,7 +2538,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
   const wrap = document.getElementById('upgradeMmTargets');
   if (!wrap) return;
   const colors     = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Filtrer les comptes d�sactiv�s — non visibles aux membres
+  // Filtrer les comptes desactives — non visibles aux membres
   const configured = adminAccounts.filter(a => a.phone && !a.disabled);
   if (!configured.length) {
     wrap.innerHTML = `
@@ -2548,7 +2548,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
       </div>`;
     return;
   }
-  // D�terminer le compte s�lectionn� par d�faut
+  // Dterminer le compte slectionn par defaut
   const defaultAcc = operator
     ? (configured.find(a => a.operator === operator) || configured[0])
     : configured[0];
@@ -2601,7 +2601,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
         onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'"
         onclick="_toggleAdminMmAll()">
-        <i class="fas fa-exchange-alt"></i> Changer de m�thode
+        <i class="fas fa-exchange-alt"></i> Changer de methode
       </button>` : ''}`;
 }
 function _toggleAdminMmAll() {
@@ -2611,15 +2611,15 @@ function _toggleAdminMmAll() {
   const btn  = document.getElementById('upgradeAdminMmChangeBtn');
   const allVisible = [...opts].every(o => o.style.display !== 'none');
   if (allVisible) {
-    // Recacher les non-s�lectionn�es
+    // Recacher les non-slectionnes
     opts.forEach(o => {
       const card = o.querySelector('div');
       const isSelected = card && card.style.borderColor.includes('accent2') || card && card.style.border.includes('accent2');
-      // D�tecter via le badge "Envoyer ici"
+      // Detecter via le badge "Envoyer ici"
       const hasBadge = o.querySelector('[style*="Envoyer"]') || o.innerHTML.includes('Envoyer ici');
       if (!hasBadge) o.style.display = 'none';
     });
-    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de m�thode';
+    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de methode';
   } else {
     opts.forEach(o => o.style.display = 'block');
     if (btn) btn.innerHTML = '<i class="fas fa-times"></i> Annuler';
@@ -2656,21 +2656,21 @@ function _onAdminMmSelect(selectedIdx) {
     }
   });
   const btn = document.getElementById('upgradeAdminMmChangeBtn');
-  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de m�thode';
+  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de methode';
 }
 /**
- * Construit le s�lecteur de compte MM utilisateur.
- * - Si pas connect� → champs manuels
- * - Si connect� sans compte → alerte + champs manuels
- * - Si 1 seul compte � affichage fixe (pas de choix)
+ * Construit le slecteur de compte MM utilisateur.
+ * - Si pas connect → champs manuels
+ * - Si connect sans compte → alerte + champs manuels
+ * - Si 1 seul compte  affichage fixe (pas de choix)
  * - Si plusieurs comptes → cartes radio cliquables
- *   � seuls les op�rateurs avec num�ro admin sont mis en avant
+ *    seuls les operateurs avec numero admin sont mis en avant
  */
 function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
   const wrap = document.getElementById('upgradeUserMmWrap');
   if (!wrap) return;
   const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Cas 1 : visiteur non connect�
+  // Cas 1 : visiteur non connect
   if (!user) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice">
@@ -2678,19 +2678,19 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
         <span>Connectez-vous pour utiliser votre compte Mobile Money enregistre.</span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre op�rateur</label>
+        <label class="upgrade-form-label">Votre operateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.map(a =>
             `<option value="${a.operator}">${a.operator}</option>`
           ).join('')}
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre num�ro Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numero Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 2 : connect� sans aucun compte MM
+  // Cas 2 : connect sans aucun compte MM
   if (!userAccounts.length) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice upgrade-mm-notice-warn">
@@ -2700,20 +2700,20 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
         </span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre op�rateur</label>
+        <label class="upgrade-form-label">Votre operateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.length
             ? adminConfigured.map(a => `<option value="${a.operator}">${a.operator}</option>`).join('')
             : `<option value="MVola">MVola</option><option value="Orange Money">Orange Money</option><option value="Airtel Money">Airtel Money</option>`
           }
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre num�ro Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numero Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 3 : 1 seul compte MM � affichage fixe, pas de s�lecteur
+  // Cas 3 : 1 seul compte MM  affichage fixe, pas de slecteur
   if (userAccounts.length === 1) {
     const acc   = userAccounts[0];
     const color = colors[acc.operator] || 'var(--accent)';
@@ -2742,7 +2742,7 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
       <input type="hidden" id="upgradePhone"    value="${acc.phone}" />`;
     return;
   }
-  // Cas 4 : plusieurs comptes MM → s�lecteur de cartes
+  // Cas 4 : plusieurs comptes MM → slecteur de cartes
   wrap.innerHTML = `
     <p class="upgrade-form-label" style="margin-bottom:0.5rem">
       <i class="fas fa-hand-pointer" style="color:var(--accent)"></i>
@@ -2769,7 +2769,7 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
               <span class="upgrade-user-mm-right">
                 ${hasAdmin
                   ? `<span class="upgrade-mm-match"><i class="fas fa-check-circle"></i></span>`
-                  : `<span class="upgrade-mm-nomatch" title="Pas de num�ro admin pour cet op�rateur"><i class="fas fa-exclamation-circle"></i></span>`
+                  : `<span class="upgrade-mm-nomatch" title="Pas de numero admin pour cet operateur"><i class="fas fa-exclamation-circle"></i></span>`
                 }
                 <span class="upgrade-user-mm-check"><i class="fas fa-check-circle"></i></span>
               </span>
@@ -2780,12 +2780,12 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
     <input type="hidden" id="upgradeOperator" value="${(commonOps[0] || userAccounts[0]).operator}" />
     <input type="hidden" id="upgradePhone"    value="${(commonOps[0] || userAccounts[0]).phone}" />`;
 }
-// Appel� quand l\'utilisateur change de compte MM (s�lecteur cartes)
+// Appel quand l\'utilisateur change de compte MM (slecteur cartes)
 function _onUserMmChange(operator, phone) {
   _setUpgradeFields(operator, phone);
   _showAdminTargetFor(operator, _adminPayAccounts);
 }
-// Appel� quand l\'utilisateur change l'op�rateur dans le select manuel
+// Appel quand l\'utilisateur change l'operateur dans le select manuel
 function _onManualOpChange(operator) {
   const opEl = document.getElementById('upgradeOperator');
   if (opEl) opEl.value = operator;
@@ -2873,7 +2873,7 @@ function _removeUpgradeProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'�cran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ecran";
 }
 function _backToPlans() {
   document.querySelector('.upgrade-plans').style.display = 'grid';
@@ -2888,8 +2888,8 @@ async function _submitUpgradeRequest() {
   if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numero Mobile Money.'; return; }
   if (!proof)  {
     msg.style.color = 'var(--red)';
-    msg.textContent = '?? La preuve de paiement est obligatoire. Veuillez joindre une capture d\'�cran.';
-    // Mettre en �vidence la zone de preuve
+    msg.textContent = 'La preuve de paiement est obligatoire. Veuillez joindre une capture d\'ecran.';
+    // Mettre en vidence la zone de preuve
     const label = document.getElementById('upgradeProofLabel');
     if (label) {
       label.style.borderColor = 'var(--red)';
@@ -2922,13 +2922,13 @@ async function _submitUpgradeRequest() {
       }
       throw new Error(err.error || 'ERREUR_SERVEUR');
     }
-    // Succ�s r�el — l'API a confirm� la r�ception
+    // Succs rel — l'API a confirma la rception
     _upgradeProofBase64 = '';
     document.getElementById('upgradePayment').style.display = 'none';
     document.getElementById('upgradeSuccess').style.display = 'flex';
     document.getElementById('upgradeSuccessPlan').textContent = _selectedPlan;
   } catch(e) {
-    // Erreur r�elle — on affiche le message, on ne cache PAS le formulaire
+    // Erreur relle — on affiche le message, on ne cache PAS le formulaire
     const errMsgs = {
       SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. Verifiez votre connexion.',
       NON_AUTHENTIFIE:      'Session expiree. Veuillez vous reconnecter.',
@@ -2943,7 +2943,7 @@ async function _submitUpgradeRequest() {
 async function openCourse(idx) {
   const realId = _courseIndexMap[idx];
   if (realId === undefined) return;
-  // Utiliser le cache d�j� charg�, sinon COURSES hardcod�es
+  // Utiliser le cache deja charg, sinon COURSES hardcodes
   const allVideos = getVideos();
   let course = allVideos.find(c => c.id === realId || c.id === Number(realId));
   // Si pas dans le cache local, charger depuis le serveur
@@ -2960,9 +2960,9 @@ async function openCourse(idx) {
     try { user = await PaganiAPI.getMe(); window._currentUser = user; } catch(e) {}
   }
   if (!course.free && !user) { _showUpgradeModal(null, course.title); return; }
-  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'acc�s
+  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'acces
   if (!course.free && user && user.plan === 'Starter') {
-    // Rafra�chir le user depuis le serveur pour avoir unlockedCourses � jour
+    // Rafraechir le user depuis le serveur pour avoir unlockedCourses a jour
     if (window.PaganiAPI) {
       try {
         const fresh = await PaganiAPI.getMe();
@@ -2984,7 +2984,7 @@ async function openCourse(idx) {
   if (!modal) return;
   document.getElementById('modalTitle').textContent = course.title;
   document.getElementById('modalDesc').textContent  = course.desc;
-  // Description d�taill�e admin
+  // Description dtaille admin
   const descWrap    = document.getElementById('modalVideoDesc');
   const descContent = document.getElementById('modalVideoDescContent');
   const descToggle  = document.getElementById('modalVideoDescToggle');
@@ -3008,7 +3008,7 @@ async function openCourse(idx) {
       descWrap.style.display = 'none';
     }
   }
-  // Vid�o gratuite : connexion requise pour lire
+  // Video gratuite : connexion requise pour lire
   if (course.free) {
     if (!user) { _showUpgradeModal(null, course.title, true); return; }
     modal.classList.add('open');
@@ -3019,14 +3019,14 @@ async function openCourse(idx) {
     else { _ytApiReady ? _loadYT(id) : (_ytPendingId = id, _showVideoSlot('youtube')); }
     return;
   }
-  // Vid�o payante : demander un token au serveur
+  // Video payante : demander un token au serveur
   if (window.PaganiAPI) {
     modal.classList.add('open');
     _showVideoSlot('youtube'); // afficher un loader
     try {
       const result = await PaganiAPI.getVideoToken(realId);
       if (result.source === 'drive') {
-        // R�soudre le token en driveId r�el
+        // Rsoudre le token en driveId rel
         const { driveId } = await PaganiAPI.resolveVideoToken(result.token);
         _loadDrive(driveId);
       } else {
@@ -3036,19 +3036,19 @@ async function openCourse(idx) {
       _showVideoError(
         e.message === 'ACCES_REFUSE'
           ? '?? Cette formation est reservee aux membres Pro et Elite.'
-          : '� Vid�o bient�t disponible.'
+          : ' Video bientt disponible.'
       );
     }
     return;
   }
-  // Fallback : ancien syst�me sans serveur
+  // Fallback : ancien systme sans serveur
   const video = _getSecureVideo(course, user);
   modal.classList.add('open');
   if (!video) {
     _showVideoError(
       !user || (user.plan === 'Starter')
         ? '?? Cette formation est reservee aux membres Pro et Elite.'
-        : '� Vid�o bient�t disponible.'
+        : ' Video bientt disponible.'
     );
     return;
   }
@@ -3059,7 +3059,7 @@ function closeModal() {
   const modal = document.getElementById('videoModal');
   if (!modal) return;
   modal.classList.remove('open');
-  // Mettre en pause sans d�truire
+  // Mettre en pause sans dtruire
   if (_ytPlayer && typeof _ytPlayer.pauseVideo === 'function') {
     try { _ytPlayer.pauseVideo(); } catch(e) {}
   }
@@ -3068,18 +3068,18 @@ function closeModal() {
   if (drive) drive.src = '';
   _showVideoSlot('youtube');
 }
-// ===== Achat vid�o unitaire =====
+// ===== Achat video unitaire =====
 async function _showBuyVideoModal(user, course) {
   const existing = document.getElementById('buyVideoModalOverlay');
   if (existing) existing.remove();
-  // R�cup�rer le prix dynamique depuis le serveur si disponible
+  // Rcuprer le prix dynamique depuis le serveur si disponible
   let unitPrice = course.unitPrice || 10000;
   try {
     if (window.PaganiAPI) { const fv = await PaganiAPI.getVideos(); if (fv && fv.length) _adminVideosCache = fv; }
     const stored2 = _adminVideosCache.find(v => v.id === course.id);
     if (stored2 && stored2.unitPrice) unitPrice = stored2.unitPrice;
     const p = await PaganiAPI.getPricing();
-    // Prix sp�cifique � la vid�o (stock� dans la vid�o elle-m�me) ou prix global
+    // Prix spcifique a la video (stocke dans la video elle-meme) ou prix global
     const stored = getVideos().find(v => v.id === course.id);
     unitPrice = (stored && stored.unitPrice) || course.unitPrice || p.video || 10000;
   } catch(e) {}
@@ -3089,7 +3089,7 @@ async function _showBuyVideoModal(user, course) {
   overlay.innerHTML = `
     <div class="buy-video-modal" id="buyVideoModalBox">
       <div class="buy-video-header">
-        <div class="buy-video-icon">??</div>
+        <div class="buy-video-icon">🎬</div>
         <h2>${course.title}</h2>
         <p class="buy-video-desc">${course.desc}</p>
         <div class="buy-video-meta">
@@ -3108,12 +3108,12 @@ async function _showBuyVideoModal(user, course) {
             <p>Acces permanent a cette video uniquement.</p>
           </div>
           <ul class="buy-option-features">
-            <li><i class="fas fa-check"></i> Acc�s � vie � cette formation</li>
+            <li><i class="fas fa-check"></i> Acces a vie a cette formation</li>
             <li><i class="fas fa-check"></i> Paiement unique, pas d'abonnement</li>
             <li class="muted"><i class="fas fa-times"></i> Autres formations non incluses</li>
           </ul>
           <button class="buy-option-btn unit" onclick="_selectBuyOption('unit', ${unitPrice})">
-            Acheter cette vid�o <i class="fas fa-arrow-right"></i>
+            Acheter cette video <i class="fas fa-arrow-right"></i>
           </button>
         </div>
         <!-- Option 2 : Abonnement Pro -->
@@ -3135,7 +3135,7 @@ async function _showBuyVideoModal(user, course) {
           </button>
         </div>
       </div>
-      <!-- Formulaire paiement (masqu� par d�faut) -->
+      <!-- Formulaire paiement (masqu par defaut) -->
       <div id="buyVideoPayment" style="display:none;padding:1.5rem">
         <div class="upgrade-payment-header">
           <button class="upgrade-back-btn" onclick="_backToBuyOptions()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -3162,7 +3162,7 @@ async function _showBuyVideoModal(user, course) {
             <div style="width:100%">
               <strong>Confirmez votre paiement</strong>
               <div class="upgrade-form" style="margin-top:0.6rem">
-                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="R�f�rence transaction (optionnel)" />
+                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="Reference transaction (optionnel)" />
                 <div id="buyProofWrap" style="margin-top:0.6rem">
                   <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
                     <i class="fas fa-camera" style="color:var(--accent)"></i>
@@ -3170,7 +3170,7 @@ async function _showBuyVideoModal(user, course) {
                   </label>
                   <label id="buyProofLabel" style="display:flex;align-items:center;gap:0.6rem;background:var(--bg2);border:2px dashed var(--border);border-radius:10px;padding:0.75rem 1rem;cursor:pointer;font-size:0.85rem;color:var(--text2)">
                     <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                    <span id="buyProofText">Cliquez pour ajouter une capture d\'�cran</span>
+                    <span id="buyProofText">Cliquez pour ajouter une capture d\'ecran</span>
                     <input type="file" id="buyProofInput" accept="image/*" style="display:none" onchange="_previewBuyProof(this)" />
                   </label>
                   <div id="buyProofPreview" style="display:none;margin-top:0.5rem;position:relative">
@@ -3187,7 +3187,7 @@ async function _showBuyVideoModal(user, course) {
           </div>
         </div>
       </div>
-      <!-- Succ�s -->
+      <!-- Succs -->
       <div id="buyVideoSuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
         <div style="font-size:3rem">?</div>
         <h3>Demande envoyee !</h3>
@@ -3203,7 +3203,7 @@ async function _showBuyVideoModal(user, course) {
     const fmt = n => Number(n).toLocaleString('fr-FR');
     const elPro = document.getElementById('buyModalPricePro');
     if (elPro) elPro.innerHTML = `${fmt(p.pro || 30000)} <span>AR</span><small>/mois</small>`;
-    // Mettre � jour le bouton Pro avec le bon prix
+    // Mettre a jour le bouton Pro avec le bon prix
     const btnPro = overlay.querySelector('.buy-option-btn.pro');
     if (btnPro) btnPro.onclick = () => _selectBuyOption('pro', p.pro || 30000);
   } catch(e) {}
@@ -3441,14 +3441,14 @@ function _removeBuyProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'�cran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ecran";
 }
 async function _submitBuyRequest(courseId) {
   const txRef = document.getElementById('buyTxRef')?.value.trim() || '';
   const proof = _buyProofBase64;
   const msg   = document.getElementById('buyMsg');
   const user  = getUser();
-  // Lire les champs dynamiques inject�s par _buildBuyPaymentView
+  // Lire les champs dynamiques injectes par _buildBuyPaymentView
   const operator = document.getElementById('buyOperator')?.value || '';
   const phone    = document.getElementById('buyPhone')?.value    || '';
   const mmName   = document.getElementById('buyMmName')?.value   || '';
@@ -3497,7 +3497,7 @@ function copyLink() {
   if (user) input.value = `https://paganidigital.com/ref/${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
-    msg.textContent = "? Lien copi� dans le presse-papiers !";
+    msg.textContent = "? Lien copie dans le presse-papiers !";
     setTimeout(() => msg.textContent = "", 3000);
   });
 }
@@ -3547,13 +3547,13 @@ async function requestWithdrawAR(e) {
   const msg      = document.getElementById("withdrawMsg");
   const user     = getUser();
   if (!user) { msg.textContent = "Connectez-vous pour faire une demande."; return; }
-  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "S�lectionnez un compte Mobile Money."; return; }
+  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "Slectionnez un compte Mobile Money."; return; }
   try {
     await PaganiAPI.requestWithdraw({ montant: amount, phone, operator });
     const updated = await PaganiAPI.getMe();
     if (updated) { window._currentUser = updated; updateAffiliateStats(updated); }
     msg.style.color = "var(--green)";
-    msg.textContent = `? Demande de ${formatAR(amount)} envoy�e vers ${operator} (${phone}). Traitement sous 24-72h.`;
+    msg.textContent = `Demande de ${formatAR(amount)} envoyee vers ${operator} (${phone}). Traitement sous 24-72h.`;
   } catch(ex) {
     msg.style.color = "var(--red)";
     const errs = { MONTANT_MIN: "Montant minimum : 5 000 AR.", SOLDE_INSUFFISANT: "Solde insuffisant." };
@@ -3693,7 +3693,7 @@ async function saveSocialLinks() {
       body: JSON.stringify(payload)
     });
     const data = await r.json();
-    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? Sauvegard� !' : (data.error || 'Erreur'); }
+    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? Sauvegarde !' : (data.error || 'Erreur'); }
     setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur reseau'; }
@@ -3716,11 +3716,11 @@ async function loadAdminShares() {
     const uniq    = new Set(shares.map(s => s.userId)).size;
     const topPost = shares.reduce((acc, s) => { acc[s.postId] = (acc[s.postId] || 0) + 1; return acc; }, {});
     const topId   = Object.entries(topPost).sort((a,b) => b[1]-a[1])[0];
-    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : '�';
+    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : '';
     kpisEl.innerHTML = `
       <div class="video-stat-card"><i class="fab fa-facebook" style="color:#1877f2"></i><strong>${total}</strong><span>Partages total</span></div>
       <div class="video-stat-card"><i class="fas fa-users" style="color:var(--accent)"></i><strong>${uniq}</strong><span>Membres actifs</span></div>
-      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partag�</span></div>`;
+      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partag</span></div>`;
   }
   if (!shares.length) {
     tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistre pour le moment.</p></div>';
@@ -3732,14 +3732,14 @@ async function loadAdminShares() {
     </div>
     ${shares.map(s => `
     <div class="video-admin-row" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || '�')}</span>
+      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || '')}</span>
       <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Post #' + s.postId)}</span>
-      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || '�')}</code></span>
+      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || '')}</code></span>
       <span style="font-size:0.78rem;color:var(--text2)">${timeAgo(s.createdAt)}</span>
     </div>`).join('')}`;
 }
 
-// ===== COMPTEUR ANIM� (hero stats) =====
+// ===== COMPTEUR ANIM (hero stats) =====
 function animateCounters() {
   document.querySelectorAll(".stat strong[data-target]").forEach(el => {
     const target = parseInt(el.dataset.target);
@@ -3757,9 +3757,9 @@ function animateCounters() {
 function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("open");
 }
-// ===== GESTION VID�OS ADMIN =====
+// ===== GESTION VIDEOS ADMIN =====
 let _editingVideoId = null;
-let _adminVideosCache = []; // cache local pour �viter des appels r�p�t�s
+let _adminVideosCache = []; // cache local pour viter des appels rpts
 function getVideos() {
   return _adminVideosCache.length ? _adminVideosCache : [];
 }
@@ -3846,7 +3846,7 @@ async function setVideoAccess(id, targetType) {
   if (!v.free && v.unitPrice && targetType === 'pro') {
     const row = document.getElementById(`vrow-${id}`);
     if (!row) return;
-    // V�rifier si un menu existe d�j�
+    // Verifier si un menu existe deja
     if (row.querySelector('.access-menu')) { row.querySelector('.access-menu').remove(); return; }
     const menu = document.createElement('div');
     menu.className = 'access-menu';
@@ -3887,7 +3887,7 @@ function _currentAdminFilter() {
 function _onAccessTypeChange(type) {
   const priceGroup = document.getElementById('vPriceGroup');
   if (priceGroup) priceGroup.style.display = type === 'unit' ? 'block' : 'none';
-  // Synchroniser les radios si appel� programmatiquement
+  // Synchroniser les radios si appel programmatiquement
   const map = { free: 'vFree', paid: 'vPaid', unit: 'vUnit', pro: 'vPaid' };
   const radioId = map[type];
   if (radioId) {
@@ -3931,11 +3931,11 @@ async function editVideo(id) {
   document.getElementById('vVideoDescription').value = v.videoDescription || '';
   document.getElementById('vDuration').value = v.duration || '';
   document.getElementById('vVideoId').value  = v.videoId  || '';
-  // Le serveur retourne le driveId en clair, localStorage le retourne chiffr�
+  // Le serveur retourne le driveId en clair, localStorage le retourne chiffre
   document.getElementById('vDriveId').value  = window.PaganiAPI ? (v.driveId || '') : (v.driveId ? _decode(v.driveId) : '');
   document.getElementById('vCategory').value = v.category || 'debutant';
-  document.getElementById('vLevel').value    = v.level    || 'D�butant';
-  // D�terminer le type d'acc�s
+  document.getElementById('vLevel').value    = v.level    || 'Debutant';
+  // Dterminer le type d'acces
   const accessType = v.free ? 'free' : (v.accessType === 'unit' || v.unitPrice ? 'unit' : 'paid');
   const radioEl = document.getElementById(accessType === 'free' ? 'vFree' : accessType === 'unit' ? 'vUnit' : 'vPaid');
   if (radioEl) radioEl.checked = true;
@@ -4118,7 +4118,7 @@ function closeDashFollowModal() {
   const modal = document.getElementById('dashFollowModal');
   if (modal) modal.style.display = 'none';
 }
-// ===== MESSAGERIE PRIV�E =====
+// ===== MESSAGERIE PRIVE =====
 let _currentChatUserId   = null;
 let _currentChatUserName = null;
 let _chatPollingTimer    = null;
@@ -4142,7 +4142,7 @@ function _initVirtualKeyboard() {
   window.addEventListener('resize', _applyHeight);
   _applyHeight();
 }
-// Appel� une fois au chargement de la page messages
+// Appela une fois au chargement de la page messages
 if (document.getElementById('msgApp')) {
   document.addEventListener('DOMContentLoaded', _initVirtualKeyboard);
 }
@@ -4237,7 +4237,7 @@ async function loadConversations() {
         }).catch(function(){});
       });
     }
-    // Ouvrir automatiquement si redirig� depuis une notification
+    // Ouvrir automatiquement si redirig depuis une notification
     if (window._openChatWith) {
       const target = convs.find(c => c.id === window._openChatWith);
       if (target) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '', target.plan || '');
@@ -4265,12 +4265,12 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   const inputRow = document.getElementById('chatInputRow');
   const profLink = document.getElementById('chatProfileLink');
   if (!messages) return;
-  // Mettre � jour l'URL pour persister l'�tat au refresh
+  // Mettre a jour l'URL pour persister l'etat au refresh
   const newUrl = window.location.pathname + '?with=' + userId;
   if (window.location.search !== '?with=' + userId) {
     history.pushState({ chatWith: userId, chatName: userName }, '', newUrl);
   }
-  // Afficher les �l�ments
+  // Afficher les elements
   if (header)   header.style.display   = 'flex';
   if (empty)    empty.style.display    = 'none';
   if (messages) messages.style.display = 'flex';
@@ -4280,7 +4280,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   const infoLink   = document.getElementById('chatHeaderInfoLink');
   if (avatarLink) avatarLink.href = `profil.html?id=${userId}`;
   if (infoLink)   infoLink.href   = `profil.html?id=${userId}`;
-  // Avatar + nom dans l'en-t�te
+  // Avatar + nom dans l'en-tte
   if (headerAv) {
     headerAv.className = 'mpx-chat-avatar';
     headerAv.innerHTML = avatarPhoto
@@ -4295,7 +4295,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
       ? `<span style="color:${color}">Plan ${userPlan}</span>`
       : '';
     headerSub.innerHTML = '';
-    // V�rifier le statut en ligne
+    // Verifier le statut en ligne
     if (window.PaganiAPI) {
       var _presenceForUserId = userId;
       PaganiAPI.getPresence(userId).then(function(p) {
@@ -4327,7 +4327,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
     chat.classList.add('mpx-chat-entering');
     chat.addEventListener('animationend', () => chat.classList.remove('mpx-chat-entering'), { once: true });
   }
-  // Mettre � jour la liste (marquer actif)
+  // Mettre a jour la liste (marquer actif)
   loadConversations();
   await _loadChatMessages(userId, true);
   _rxCache = {};
@@ -4369,7 +4369,7 @@ function closeChatMobile() {
   document.body.classList.remove('chat-open');
   const body = document.querySelector('.msg-page-body');
   if (body) body.style.height = '';
-  // Retour imm�diat � la sidebar sans attendre animationend
+  // Retour immdiat a la sidebar sans attendre animationend
   if (chat)    { chat.classList.remove('msg-visible'); chat.classList.remove('mpx-chat-entering'); chat.classList.remove('mpx-chat-leaving'); }
   if (sidebar) sidebar.classList.remove('msg-hidden');
   _currentChatUserId   = null;
@@ -4386,12 +4386,12 @@ function closeChatMobile() {
   if (messages) messages.style.display = 'none';
   if (inputRow) inputRow.style.display = 'none';
 }
-// G�rer le bouton retour du navigateur
+// Grer le bouton retour du navigateur
 window.addEventListener('popstate', (e) => {
   if (!document.getElementById('mpxChat')) return;
   const params = new URLSearchParams(window.location.search);
   if (!params.get('with')) {
-    // Retour � la liste
+    // Retour a la liste
     const sidebar = document.getElementById('mpxSidebar');
     const chat    = document.getElementById('mpxChat');
     if (sidebar) sidebar.classList.remove('msg-hidden');
@@ -4525,7 +4525,7 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
   ${rxZone}`;
 }
 
-// Met � jour les ticks ?/?? dans le DOM sans re-render
+// Met a jour les ticks ?/?? dans le DOM sans re-render
 
 // ===== SUPPRESSION MESSAGE (LONG PRESS) =====
 let _msgLPT = null;
@@ -4651,7 +4651,7 @@ function _updateReadTicks(msgs, container) {
   });
 }
 
-// Curseur pour la pagination (oldest createdAt charg�)
+// Curseur pour la pagination (oldest createdAt charg)
 let _chatOldestTs = null;
 let _chatAllLoaded = false;
 let _chatLoadingMore = false;
@@ -5061,7 +5061,7 @@ async function renderUserSubscriptions() {
     const isPending = r.statut === 'En attente';
     return `
     <div class="sub-user-card ${r.statut === 'Approuve' ? 'sub-user-approved' : r.statut === 'Rejete' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
-      <!-- EN-T�TE -->
+      <!-- EN-TTE -->
       <div class="sub-user-card-header">
         <div style="display:flex;align-items:center;gap:0.7rem">
           <span class="sub-plan-badge" style="background:${planColors[r.plan]||'var(--accent)'}22;color:${planColors[r.plan]||'var(--accent)'}">
@@ -5072,10 +5072,10 @@ async function renderUserSubscriptions() {
           </span>
         </div>
         <span style="font-size:0.78rem;color:var(--text2)">
-          ${new Date(r.createdAt).toLocaleDateString('fr-FR')} � ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+          ${new Date(r.createdAt).toLocaleDateString('fr-FR')}  ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
         </span>
       </div>
-      <!-- D�TAILS PAIEMENT -->
+      <!-- DTAILS PAIEMENT -->
       <div class="sub-user-details">
         <div class="sub-user-detail">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -5096,7 +5096,7 @@ async function renderUserSubscriptions() {
       <div class="sub-user-status-msg approved">
         <i class="fas fa-check-circle"></i>
         <div>
-          <strong>Abonnement activ�e !</strong>
+          <strong>Abonnement activee !</strong>
           <p>Votre plan ${r.plan} est actif. Profitez de toutes les formations.</p>
         </div>
         <a href="formations.html" class="btn-primary" style="padding:0.45rem 1rem;font-size:0.82rem;white-space:nowrap">
@@ -5148,7 +5148,7 @@ function _retrySubscription(plan, amount) {
   if (!user) return;
   // Ouvrir directement la modale de paiement sur le bon plan
   _showUpgradeModal(user, `Plan ${plan}`);
-  // Apr�s que la modale s'ouvre, s�lectionner automatiquement le bon plan
+  // Aprs que la modale s'ouvre, slectionner automatiquement le bon plan
   setTimeout(() => {
     const btn = document.querySelector(`.upgrade-plan-btn${plan === 'Elite' ? '.elite' : ':not(.elite)'}`);
     if (btn) btn.click();
@@ -5161,7 +5161,7 @@ function _scrollToSubCard(subId) {
   // Carte admin : sub-{id} | carte utilisateur : sub-user-{id}
   const card = document.getElementById('sub-' + subId) || document.getElementById('sub-user-' + subId);
   if (!card) {
-    // Liste pas encore rendue — r�essayer dans 400ms (max 3 fois)
+    // Liste pas encore rendue — ressayer dans 400ms (max 3 fois)
     if (!_scrollToSubCard._retries) _scrollToSubCard._retries = {};
     const key = String(subId);
     _scrollToSubCard._retries[key] = (_scrollToSubCard._retries[key] || 0) + 1;
@@ -5248,7 +5248,7 @@ async function loadAdminPricingSubscriptions() {
           <input type="number" id="priceElite" class="upgrade-input" value="${p.elite}" min="0" step="1000" />
         </div>
       </div>
-      <!-- Vid�o unitaire -->
+      <!-- Video unitaire -->
       <div class="pricing-admin-card">
         <div class="pricing-admin-card-header">
           <i class="fas fa-film" style="color:var(--accent)"></i>
@@ -5346,7 +5346,7 @@ async function saveAdminPricing() {
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== TARIFS ADMIN — PRIX PAR VID�O =====
+// ===== TARIFS ADMIN — PRIX PAR VIDEO =====
 async function loadAdminVideoPricing() {
   const container = document.getElementById('adminVideoPricingContent');
   if (!container) return;
@@ -5454,7 +5454,7 @@ async function saveVideoPrice(videoId) {
       row.style.background = 'rgba(0,212,170,0.06)';
       setTimeout(() => row.style.background = '', 1200);
     }
-    // Mettre � jour le cache local
+    // Mettre a jour le cache local
     const v = _adminVideosCache.find(x => x.id === videoId);
     if (v) { v.unitPrice = price; v.accessType = price ? 'unit' : 'pro'; }
   } catch(e) { alert('Erreur : ' + e.message); }
@@ -5467,13 +5467,13 @@ async function loadAdminModulePricing() {
   let modules = [];
   try { modules = await PaganiAPI.admin.getVideoModules(); } catch(e) {}
   if (!modules.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module cr��. Cr�ez d\'abord des modules dans la section Modules.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module creee. Creeez d\'abord des modules dans la section Modules.</p></div>';
     return;
   }
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      Definissez un prix d'acces par module. Un utilisateur qui ach�te un module d�bloque toutes ses vid�os.
+      Definissez un prix d'acces par module. Un utilisateur qui achete un module debloque toutes ses videos.
     </p>
     <div class="module-pricing-grid">
       ${modules.map(m => `
@@ -5506,7 +5506,7 @@ async function saveModulePrice(moduleId) {
   const msg   = document.getElementById(`mpm-${moduleId}`);
   try {
     await PaganiAPI.admin.updateVideoModule(moduleId, { modulePrice: price });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Sauvegard�'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Sauvegarde'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
@@ -5625,7 +5625,7 @@ async function saveAdminCommissions() {
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== ACHATS VID�OS ADMIN =====
+// ===== ACHATS VIDEOS ADMIN =====
 let _videoPurchasesCache = [];
 let _videoPurchasesFilter = 'all';
 async function renderAdminVideoPurchases() {
@@ -5640,7 +5640,7 @@ async function renderAdminVideoPurchases() {
   }
   _updateVideoPurchasesBadge();
   _renderFilteredVideoPurchases();
-  // Scroller vers une demande sp�cifique si param�tre URL
+  // Scroller vers une demande spcifique si parametre URL
   const urlParams = new URLSearchParams(window.location.search);
   const purchaseId = urlParams.get('purchase');
   if (purchaseId) setTimeout(() => _scrollToVideoPurchaseCard(purchaseId), 400);
@@ -5682,7 +5682,7 @@ function _vpConfirm(type, r) {
     } else {
       iconEl.textContent  = '?';
       titleEl.textContent = 'Rejeter cette demande ?';
-      subEl.textContent   = 'Le membre sera notifie du rejet. Cette action peut �tre annul�e.';
+      subEl.textContent   = 'Le membre sera notifie du rejet. Cette action peut etre annulee.';
       okLabel.textContent = 'Oui, rejeter';
       okBtn.querySelector('i').className = 'fas fa-ban';
     }
@@ -5691,7 +5691,7 @@ function _vpConfirm(type, r) {
     const av    = (user && user.avatarPhoto)
       ? '<img src="' + user.avatarPhoto + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover" />'
       : '<div class="vp-confirm-user-avatar" style="background:' + color + '">' + getInitials(r.userName || '?') + '</div>';
-    const videoLabel = (r.videoTitle || ('Vid�o #' + r.courseId));
+    const videoLabel = (r.videoTitle || ('Video #' + r.courseId));
     const amtLabel   = (r.amount || 0).toLocaleString('fr-FR') + ' AR';
     userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' — ' + amtLabel + '</small></div>';
     okBtn.onclick = function() { _vpConfirmClose(); _vpConfirmResolve = null; resolve(true); };
@@ -5708,7 +5708,7 @@ function _vpConfirmClose() {
 }
 function _vpTimeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
-  if (diff < 1)  return { text: '� l\'instant', urgent: true };
+  if (diff < 1)  return { text: ' l\'instant', urgent: true };
   if (diff < 60) return { text: `Il y a ${diff} min`, urgent: diff < 30 };
   if (diff < 1440) return { text: `Il y a ${Math.floor(diff/60)}h`, urgent: false };
   return { text: new Date(dateStr).toLocaleDateString('fr-FR'), urgent: false };
@@ -5734,8 +5734,8 @@ function _renderFilteredVideoPurchases() {
   const counterHTML = `
     <div class="vp-section-counter">
       ${pending  ? `<span class="vp-counter-pill pending"><i class="fas fa-clock"></i> ${pending} en attente</span>` : ''}
-      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuv�e${approved>1?'s':''}</span>` : ''}
-      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejet�e${rejected>1?'s':''}</span>` : ''}
+      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuvee${approved>1?'s':''}</span>` : ''}
+      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejetee${rejected>1?'s':''}</span>` : ''}
     </div>`;
   if (!list.length) {
     container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat video.</p></div>';
@@ -5771,7 +5771,7 @@ function _renderFilteredVideoPurchases() {
         <div class="vp-card-meta">
           ${isNew ? '<span class="vp-new-badge">Nouveau</span>' : ''}
           <span class="sub-plan-badge" style="background:rgba(245,158,11,0.15);color:var(--gold)">
-            <i class="fas fa-film"></i> Achat vid�o
+            <i class="fas fa-film"></i> Achat video
           </span>
           <span class="status-badge ${statusClass}" id="vp-status-${r.id}">
             <i class="${statusIcon}"></i> ${r.statut}
@@ -5824,7 +5824,7 @@ function _buildVideoPurchaseActions(r) {
         <i class="fas fa-times"></i> Rejeter
       </button>
       <button class="vp-btn-approve" id="vp-btn-approve-${r.id}" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-check"></i> Approuver et d�bloquer
+        <i class="fas fa-check"></i> Approuver et debloquer
       </button>`;
   }
   if (r.statut === 'Rejete') {
@@ -5835,7 +5835,7 @@ function _buildVideoPurchaseActions(r) {
         ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> — ${r.rejectReason}</em>` : ''}
       </span>
       <button class="vp-btn-sm-approve" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand m�me
+        <i class="fas fa-undo"></i> Approuver quand meme
       </button>`;
   }
   return `
@@ -5904,11 +5904,11 @@ async function approveVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Approuv�'; statusEl.className = 'status-badge status-paid'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Approuve'; statusEl.className = 'status-badge status-paid'; }
     _updateVideoPurchasesBadge();
     _vpShowToast('Acces debloque pour ' + r.userName);
   } catch(e) {
-    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et d�bloquer'; }
+    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et debloquer'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
   }
 }
@@ -5937,7 +5937,7 @@ async function rejectVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejet�'; statusEl.className = 'status-badge status-rejected'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejete'; statusEl.className = 'status-badge status-rejected'; }
     _updateVideoPurchasesBadge();
     _vpShowToast('Demande rejetee' + (reason ? ' — ' + reason : ''), 'error');
   } catch(e) {
@@ -5975,7 +5975,7 @@ async function renderAdminSubscriptions() {
   container.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
   try {
     if (window.PaganiAPI) {
-      // Charger les users si cache vide (n�cessaire pour r�cup�rer les noms MM)
+      // Charger les users si cache vide (ncessaire pour rcuprer les noms MM)
       if (!_allUsersCache.length) _allUsersCache = await PaganiAPI.admin.getUsers();
       _subsCache = await PaganiAPI.admin.getUpgradeRequests();
     }
@@ -5996,11 +5996,11 @@ function filterSubsByStatus(status, btn) {
   if (btn) btn.classList.add('active');
   _renderFilteredSubs();
 }
-// R�cup�re le nom MM depuis le cache utilisateurs si absent de la demande
+// Rcupre le nom MM depuis le cache utilisateurs si absent de la demande
 function _getMmNameFromCache(r) {
   const user = _allUsersCache.find(u => u.id === r.userId);
   if (!user) return '—';
-  // Chercher dans mmAccounts le compte correspondant � l'op�rateur utilis�
+  // Chercher dans mmAccounts le compte correspondant a l'operateur utilise
   const acc = (user.mmAccounts || []).find(a => a.operator === r.operator && a.phone);
   if (acc && acc.name) return acc.name;
   // Fallback sur mmName racine
@@ -6032,7 +6032,7 @@ function _renderFilteredSubs() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     return `
     <div class="sub-request-card ${r.statut === 'En attente' ? 'sub-pending' : ''}" id="sub-${r.id}">
-      <!-- EN-T�TE -->
+      <!-- EN-TTE -->
       <div class="sub-card-header">
         <div class="sub-card-user">
           ${av}
@@ -6050,7 +6050,7 @@ function _renderFilteredSubs() {
           </span>
         </div>
       </div>
-      <!-- D�TAILS -->
+      <!-- DTAILS -->
       <div class="sub-card-details">
         <div class="sub-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -6092,7 +6092,7 @@ function _renderFilteredSubs() {
     </div>`;
   }).join('');
 }
-// Construit le HTML des actions selon l\'�tat de la demande
+// Construit le HTML des actions selon l\'etat de la demande
 function _buildSubActions(r) {
   if (r.statut === 'En attente') {
     return `
@@ -6111,10 +6111,10 @@ function _buildSubActions(r) {
         ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">— ${r.rejectReason}</em>` : ''}
       </span>
       <button class="sub-action-approve" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubApprove(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand m�me
+        <i class="fas fa-undo"></i> Approuver quand meme
       </button>`;
   }
-  // Approuv�
+  // Approuve
   return `
     <span style="font-size:0.78rem;color:var(--green);display:flex;align-items:center;gap:0.4rem">
       <i class="fas fa-check-circle"></i>
@@ -6213,7 +6213,7 @@ async function _confirmSubAction(id, statut) {
     if (statut === 'Approuve') {
       const u = _allUsersCache.find(u => u.id === r.userId);
       if (u) u.plan = r.plan;
-      // Rafra�chir le token si c'est l\'utilisateur courant (cas rare mais possible)
+      // Rafraechir le token si c'est l\'utilisateur courant (cas rare mais possible)
       if (result._newToken && window._currentUser && window._currentUser.id === r.userId) {
         localStorage.setItem('pd_jwt', result._newToken);
         window._currentUser.plan = r.plan;
@@ -6227,7 +6227,7 @@ async function _confirmSubAction(id, statut) {
   }
   _subActionTarget = null;
 }
-// Met � jour uniquement la carte concern�e sans re-render toute la liste
+// Met a jour uniquement la carte concerne sans re-render toute la liste
 function _updateSubCard(r) {
   const card = document.getElementById(`sub-${r.id}`);
   if (!card) return;
@@ -6432,7 +6432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     PaganiNotif.startPolling();
     if (user) PaganiNotif.refreshBadge();
   }
-  // Toujours afficher le feed et les cours (m�me sans �tre connect�)
+  // Toujours afficher le feed et les cours (meme sans etre connect)
   if (window.PaganiAPI) {
     try { const vids = await PaganiAPI.getVideos(); if (vids && vids.length) _adminVideosCache = vids; } catch(e) {}
   }
@@ -6441,16 +6441,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateFormationsStats();
   updateNavbar(user);
   loadNavbarCustomBtn();
-  // Dashboard : afficher si connect�, sinon laisser loginSection visible
+  // Dashboard : afficher si connect, sinon laisser loginSection visible
   const loginSection = document.getElementById("loginSection");
   if (loginSection) {
     if (user) {
       showDashboard(user);
       await updateAffiliateStats(user);
     }
-    // Si pas connect�, loginSection reste visible (comportement normal)
+    // Si pas connect, loginSection reste visible (comportement normal)
   }
-  // Gestion des param�tres URL
+  // Gestion des parametres URL
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam     = urlParams.get('tab');
   const sectionParam = urlParams.get('section');
@@ -6487,7 +6487,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 });
-// ===== VUE UTILISATEUR - MES ACHATS VID�O =====
+// ===== VUE UTILISATEUR - MES ACHATS VIDEO =====
 async function renderUserVideoPurchases() {
   const container = document.getElementById('myVideosPurchaseList');
   if (!container) return;
@@ -6557,7 +6557,7 @@ async function renderUserVideoPurchases() {
       + '</div>';
   }).join('');
 }
-// ===== POLLING ADMIN - BADGE TEMPS R�EL =====
+// ===== POLLING ADMIN - BADGE TEMPS REL =====
 let _adminPollInterval = null;
 function _startAdminPolling() {
   if (_adminPollInterval) return;
@@ -6588,7 +6588,7 @@ function _startAdminPolling() {
     } catch(e) {}
   }, 30000);
 }
-// ===== GESTION MODULES VID�O ADMIN =====
+// ===== GESTION MODULES VIDEO ADMIN =====
 let _modulesCache = [];
 let _editingModuleId = null;
 let _moduleModalFromVideo = false;
@@ -7096,7 +7096,7 @@ async function submitMyPostsDashboard() {
       };
       const container = document.getElementById('myPostsList');
       if (container) {
-        // Retirer le message "aucune publication" si pr�sent
+        // Retirer le message "aucune publication" si prsent
         const empty = container.querySelector('.history-empty');
         if (empty) empty.remove();
         const el = buildPostCard(normalized, user, false);
@@ -7114,9 +7114,9 @@ async function submitMyPostsDashboard() {
   }
 }
 
-// ===== DESIGN AM�LIORATIONS =====
+// ===== DESIGN AMLIORATIONS =====
 
-// �tape 1 : Navbar scroll effect
+// tape 1 : Navbar scroll effect
 (function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
@@ -7127,7 +7127,7 @@ async function submitMyPostsDashboard() {
   onScroll();
 })();
 
-// �tape 8 : Bouton scroll-to-top
+// tape 8 : Bouton scroll-to-top
 (function initScrollTop() {
   const btn = document.createElement('button');
   btn.id = 'scrollTopBtn';
