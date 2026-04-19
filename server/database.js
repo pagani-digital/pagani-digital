@@ -1196,6 +1196,54 @@ async function updateEbookPurchase(id, { statut, rejectReason }) {
 }
 
 // ═══════════════════════════════════════════════
+// RÉACTIONS POSTS
+// ═══════════════════════════════════════════════
+
+async function togglePostReaction(postId, userId, emoji) {
+  const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
+  if (!ALLOWED.includes(emoji)) throw new Error('EMOJI_INVALIDE');
+  const existing = await query(
+    'SELECT id, emoji FROM post_reactions WHERE post_id=$1 AND user_id=$2',
+    [postId, userId]
+  );
+  if (existing.rows.length) {
+    if (existing.rows[0].emoji === emoji) {
+      await query('DELETE FROM post_reactions WHERE post_id=$1 AND user_id=$2', [postId, userId]);
+      return { action: 'removed', emoji };
+    }
+    await query('UPDATE post_reactions SET emoji=$1, created_at=NOW() WHERE post_id=$2 AND user_id=$3', [emoji, postId, userId]);
+    return { action: 'changed', emoji };
+  }
+  await query('INSERT INTO post_reactions (post_id, user_id, emoji) VALUES ($1,$2,$3)', [postId, userId, emoji]);
+  return { action: 'added', emoji };
+}
+
+async function getPostReactions(postId) {
+  const res = await query('SELECT emoji, user_id FROM post_reactions WHERE post_id=$1', [postId]);
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push(row.user_id);
+  }
+  return grouped;
+}
+
+async function getPostsReactionsBatch(postIds) {
+  if (!postIds.length) return {};
+  const res = await query(
+    'SELECT post_id, emoji, user_id FROM post_reactions WHERE post_id = ANY($1)',
+    [postIds]
+  );
+  const result = {};
+  for (const row of res.rows) {
+    if (!result[row.post_id]) result[row.post_id] = {};
+    if (!result[row.post_id][row.emoji]) result[row.post_id][row.emoji] = [];
+    result[row.post_id][row.emoji].push(row.user_id);
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════
 // UTIL
 // ═══════════════════════════════════════════════
 
@@ -1312,4 +1360,8 @@ module.exports = {
   getAllEbookPurchases,
   hasEbookPurchase,
   updateEbookPurchase,
+
+  togglePostReaction,
+  getPostReactions,
+  getPostsReactionsBatch,
 };

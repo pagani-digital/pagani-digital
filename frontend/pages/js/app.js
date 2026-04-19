@@ -359,6 +359,14 @@ async function renderFeed() {
   container.innerHTML = renderSkeletons(3);
   // Charger les posts depuis le serveur
   try { await _loadPosts(); } catch(e) {}
+  // Charger les réactions en batch
+  try {
+    if (window.PaganiAPI && _postsCache.length) {
+      const ids = _postsCache.map(p => p.id);
+      const batchRes = await Promise.allSettled(ids.slice(0,20).map(id => PaganiAPI.getPostReactions(id)));
+      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
+    }
+  } catch(e) {}
   // Pas de setTimeout : on remplace les skeletons immdiatement
   container.innerHTML = '';
   if (_postsCache.length === 0) {
@@ -1352,6 +1360,165 @@ function renderTrendingHashtags(posts) {
 }
 
 let _activeHashtag = null;
+
+// ── RÉACTIONS POSTS ───────────────────────────────────────────────────────────
+const POST_REACTIONS = ['❤️','😂','😮','😢','😡','👍'];
+const REACTION_LABELS = { '❤️':'J\'adore','😂':'Haha','😮':'Wow','😢':'Triste','😡':'Grrr','👍':'Super' };
+// Cache local : postId -> { emoji: [userId, ...] }
+const _reactionsCache = {};
+
+function _getMyReaction(postId, userEmail) {
+  // On stocke par userId dans le cache serveur, mais on compare par email côté like legacy
+  // Pour les réactions, on stocke userId
+  return null; // sera résolu depuis le DOM
+}
+
+function _buildReactionBar(postId, reactions, myReaction) {
+  // Compter le total et trouver la réaction dominante
+  const counts = {};
+  let total = 0;
+  for (const [emoji, users] of Object.entries(reactions || {})) {
+    counts[emoji] = users.length;
+    total += users.length;
+  }
+  // Top 3 emojis
+  const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([e]) => e);
+
+  const myEmoji = myReaction || null;
+  const label = myEmoji ? REACTION_LABELS[myEmoji] : 'Réagir';
+  const btnClass = myEmoji ? 'reaction-btn reacted' : 'reaction-btn';
+  const btnStyle = myEmoji ? `color:var(--reaction-${_reactionColor(myEmoji)})` : '';
+
+  return `<div class="reaction-btn-wrap" style="position:relative;flex:1">
+    <button class="${btnClass}" style="${btnStyle}"
+      onclick="toggleReactionPicker(${postId}, this)"
+      onmouseenter="_showReactionPicker(${postId}, this)"
+      data-postid="${postId}" data-myreaction="${myEmoji || ''}">
+      <span class="reaction-main-emoji">${myEmoji || '👍'}</span>
+      <span class="reaction-label">${label}</span>
+    </button>
+    <div class="reaction-picker" id="rpicker-${postId}" style="display:none">
+      ${POST_REACTIONS.map(e => `<button class="rp-btn ${e === myEmoji ? 'rp-active' : ''}"
+        onclick="selectReaction(${postId}, '${e}', this)"
+        title="${REACTION_LABELS[e]}">${e}</button>`).join('')}
+    </div>
+  </div>
+  ${total > 0 ? `<span class="reaction-summary" onclick="showReactionDetails(${postId})" title="Voir les réactions">
+    ${top.map(e => `<span>${e}</span>`).join('')}
+    <span class="reaction-count">${total}</span>
+  </span>` : ''}`;
+}
+
+function _reactionColor(emoji) {
+  const map = { '❤️':'red','😂':'gold','😮':'gold','😢':'blue','😡':'red','👍':'accent' };
+  return map[emoji] || 'accent';
+}
+
+function _showReactionPicker(postId, btn) {
+  const picker = document.getElementById('rpicker-' + postId);
+  if (!picker) return;
+  clearTimeout(btn._hideTimer);
+  picker.style.display = 'flex';
+  // Fermer si on quitte la zone
+  const wrap = btn.closest('.reaction-btn-wrap');
+  if (wrap && !wrap._pickerInit) {
+    wrap._pickerInit = true;
+    wrap.addEventListener('mouseleave', () => {
+      btn._hideTimer = setTimeout(() => { picker.style.display = 'none'; }, 300);
+    });
+    picker.addEventListener('mouseenter', () => clearTimeout(btn._hideTimer));
+  }
+}
+
+function toggleReactionPicker(postId, btn) {
+  const picker = document.getElementById('rpicker-' + postId);
+  if (!picker) return;
+  const isOpen = picker.style.display !== 'none';
+  // Fermer tous les autres pickers
+  document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
+  if (!isOpen) {
+    picker.style.display = 'flex';
+    setTimeout(() => {
+      document.addEventListener('click', function close(e) {
+        if (!picker.contains(e.target) && e.target !== btn) {
+          picker.style.display = 'none';
+          document.removeEventListener('click', close);
+        }
+      });
+    }, 10);
+  }
+}
+
+async function selectReaction(postId, emoji, btn) {
+  const user = getUser();
+  if (!user) { window.location.href = 'dashboard.html'; return; }
+  // Fermer le picker
+  const picker = document.getElementById('rpicker-' + postId);
+  if (picker) picker.style.display = 'none';
+
+  // Trouver le bouton principal
+  const mainBtn = document.querySelector(`[data-postid="${postId}"].reaction-btn`);
+  const prevEmoji = mainBtn ? mainBtn.dataset.myreaction : '';
+
+  // Mise à jour optimiste
+  if (!_reactionsCache[postId]) _reactionsCache[postId] = {};
+  const cache = _reactionsCache[postId];
+  // Retirer l'ancienne réaction
+  if (prevEmoji && cache[prevEmoji]) {
+    cache[prevEmoji] = cache[prevEmoji].filter(id => id !== user.id);
+    if (!cache[prevEmoji].length) delete cache[prevEmoji];
+  }
+  const isSame = prevEmoji === emoji;
+  if (!isSame) {
+    if (!cache[emoji]) cache[emoji] = [];
+    if (!cache[emoji].includes(user.id)) cache[emoji].push(user.id);
+  }
+  _updateReactionUI(postId, cache, isSame ? null : emoji);
+
+  // Appel API
+  try {
+    if (window.PaganiAPI) await PaganiAPI.togglePostReaction(postId, emoji);
+  } catch(e) {}
+}
+
+function _updateReactionUI(postId, reactions, myEmoji) {
+  const wrap = document.querySelector(`[data-postid="${postId}"].reaction-btn`)?.closest('.reaction-btn-wrap');
+  if (!wrap) return;
+  const parent = wrap.parentElement;
+  if (!parent) return;
+  // Reconstruire la zone réaction
+  const newHtml = _buildReactionBar(postId, reactions, myEmoji);
+  // Remplacer wrap + summary
+  const summary = parent.querySelector('.reaction-summary');
+  if (summary) summary.remove();
+  wrap.outerHTML = newHtml;
+  // Mettre à jour le bouton principal
+  const newBtn = parent.querySelector(`[data-postid="${postId}"].reaction-btn`);
+  if (newBtn) newBtn.dataset.myreaction = myEmoji || '';
+}
+
+function showReactionDetails(postId) {
+  const reactions = _reactionsCache[postId] || {};
+  const lines = Object.entries(reactions)
+    .filter(([,users]) => users.length)
+    .sort((a,b) => b[1].length - a[1].length)
+    .map(([emoji, users]) => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:1.4rem">${emoji}</span>
+      <span style="font-weight:700;color:var(--text)">${users.length}</span>
+      <span style="font-size:0.78rem;color:var(--text2)">${REACTION_LABELS[emoji]}</span>
+    </div>`).join('');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem';
+  overlay.innerHTML = `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:1.5rem;min-width:220px;max-width:320px;width:100%">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <strong>Réactions</strong>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.1rem">✕</button>
+    </div>
+    ${lines || '<p style="color:var(--text2);font-size:0.88rem">Aucune réaction.</p>'}
+  </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
 // --- Skeleton loader ---
 function renderSkeletons(n) {
   return Array.from({length: n}, () => `

@@ -279,6 +279,42 @@ app.get('/api/posts', async (req, res) => {
     res.json(posts.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+// Réactions sur les posts
+app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const { emoji } = req.body;
+    if (!emoji) return res.status(400).json({ error: 'EMOJI_REQUIS' });
+    const result = await db.togglePostReaction(id, req.user.id, emoji);
+    // Notifier l'auteur du post si nouvelle réaction
+    if (result.action === 'added') {
+      const post = await db.getPostById(id);
+      if (post && post.authorId && post.authorId !== req.user.id) {
+        const user = await db.getUserById(req.user.id);
+        const _uid = await _resolveNotifUserId(post.authorId);
+        if (_uid !== null) await db.createNotification({
+          userId: _uid, type: 'REACTION',
+          message: `${user?.name} a réagi ${emoji} à votre publication.`,
+          link: `index.html#post-${post.id}`
+        });
+      }
+    }
+    res.json(result);
+  } catch(e) {
+    if (e.message === 'EMOJI_INVALIDE') return res.status(400).json({ error: 'EMOJI_INVALIDE' });
+    res.status(500).json({ error: 'ERREUR_SERVEUR' });
+  }
+});
+
+app.get('/api/posts/:id/reactions', async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    res.json(await db.getPostReactions(id));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 // Filtrer les posts par hashtag
 app.get('/api/posts/hashtag/:tag', async (req, res) => {
   try {
@@ -1196,6 +1232,18 @@ const _migPool = process.env.DATABASE_URL
 
 async function runMigrations() {
   await require('./migrations').runMigrations(_migPool);
+  // Migration table post_reactions
+  try {
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS post_reactions (
+      id SERIAL PRIMARY KEY,
+      post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      emoji TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(post_id, user_id)
+    )`);
+    await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_post_reactions_post ON post_reactions(post_id)`);
+  } catch(e) { console.error('migrate post_reactions:', e.message); }
   // Migration réactions messages
   try {
     await _migPool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
