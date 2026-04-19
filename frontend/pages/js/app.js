@@ -2,24 +2,7 @@
 // IMPORTANT : videoId est volontairement absent ici pour les vid�os payantes.
 // Les IDs sont stock�s s�par�ment dans _getSecureVideoId() et ne sont jamais
 // inject�s dans le DOM. Seules les vid�os gratuites ont leur videoId ici.
-const COURSES = [
-  { id: 1,  title: "Introduction � la Blockchain",          desc: "Comprendre les bases de la technologie blockchain.",                          category: "debutant",  duration: "45 min",   level: "D�butant",      icon: "fas fa-cube",         free: true,  videoId: "SSo_EIwHSd4" },
-  { id: 2,  title: "Acheter ses premiers Bitcoins",          desc: "Guide complet pour acheter du BTC en toute s�curit�.",                        category: "debutant",  duration: "30 min",   level: "D�butant",      icon: "fab fa-bitcoin",      free: true,  videoId: "Gc2en3nHxA4" },
-  { id: 3,  title: "Analyse Technique Crypto",               desc: "Ma�trisez les graphiques et indicateurs de trading.",                         category: "trading",   duration: "1h 20 min", level: "Interm�diaire",  icon: "fas fa-chart-line",   free: false, videoId: "", unitPrice: 8000 },
-  { id: 4,  title: "Strat�gies de Trading Avanc�es",         desc: "Scalping, swing trading et gestion du risque.",                             category: "trading",   duration: "2h 10 min", level: "Avanc�e",         icon: "fas fa-chart-bar",    free: false, videoId: "", unitPrice: 15000 },
-  { id: 5,  title: "Introduction � la DeFi",                 desc: "D�couvrez la finance d�centralis�e et ses opportunit�s.",                     category: "defi",      duration: "55 min",   level: "Interm�diaire",  icon: "fas fa-coins",        free: false, videoId: "", unitPrice: 10000 },
-  { id: 6,  title: "Yield Farming & Staking",                desc: "G�n�rez des revenus passifs avec vos cryptos.",                               category: "defi",      duration: "1h 30 min", level: "Avanc�e",         icon: "fas fa-seedling",     free: false, videoId: "", unitPrice: 12000 },
-  { id: 7,  title: "Comprendre les NFTs",                    desc: "Tout savoir sur les tokens non-fongibles.",                                  category: "nft",       duration: "40 min",   level: "D�butant",      icon: "fas fa-image",        free: true,  videoId: "" },
-  { id: 8,  title: "Cr�er et Vendre des NFTs",               desc: "Lancez votre collection NFT sur OpenSea.",                                  category: "nft",       duration: "1h 15 min", level: "Interm�diaire",  icon: "fas fa-palette",      free: false, videoId: "", unitPrice: 10000 },
-  { id: 9,  title: "Les bases de la cr�ation de contenu",    desc: "Comprendre les fondamentaux pour cr�er du contenu engageant.",              category: "contenu",   duration: "50 min",   level: "D�butant",      icon: "fas fa-video",        free: true,  videoId: "" },
-  { id: 10, title: "Cr�er des Reels & Shorts viraux",        desc: "Techniques pour produire des vid�os courtes qui font le buzz.",             category: "contenu",   duration: "1h 10 min", level: "Interm�diaire",  icon: "fas fa-film",         free: false, videoId: "", unitPrice: 8000 },
-  { id: 11, title: "Mon�tiser son contenu",                   desc: "Transformez votre audience en revenus durables.",                           category: "contenu",   duration: "1h 25 min", level: "Avanc�e",         icon: "fas fa-dollar-sign",  free: false, videoId: "", unitPrice: 12000 },
-  { id: 12, title: "Outils de cr�ation gratuits",            desc: "Canva, CapCut, DaVinci Resolve : ma�trisez les meilleurs outils.",          category: "contenu",   duration: "45 min",   level: "D�butant",      icon: "fas fa-tools",        free: true,  videoId: "" },
-  { id: 13, title: "Cr�er une page Facebook professionnelle", desc: "Configurez et optimisez votre page Facebook de A � Z.",                   category: "facebook",  duration: "35 min",   level: "D�butant",      icon: "fab fa-facebook",     free: true,  videoId: "" },
-  { id: 14, title: "Strat�gie de contenu Facebook",           desc: "Planifiez et publiez du contenu qui g�n�re de l'engagement.",               category: "facebook",  duration: "1h 05 min", level: "Interm�diaire",  icon: "fas fa-calendar-alt", free: false, videoId: "", unitPrice: 8000 },
-  { id: 15, title: "Facebook Ads pour d�butants",             desc: "Cr�ez vos premi�res publicit�s Facebook avec un petit budget.",             category: "facebook",  duration: "1h 40 min", level: "Interm�diaire",  icon: "fas fa-bullhorn",     free: false, videoId: "", unitPrice: 15000 },
-  { id: 16, title: "G�rer une communaut� Facebook",           desc: "Animez votre groupe et fid�lisez votre audience.",                         category: "facebook",  duration: "55 min",   level: "Avanc�e",         icon: "fas fa-users-cog",    free: false, videoId: "", unitPrice: 10000 },
-];
+const COURSES = [];
 // ===== CHIFFREMENT L�GER DES IDS PRIV�S =====
 const _ENC_KEY = 'pagani2025secure';
 function _encode(str) {
@@ -162,7 +145,7 @@ function formatPostContent(text) {
 }
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 60) return "� l'instant";
+  if (diff < 60) return "a l'instant";
   if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
   if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
   return new Date(dateStr).toLocaleDateString("fr-FR");
@@ -192,7 +175,7 @@ function _updatePostStats(postId, post) {
     <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments!==1?'s':''}</span>`;
 }
 // ===== EMOJI PICKER COMMENTAIRES =====
-const COMMENT_EMOJIS = ['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','?','??','??','??'];
+const COMMENT_EMOJIS = ['😊','😂','❤️','👍','🔥','🎉','😍','🙏','💪','😎','🤔','😢','😡','👏','🚀','✅','⭐','💡','💰','📈'];
 function toggleCommentEmoji(inputId, btn) {
   // Fermer tout picker d�j� ouvert
   document.querySelectorAll('.comment-emoji-picker').forEach(p => {
@@ -299,7 +282,7 @@ async function _silentRefreshFeed() {
           const liked = post.likes.includes(user.email);
           likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
           const label = likeBtn.querySelector('.reaction-label');
-          if (label) label.textContent = liked ? "J'adore ??" : "J'adore";
+          if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
         }
       }
       const commSection = el.querySelector('.comments-section');
@@ -573,7 +556,7 @@ function buildPostCard(post, user, isAdmin) {
       ` : `
         <button class="reaction-btn ${liked ? "liked" : ""}" onclick="toggleLike(${post.id})">
           <i class="fas fa-heart"></i>
-          <span class="reaction-label">${liked ? "J'adore ??" : "J'adore"}</span>
+          <span class="reaction-label">${liked ? "J'adore ❤️" : "J'adore"}</span>
         </button>
         <button class="comment-toggle-btn" onclick="toggleComments(${post.id})">
           <i class="fas fa-comment"></i>
@@ -629,7 +612,7 @@ async function toggleLike(postId) {
       if (likeBtn) {
         likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
         const label = likeBtn.querySelector('.reaction-label');
-        if (label) label.textContent = liked ? "J'adore ??" : "J'adore";
+        if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
       }
     }
   }
@@ -770,7 +753,7 @@ function switchEditorTab(tab, btn) {
 function updateEditorPreview(force) {
   const ta    = document.getElementById('newsContent');
   const count = document.getElementById('editorCharCount');
-  if (ta && count) count.textContent = ta.value.length + ' caract�res';
+  if (ta && count) count.textContent = ta.value.length + ' caracteres';
   if (!force) return;
   const box   = document.getElementById('editorPreviewContent');
   const title = document.getElementById('newsTitle')?.value.trim();
@@ -1095,7 +1078,7 @@ async function submitEditPost() {
   const id      = Number(document.getElementById('editPostId').value);
   const content = document.getElementById('editPostContent').value.trim();
   const msg     = document.getElementById('editPostMsg');
-  if (!content) { msg.textContent = 'Le contenu ne peut pas �tre vide.'; return; }
+  if (!content) { msg.textContent = 'Le contenu ne peut pas etre vide.'; return; }
   msg.textContent = '';
   const user = getUser();
   const isAdmin = user && user.role === 'admin';
@@ -1192,7 +1175,7 @@ function openPostImage(postId) {
       <i class="fas fa-times"></i>
     </button>
     <img src="${post.image}" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.6)" />
-    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe o� ou appuyez sur Echap pour fermer</p>
+    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe ou ou appuyez sur Echap pour fermer</p>
   `;
   // Fermer au clic sur l'overlay (pas sur l\'image)
   overlay.addEventListener("click", (e) => {
@@ -1517,12 +1500,12 @@ function renderMmAccounts(user) {
           <strong>${acc.operator}</strong>
           ${filled
             ? `<span>${acc.phone}</span><span class="mm-account-name">${acc.name}</span>`
-            : `<span class="mm-account-empty">Non renseign�</span>`
+            : `<span class="mm-account-empty">Non renseigne</span>`
           }
         </div>
         <div class="mm-account-status">
           ${filled
-            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> Verrouill�</span>`
+            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> Verrouille</span>`
             : `<button class="mm-add-btn" onclick="openAddMmModal('${acc.operator}')">
                  <i class="fas fa-plus"></i> Ajouter
                </button>`
@@ -1544,8 +1527,8 @@ async function confirmAddMmAccount() {
   const phone = document.getElementById('mmAddPhone').value.trim();
   const name  = document.getElementById('mmAddName').value.trim();
   const msg   = document.getElementById('mmAddMsg');
-  if (!phone) { msg.textContent = 'Entrez le num�ro.'; return; }
-  if (!name)  { msg.textContent = 'Entrez le nom attach� au compte.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numero.'; return; }
+  if (!name)  { msg.textContent = 'Entrez le nom attache au compte.'; return; }
   msg.textContent = '';
   try {
     const updated = await PaganiAPI.addMmAccount(_mmAddingOperator, phone, name);
@@ -1555,9 +1538,9 @@ async function confirmAddMmAccount() {
     renderProfile(updated);
   } catch(e) {
     const msgs = {
-      COMPTE_VERROUILLE:  'Ce compte est d�j� verrouill�.',
-      COMPTE_DEJA_AJOUTE: 'Ce compte a d�j� �t� ajout�.',
-      OPERATEUR_INVALIDE: 'Op�rateur invalide.',
+      COMPTE_VERROUILLE:  'Ce compte est deja verrouille.',
+      COMPTE_DEJA_AJOUTE: 'Ce compte a deja ete ajoute.',
+      OPERATEUR_INVALIDE: 'Operateur invalide.',
     };
     msg.textContent = msgs[e.message] || 'Erreur lors de l\'ajout.';
   }
@@ -1925,21 +1908,21 @@ async function loadAdminPaymentAccounts() {
             <span class="admin-payment-name">${acc.name}</span>
           </span>
           ${isOff
-            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> D�sactiv�${acc.disabledReason ? ' — ' + acc.disabledReason : ''}</span>`
+            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> Desactive${acc.disabledReason ? ' — ' + acc.disabledReason : ''}</span>`
             : `<span class="admin-pay-saved"><i class="fas fa-check-circle"></i> Actif</span>`
           }
           <div class="admin-payment-actions">
-            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'R�activer' : 'D�sactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
+            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'Reactiver' : 'Desactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
               <i class="fas fa-${isOff ? 'check-circle' : 'ban'}"></i>
             </button>
             <button class="admin-action-btn edit" title="Modifier" onclick="editPaymentAccount('${acc.operator}')">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="admin-action-btn del" title="Supprimer le num�ro" onclick="openClearPayment('${acc.operator}')">
+            <button class="admin-action-btn del" title="Supprimer le numero" onclick="openClearPayment('${acc.operator}')">
               <i class="fas fa-trash"></i>
             </button>
           </div>` : `
-          <span class="admin-payment-empty">Non configur�</span>
+          <span class="admin-payment-empty">Non configure</span>
           <button class="admin-payment-edit-btn" onclick="editPaymentAccount('${acc.operator}')">
             <i class="fas fa-plus"></i> Ajouter
           </button>`
@@ -1948,7 +1931,7 @@ async function loadAdminPaymentAccounts() {
       <!-- Formulaire inline �dition -->
       <div class="admin-payment-edit-form" id="pay-edit-${key}" style="display:none">
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;width:100%">
-          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="Num�ro ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
+          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="Numero ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
           <input type="text" id="pay-name-${key}"  class="upgrade-input" placeholder="Nom du compte" value="${acc.name||''}" style="flex:1;min-width:140px" />
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
@@ -1987,18 +1970,18 @@ function openTogglePayment(operator, isCurrentlyDisabled) {
   const reasonInput = document.getElementById('togglePayReason');
   const confirmBtn  = document.getElementById('togglePayConfirmBtn');
   if (isCurrentlyDisabled) {
-    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> R�activer ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> Reactiver ${operator} ?`;
     reasonWrap.style.display = 'none';
     confirmBtn.style.background = 'var(--green)';
-    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> R�activer';
+    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Reactiver';
   } else {
-    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> D�sactiver ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> Desactiver ${operator} ?`;
     reasonWrap.style.display = 'block';
     if (reasonInput) reasonInput.value = '';
     confirmBtn.style.background = '';
     confirmBtn.className = 'btn-primary';
     confirmBtn.style.cssText = 'width:100%;background:var(--red);border:none';
-    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> D�sactiver';
+    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Desactiver';
   }
   modal.style.display = 'flex';
   if (!isCurrentlyDisabled) setTimeout(() => reasonInput?.focus(), 50);
@@ -2046,7 +2029,7 @@ async function savePaymentAccount(operator) {
   const phone = document.getElementById(`pay-phone-${key}`).value.trim();
   const name  = document.getElementById(`pay-name-${key}`).value.trim();
   const msg   = document.getElementById(`pay-msg-${key}`);
-  if (!phone) { msg.textContent = 'Entrez le num�ro.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numero.'; return; }
   if (!name)  { msg.textContent = 'Entrez le nom du compte.'; return; }
   msg.textContent = '';
   try {
@@ -2062,14 +2045,14 @@ async function savePaymentAccount(operator) {
 function _getUserLevel(user) {
   const unlocked = (user.unlockedCourses || []).length;
   if (user.plan === 'Elite' || unlocked >= 8) return 'Expert';
-  if (user.plan === 'Pro'   || unlocked >= 3) return 'Interm�diaire';
-  return 'D�butant';
+  if (user.plan === 'Pro'   || unlocked >= 3) return 'Intermediaire';
+  return 'Debutant';
 }
 function renderProgress() {
   const list = document.getElementById("progressList");
   if (!list) return;
   const user = getUser();
-  const allVideos   = getVideos().length ? getVideos() : COURSES;
+  const allVideos   = getVideos();
   const freeCourses = allVideos.filter(v => v.free);
   const unlocked    = user ? (user.unlockedCourses || []) : [];
   const unlockedCourses = allVideos.filter(v => unlocked.includes(v.id));
@@ -2100,7 +2083,7 @@ function renderCourses(filter = "all") {
   const grid = document.getElementById("coursesGrid");
   if (!grid) return;
   const videos   = getVideos(); // source de v�rit� (localStorage ou COURSES)
-  const all      = videos.length ? videos : COURSES;
+  const all      = videos;
   const filtered = filter === "all" ? all : all.filter(c => c.category === filter);
   const user     = getUser();
   // Construire la map index -> id r�el (jamais expos�e dans le HTML)
@@ -2142,7 +2125,7 @@ function _applyFiltersAndSearch() {
   const empty = document.getElementById('coursesEmpty');
   const banner = document.getElementById('searchResultBanner');
   if (!grid) return;
-  const videos = getVideos().length ? getVideos() : COURSES;
+  const videos = getVideos();
   const activeBtn = document.querySelector('.filter-btn.active');
   const activeCat = activeBtn ? (activeBtn.onclick ? '' : '') : 'all';
   // Lire la cat�gorie depuis le bouton actif
@@ -2173,7 +2156,7 @@ function _applyFiltersAndSearch() {
   if (banner) {
     if (_searchQuery) {
       banner.style.display = 'block';
-      banner.textContent = filtered.length + ' r�sultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
+      banner.textContent = filtered.length + ' resultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
     } else {
       banner.style.display = 'none';
     }
@@ -2220,7 +2203,7 @@ function setView(view, btn) {
 }
 // Met � jour les stats hero de la page formations
 function updateFormationsStats() {
-  const videos = getVideos().length ? getVideos() : COURSES;
+  const videos = getVideos();
   const total = videos.length;
   const free  = videos.filter(v => v.free).length;
   const paid  = videos.filter(v => !v.free).length;
@@ -2318,7 +2301,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
       <!-- Header -->
       <div class="upgrade-modal-header">
         <div class="upgrade-lock-icon">??</div>
-        <h2>${isGuest ? 'Connectez-vous pour acc�der' : 'Passez � un plan sup�rieur'}</h2>
+        <h2>${isGuest ? 'Connectez-vous pour acceder' : 'Passez a un plan superieur'}</h2>
         <p>${isGuest
           ? (isFree
               ? 'Connectez-vous pour regarder cette formation gratuite.'
@@ -2381,15 +2364,15 @@ async function _showUpgradeModal(user, courseName, isFree) {
             <div class="upgrade-step">
               <div class="upgrade-step-num">1</div>
               <div style="width:100%">
-                <strong>Choisissez votre m�thode de paiement</strong>
-                <p style="margin-bottom:0.8rem">S�lectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
+                <strong>Choisissez votre methode de paiement</strong>
+                <p style="margin-bottom:0.8rem">Selectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
                 <div id="upgradeUserMmWrap"></div>
               </div>
             </div>
             <div class="upgrade-step" id="upgradeStep2">
               <div class="upgrade-step-num">2</div>
               <div style="width:100%">
-                <strong>Envoyez le montant � ce num�ro</strong>
+                <strong>Envoyez le montant a ce numero</strong>
                 <p style="margin-bottom:0.6rem">Envoyez exactement <strong id="upgradeAmountRepeat" style="color:var(--accent2)"></strong> au compte ci-dessous :</p>
                 <div id="upgradeMmTargets" class="upgrade-mm-targets"></div>
               </div>
@@ -2398,7 +2381,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
               <div class="upgrade-step-num">3</div>
               <div style="width:100%">
                 <strong>Confirmez votre envoi</strong>
-                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous apr�s avoir effectu� le transfert :</p>
+                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous apres avoir effectue le transfert :</p>
                 <div class="upgrade-form">
                   <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="R�f�rence transaction (optionnel)" />
                   <!-- PREUVE DE PAIEMENT -->
@@ -2436,7 +2419,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     </div>
                   </div>
                   <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitUpgradeRequest()">
-                    <i class="fas fa-paper-plane"></i> J'ai envoy� le paiement
+                    <i class="fas fa-paper-plane"></i> J'ai envoye le paiement
                   </button>
                   <p id="upgradeMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
                 </div>
@@ -2447,8 +2430,8 @@ async function _showUpgradeModal(user, courseName, isFree) {
         <!-- Succ�s -->
         <div class="upgrade-success" id="upgradeSuccess" style="display:none">
           <div style="font-size:3rem">?</div>
-          <h3>Demande envoy�e !</h3>
-          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a �t� re�ue.<br>Votre compte sera activ� sous <strong>24h</strong> apr�s v�rification du paiement.</p>
+          <h3>Demande envoyee !</h3>
+          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a ete recue.<br>Votre compte sera active sous <strong>24h</strong> apres verification du paiement.</p>
           <button class="btn-outline" onclick="document.getElementById('upgradeModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
         </div>
       `}
@@ -2561,7 +2544,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
     wrap.innerHTML = `
       <div class="upgrade-mm-no-admin">
         <i class="fas fa-exclamation-circle"></i>
-        Aucun num�ro de paiement configur�. Contactez l\'administrateur.
+        Aucun numero de paiement configure. Contactez l\'administrateur.
       </div>`;
     return;
   }
@@ -2692,7 +2675,7 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice">
         <i class="fas fa-info-circle"></i>
-        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistr�.</span>
+        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistre.</span>
       </div>
       <div class="upgrade-form-manual">
         <label class="upgrade-form-label">Votre op�rateur</label>
@@ -2752,8 +2735,8 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
       ${!hasAdmin ? `
         <div class="upgrade-mm-notice upgrade-mm-notice-warn" style="margin-top:0.5rem">
           <i class="fas fa-exclamation-triangle"></i>
-          <span>L'op�rateur <strong>${acc.operator}</strong> n'est pas encore configur� par l\'admin.
-            Choisissez un autre num�ro admin ci-dessus pour envoyer.</span>
+          <span>L'operateur <strong>${acc.operator}</strong> n'est pas encore configure par l\'admin.
+            Choisissez un autre numero admin ci-dessus pour envoyer.</span>
         </div>` : ''}
       <input type="hidden" id="upgradeOperator" value="${acc.operator}" />
       <input type="hidden" id="upgradePhone"    value="${acc.phone}" />`;
@@ -2902,7 +2885,7 @@ async function _submitUpgradeRequest() {
   const txRef    = document.getElementById('upgradeTxRef').value.trim();
   const proof    = _upgradeProofBase64;
   const msg      = document.getElementById('upgradeMsg');
-  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre num�ro Mobile Money.'; return; }
+  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numero Mobile Money.'; return; }
   if (!proof)  {
     msg.style.color = 'var(--red)';
     msg.textContent = '?? La preuve de paiement est obligatoire. Veuillez joindre une capture d\'�cran.';
@@ -2947,11 +2930,11 @@ async function _submitUpgradeRequest() {
   } catch(e) {
     // Erreur r�elle — on affiche le message, on ne cache PAS le formulaire
     const errMsgs = {
-      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. V�rifiez votre connexion.',
-      NON_AUTHENTIFIE:      'Session expir�e. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:       'Session expir�e. Veuillez vous reconnecter.',
+      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. Verifiez votre connexion.',
+      NON_AUTHENTIFIE:      'Session expiree. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:       'Session expiree. Veuillez vous reconnecter.',
       PREUVE_REQUISE:       'La preuve de paiement est obligatoire.',
-      ERREUR_SERVEUR:       'Erreur serveur. R�essayez dans quelques instants.',
+      ERREUR_SERVEUR:       'Erreur serveur. Reessayez dans quelques instants.',
     };
     msg.style.color = 'var(--red)';
     msg.textContent = '? ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
@@ -2961,7 +2944,7 @@ async function openCourse(idx) {
   const realId = _courseIndexMap[idx];
   if (realId === undefined) return;
   // Utiliser le cache d�j� charg�, sinon COURSES hardcod�es
-  const allVideos = getVideos().length ? getVideos() : COURSES;
+  const allVideos = getVideos();
   let course = allVideos.find(c => c.id === realId || c.id === Number(realId));
   // Si pas dans le cache local, charger depuis le serveur
   if (!course && window.PaganiAPI) {
@@ -3122,7 +3105,7 @@ async function _showBuyVideoModal(user, course) {
           <div class="buy-option-header">
             <span class="buy-option-badge unit"><i class="fas fa-film"></i> Achat unique</span>
             <div class="buy-option-price">${unitPrice.toLocaleString('fr-FR')} <span>AR</span></div>
-            <p>Acc�s permanent � cette vid�o uniquement.</p>
+            <p>Acces permanent a cette video uniquement.</p>
           </div>
           <ul class="buy-option-features">
             <li><i class="fas fa-check"></i> Acc�s � vie � cette formation</li>
@@ -3162,8 +3145,8 @@ async function _showBuyVideoModal(user, course) {
           <div class="upgrade-step">
             <div class="upgrade-step-num">1</div>
             <div style="width:100%">
-              <strong>S�lectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
-              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilis� pour v�rifier votre paiement.</p>
+              <strong>Selectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
+              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilise pour verifier votre paiement.</p>
               <div id="buyUserMmWrap"></div>
             </div>
           </div>
@@ -3196,7 +3179,7 @@ async function _showBuyVideoModal(user, course) {
                   </div>
                 </div>
                 <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitBuyRequest(${course.id})">
-                  <i class="fas fa-paper-plane"></i> J'ai envoy� le paiement
+                  <i class="fas fa-paper-plane"></i> J'ai envoye le paiement
                 </button>
                 <p id="buyMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
               </div>
@@ -3207,7 +3190,7 @@ async function _showBuyVideoModal(user, course) {
       <!-- Succ�s -->
       <div id="buyVideoSuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
         <div style="font-size:3rem">?</div>
-        <h3>Demande envoy�e !</h3>
+        <h3>Demande envoyee !</h3>
         <p id="buySuccessMsg" style="color:var(--text2);font-size:0.9rem;line-height:1.6"></p>
         <button class="btn-outline" onclick="document.getElementById('buyVideoModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
       </div>
@@ -3479,11 +3462,11 @@ async function _submitBuyRequest(courseId) {
   msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
   try {
     const result = await PaganiAPI.buyVideo({ courseId, amount: _buySelectedAmount, txRef, proof, phone, operator, mmName });
-    const allVideos = getVideos().length ? getVideos() : COURSES;
+    const allVideos = getVideos();
     const course = allVideos.find(c => c.id === courseId || c.id === Number(courseId));
     if (user && window.PaganiNotif) {
       const purchaseId = result && result.id ? result.id : null;
-      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'Vid�o', purchaseId);
+      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'Video', purchaseId);
     }
     _buyProofBase64 = '';
     document.getElementById('buyVideoPayment').style.display = 'none';
@@ -3491,14 +3474,14 @@ async function _submitBuyRequest(courseId) {
     if (successEl) {
       successEl.style.display = 'flex';
       const successMsg = document.getElementById('buySuccessMsg');
-      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a �t� re�ue.<br>Votre acc�s sera activ� sous <strong>24h</strong> apr�s v�rification du paiement.';
+      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a ete recue.<br>Votre acces sera active sous <strong>24h</strong> apres verification du paiement.';
     }
   } catch(e) {
     const errMsgs = {
-      NON_AUTHENTIFIE:   'Session expir�e. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:    'Session expir�e. Veuillez vous reconnecter.',
+      NON_AUTHENTIFIE:   'Session expiree. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:    'Session expiree. Veuillez vous reconnecter.',
       PREUVE_REQUISE:    'La preuve de paiement est obligatoire.',
-      DEJA_ACHETE:       'Vous avez d�j� achet� cette formation.',
+      DEJA_ACHETE:       'Vous avez deja achete cette formation.',
       VIDEO_INTROUVABLE: 'Formation introuvable.',
     };
     msg.style.color = 'var(--red)';
@@ -3553,7 +3536,7 @@ async function renderCommissionHistory(user) {
       <span>${h.filleulName}</span>
       <span><span class="history-type">${h.type}</span></span>
       <span class="green">${formatAR(h.montant)}</span>
-      <span><span class="status-badge ${h.statut === 'Vers�' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
+      <span><span class="status-badge ${h.statut === 'Verse' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
     </div>`).join("");
 }
 async function requestWithdrawAR(e) {
@@ -3713,7 +3696,7 @@ async function saveSocialLinks() {
     if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? Sauvegard� !' : (data.error || 'Erreur'); }
     setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
   } catch(e) {
-    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur r�seau'; }
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur reseau'; }
   }
 }
 
@@ -3740,12 +3723,12 @@ async function loadAdminShares() {
       <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partag�</span></div>`;
   }
   if (!shares.length) {
-    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistr� pour le moment.</p></div>';
+    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistre pour le moment.</p></div>';
     return;
   }
   tableEl.innerHTML = `
     <div class="video-admin-header" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span>Membre</span><span>Post partag�</span><span>Code parrain</span><span>Date</span>
+      <span>Membre</span><span>Post partage</span><span>Code parrain</span><span>Date</span>
     </div>
     ${shares.map(s => `
     <div class="video-admin-row" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
@@ -3778,7 +3761,7 @@ function toggleMenu() {
 let _editingVideoId = null;
 let _adminVideosCache = []; // cache local pour �viter des appels r�p�t�s
 function getVideos() {
-  return _adminVideosCache.length ? _adminVideosCache : COURSES.map(c => ({ ...c }));
+  return _adminVideosCache.length ? _adminVideosCache : [];
 }
 function saveVideos(videos) {
   _adminVideosCache = videos;
@@ -3817,12 +3800,12 @@ async function renderAdminVideos(filter = 'all') {
   else if (filter === 'pro')   filtered = videos.filter(v => !v.free && !v.unitPrice);
   else if (filter !== 'all')   filtered = videos.filter(v => v.category === filter);
   if (filtered.length === 0) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vid�o dans cette cat�gorie.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune video dans cette categorie.</p></div>';
     return;
   }
   list.innerHTML = `
     <div class="video-admin-header">
-      <span>Titre</span><span>Cat�gorie</span><span>Niveau</span><span>Acc�s</span><span>Actions</span>
+      <span>Titre</span><span>Categorie</span><span>Niveau</span><span>Acces</span><span>Actions</span>
     </div>
     ${filtered.map(v => `
     <div class="video-admin-row" id="vrow-${v.id}">
@@ -3915,10 +3898,10 @@ function _onAccessTypeChange(type) {
 function openVideoModal() {
   _editingVideoId = null;
   _thumbnailBase64 = '';
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une vid�o';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une video';
   ['vTitle','vDesc','vVideoDescription','vDuration','vVideoId','vDriveId','vThumbnailUrl','vPrice'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('vCategory').value = 'debutant';
-  document.getElementById('vLevel').value    = 'D�butant';
+  document.getElementById('vLevel').value    = 'Debutant';
   document.getElementById('vFree').checked   = true;
   if (document.getElementById('vUnit')) document.getElementById('vUnit').checked = false;
   if (document.getElementById('vPaid')) document.getElementById('vPaid').checked = false;
@@ -3942,7 +3925,7 @@ async function editVideo(id) {
   if (!v) v = getVideos().find(x => x.id === id);
   if (!v) return;
   _editingVideoId = id;
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la vid�o';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la video';
   document.getElementById('vTitle').value    = v.title    || '';
   document.getElementById('vDesc').value     = v.description || v.desc || '';
   document.getElementById('vVideoDescription').value = v.videoDescription || '';
@@ -4329,7 +4312,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
       }).catch(function(){});
     }
   }
-  document.title = `${userName} � Messages`;
+  document.title = `${userName} - Messages`;
   // Loader
   messages.innerHTML = '<div class="mpx-loading"><span></span><span></span><span></span></div>';
   // Mobile : afficher la colonne chat
@@ -4394,7 +4377,7 @@ function closeChatMobile() {
   _currentChatUserName = null;
   if (_chatPollingTimer) { clearInterval(_chatPollingTimer); _chatPollingTimer = null; }
   history.pushState({}, '', window.location.pathname);
-  document.title = 'Messages � Pagani Digital';
+  document.title = 'Messages - Pagani Digital';
   const header   = document.getElementById('chatHeader');
   const messages = document.getElementById('chatMessages');
   const inputRow = document.getElementById('chatInputRow');
@@ -5020,8 +5003,8 @@ async function renderUserSubscriptions() {
     const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
     const planIcons  = { Starter: 'fas fa-user', Pro: 'fas fa-crown', Elite: 'fas fa-gem' };
     const planDescs  = {
-      Starter: 'Acc�s aux formations gratuites et au programme d\'affiliation.',
-      Pro:     'Acc�s � toutes les formations + commission 35%.',
+      Starter: 'Acces aux formations gratuites et au programme d\'affiliation.',
+      Pro:     'Acces a toutes les formations + commission 35%.',
       Elite:   'Acces complet + coaching 1-on-1 + commission 50%.'
     };
     planBox.innerHTML = `
@@ -5068,16 +5051,16 @@ async function renderUserSubscriptions() {
     <i class="fas fa-history"></i> Historique des demandes
   </h3>` + subs.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuv�'   ? 'status-paid'
+                      : r.statut === 'Approuve'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuv�'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
-    const canRetry = r.statut === 'Rejet�';
+    const canRetry = r.statut === 'Rejete';
     const isPending = r.statut === 'En attente';
     return `
-    <div class="sub-user-card ${r.statut === 'Approuv�' ? 'sub-user-approved' : r.statut === 'Rejet�' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
+    <div class="sub-user-card ${r.statut === 'Approuve' ? 'sub-user-approved' : r.statut === 'Rejete' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
       <!-- EN-T�TE -->
       <div class="sub-user-card-header">
         <div style="display:flex;align-items:center;gap:0.7rem">
@@ -5096,7 +5079,7 @@ async function renderUserSubscriptions() {
       <div class="sub-user-details">
         <div class="sub-user-detail">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
-          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoy�</small></span>
+          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoye</small></span>
         </div>
         <div class="sub-user-detail">
           <i class="fas fa-mobile-alt" style="color:${opColor}"></i>
@@ -5105,11 +5088,11 @@ async function renderUserSubscriptions() {
         ${r.txRef ? `
         <div class="sub-user-detail">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>R�f�rence</small></span>
+          <span><strong>${r.txRef}</strong><small>Reference</small></span>
         </div>` : ''}
       </div>
       <!-- MESSAGE STATUT -->
-      ${r.statut === 'Approuv�' ? `
+      ${r.statut === 'Approuve' ? `
       <div class="sub-user-status-msg approved">
         <i class="fas fa-check-circle"></i>
         <div>
@@ -5124,18 +5107,18 @@ async function renderUserSubscriptions() {
       <div class="sub-user-status-msg pending">
         <i class="fas fa-clock"></i>
         <div>
-          <strong>En cours de v�rification</strong>
-          <p>Votre paiement est en cours de v�rification par l\'administrateur. Activation sous 24h.</p>
+          <strong>En cours de verification</strong>
+          <p>Votre paiement est en cours de verification par l\'administrateur. Activation sous 24h.</p>
         </div>
       </div>` : ''}
-      ${r.statut === 'Rejet�' ? `
+      ${r.statut === 'Rejete' ? `
       <div class="sub-user-status-msg rejected">
         <i class="fas fa-times-circle"></i>
         <div>
-          <strong>Demande rejet�e</strong>
+          <strong>Demande rejetee</strong>
           ${r.rejectReason
             ? `<p><strong>Raison :</strong> ${r.rejectReason}</p>`
-            : `<p>Votre demande n'a pas pu �tre valid�e. Contactez le support si besoin.</p>`
+            : `<p>Votre demande n'a pas pu etre validee. Contactez le support si besoin.</p>`
           }
         </div>
       </div>` : ''}
@@ -5154,7 +5137,7 @@ async function renderUserSubscriptions() {
       <div class="sub-user-actions">
         <p style="font-size:0.78rem;color:var(--text2)">
           <i class="fas fa-info-circle" style="color:var(--gold)"></i>
-          Si vous n'avez pas encore envoy� le paiement, vous pouvez le faire maintenant.
+          Si vous n'avez pas encore envoye le paiement, vous pouvez le faire maintenant.
         </p>
       </div>` : ''}
     </div>`;
@@ -5269,10 +5252,10 @@ async function loadAdminPricingSubscriptions() {
       <div class="pricing-admin-card">
         <div class="pricing-admin-card-header">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          <strong>Achat vid�o unitaire</strong>
+          <strong>Achat video unitaire</strong>
         </div>
         <div class="pricing-admin-row">
-          <label>Prix par vid�o <small>(AR)</small></label>
+          <label>Prix par video <small>(AR)</small></label>
           <input type="number" id="priceVideo" class="upgrade-input" value="${p.video}" min="0" step="500" />
         </div>
         <div class="pricing-admin-row">
@@ -5332,7 +5315,7 @@ async function loadAdminPricingSubscriptions() {
       </button>
       <p id="pricingMsg" style="font-size:0.82rem;min-height:1rem"></p>
     </div>
-    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> Derni�re mise � jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
+    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> Derniere mise a jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
 }
 async function saveAdminPricing() {
   const msg = document.getElementById('pricingMsg');
@@ -5356,7 +5339,7 @@ async function saveAdminPricing() {
   };
   try {
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Tarifs mis � jour avec succ�s.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Tarifs mis a jour avec succes.'; }
     setTimeout(() => loadAdminPricingSubscriptions(), 800);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
@@ -5383,9 +5366,9 @@ async function loadAdminVideoPricing() {
       <div class="pricing-video-global">
         <div class="pricing-admin-card-header">
           <i class="fas fa-tag" style="color:var(--accent2)"></i>
-          <strong>Prix global par d�faut</strong>
+          <strong>Prix global par defaut</strong>
         </div>
-        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux vid�os sans prix individuel d�fini.</p>
+        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux videos sans prix individuel defini.</p>
         <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
           <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1;min-width:160px">
             <label style="font-size:0.78rem;color:var(--text2);font-weight:600">Prix global <small>(AR)</small></label>
@@ -5402,15 +5385,15 @@ async function loadAdminVideoPricing() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
         <h3 style="font-size:0.95rem;font-weight:700">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          Prix individuels — Vid�os payantes (${paid.length})
+          Prix individuels - Videos payantes (${paid.length})
         </h3>
         <span style="font-size:0.78rem;color:var(--text2)">Laissez vide pour utiliser le prix global</span>
       </div>
       ${paid.length === 0
-        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vid�o payante.</p></div>'
+        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune video payante.</p></div>'
         : `<div class="video-price-list">
             <div class="video-price-header">
-              <span>Vid�o</span><span>Cat�gorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
+              <span>Video</span><span>Categorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
             </div>
             ${paid.map(v => `
             <div class="video-price-row" id="vpr-${v.id}">
@@ -5443,7 +5426,7 @@ async function saveGlobalVideoPrice() {
   try {
     const p = await PaganiAPI.getPricing();
     await PaganiAPI.admin.updatePricing({ ...p, video: val });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Sauvegard�'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Sauvegarde'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
@@ -5490,7 +5473,7 @@ async function loadAdminModulePricing() {
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      D�finissez un prix d'acc�s par module. Un utilisateur qui ach�te un module d�bloque toutes ses vid�os.
+      Definissez un prix d'acces par module. Un utilisateur qui ach�te un module d�bloque toutes ses vid�os.
     </p>
     <div class="module-pricing-grid">
       ${modules.map(m => `
@@ -5551,7 +5534,7 @@ async function loadAdminCommissions() {
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      Les commissions sont calcul�es sur le montant pay� par le filleul lors d'un abonnement ou d'un achat de formation.
+      Les commissions sont calculees sur le montant paye par le filleul lors d'un abonnement ou d'un achat de formation.
     </p>
     <div class="comm-pricing-grid">
       ${plans.map(pl => `
@@ -5576,7 +5559,7 @@ async function loadAdminCommissions() {
         </div>
         <div class="comm-pricing-example">
           <i class="fas fa-calculator" style="color:var(--text2)"></i>
-          <span>Ex: abonnement Pro 30 000 AR � <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
+          <span>Ex: abonnement Pro 30 000 AR - <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
         </div>
       </div>`).join('')}
     </div>
@@ -5636,7 +5619,7 @@ async function saveAdminCommissions() {
       },
     };
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Commissions mises � jour.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Commissions mises a jour.'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
   }
@@ -5693,13 +5676,13 @@ function _vpConfirm(type, r) {
     if (type === 'approve') {
       iconEl.textContent  = '?';
       titleEl.textContent = 'Approuver cet achat ?';
-      subEl.textContent   = 'L\'acc�s � la vid�o sera d�bloqu� imm�diatement pour ce membre.';
+      subEl.textContent   = 'L\'acces a la video sera debloque immediatement pour ce membre.';
       okLabel.textContent = 'Oui, approuver';
       okBtn.querySelector('i').className = 'fas fa-check';
     } else {
       iconEl.textContent  = '?';
       titleEl.textContent = 'Rejeter cette demande ?';
-      subEl.textContent   = 'Le membre sera notifi� du rejet. Cette action peut �tre annul�e.';
+      subEl.textContent   = 'Le membre sera notifie du rejet. Cette action peut �tre annul�e.';
       okLabel.textContent = 'Oui, rejeter';
       okBtn.querySelector('i').className = 'fas fa-ban';
     }
@@ -5746,8 +5729,8 @@ function _renderFilteredVideoPurchases() {
     : _videoPurchasesCache.filter(r => r.statut === _videoPurchasesFilter);
   // Compteurs
   const pending  = _videoPurchasesCache.filter(r => r.statut === 'En attente').length;
-  const approved = _videoPurchasesCache.filter(r => r.statut === 'Approuv�').length;
-  const rejected = _videoPurchasesCache.filter(r => r.statut === 'Rejet�').length;
+  const approved = _videoPurchasesCache.filter(r => r.statut === 'Approuve').length;
+  const rejected = _videoPurchasesCache.filter(r => r.statut === 'Rejete').length;
   const counterHTML = `
     <div class="vp-section-counter">
       ${pending  ? `<span class="vp-counter-pill pending"><i class="fas fa-clock"></i> ${pending} en attente</span>` : ''}
@@ -5755,17 +5738,17 @@ function _renderFilteredVideoPurchases() {
       ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejet�e${rejected>1?'s':''}</span>` : ''}
     </div>`;
   if (!list.length) {
-    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat vid�o.</p></div>';
+    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat video.</p></div>';
     return;
   }
   const opColors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   const now = Date.now();
   container.innerHTML = counterHTML + list.map((r, idx) => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuv�'   ? 'status-paid'
+                      : r.statut === 'Approuve'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuv�'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor  = opColors[r.operator] || 'var(--accent)';
     const user     = _allUsersCache.find(u => u.id === r.userId);
@@ -5774,7 +5757,7 @@ function _renderFilteredVideoPurchases() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     const timeInfo = _vpTimeAgo(r.createdAt);
     const isNew    = r.statut === 'En attente' && (now - new Date(r.createdAt)) < 3600000;
-    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'Approuv�' ? 'vp-approved' : 'vp-rejected';
+    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'Approuve' ? 'vp-approved' : 'vp-rejected';
     return `
     <div class="vp-card ${vpClass}" id="vp-${r.id}" style="animation-delay:${idx * 50}ms">
       <div class="vp-card-header">
@@ -5801,7 +5784,7 @@ function _renderFilteredVideoPurchases() {
       <div class="vp-card-details">
         <div class="vp-detail-item">
           <i class="fas fa-play-circle" style="color:var(--accent)"></i>
-          <span><strong>${r.videoTitle || 'Vid�o #' + r.courseId}</strong><small>Formation</small></span>
+          <span><strong>${r.videoTitle || 'Video #' + r.courseId}</strong><small>Formation</small></span>
         </div>
         <div class="vp-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -5815,7 +5798,7 @@ function _renderFilteredVideoPurchases() {
         ${r.txRef ? `
         <div class="vp-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>R�f�rence</small></span>
+          <span><strong>${r.txRef}</strong><small>Reference</small></span>
         </div>` : ''}
       </div>
       <div class="vp-proof-zone">
@@ -5844,11 +5827,11 @@ function _buildVideoPurchaseActions(r) {
         <i class="fas fa-check"></i> Approuver et d�bloquer
       </button>`;
   }
-  if (r.statut === 'Rejet�') {
+  if (r.statut === 'Rejete') {
     return `
       <span class="vp-status-done rejected">
         <i class="fas fa-times-circle"></i>
-        Rejet� le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
         ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> — ${r.rejectReason}</em>` : ''}
       </span>
       <button class="vp-btn-sm-approve" onclick="approveVideoPurchase(${r.id})">
@@ -5858,7 +5841,7 @@ function _buildVideoPurchaseActions(r) {
   return `
     <span class="vp-status-done approved">
       <i class="fas fa-check-circle"></i>
-      Approuv� le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
     </span>
     <button class="vp-btn-sm-reject" onclick="_vpShowRejectModal(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -5870,12 +5853,12 @@ function _vpShowRejectModal(id) {
   const zone = document.getElementById('vp-reject-modal-' + id);
   if (!zone) return;
   const r = _videoPurchasesCache.find(x => x.id === id);
-  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non re�u', 'Doublon'];
+  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non recu', 'Doublon'];
   zone.innerHTML = `
     <div class="vp-reject-modal">
       <div class="vp-reject-modal-header">
         <i class="fas fa-exclamation-triangle"></i>
-        <strong>Rejeter — ${r ? (r.videoTitle || 'Vid�o #' + r.courseId) : ''}</strong>
+        <strong>Rejeter - ${r ? (r.videoTitle || 'Video #' + r.courseId) : ''}</strong>
       </div>
       <div class="vp-reject-presets">
         ${presets.map(p => `<button class="vp-reject-preset" onclick="_vpSelectPreset(this,'vp-reject-reason-${id}')">${p}</button>`).join('')}
@@ -5909,8 +5892,8 @@ async function approveVideoPurchase(id) {
   const btn = document.getElementById('vp-btn-approve-' + id);
   if (btn) { btn.classList.add('vp-loading'); btn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Approuv�' });
-    r.statut = 'Approuv�';
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Approuve' });
+    r.statut = 'Approuve';
     r.treatedAt = new Date().toISOString();
     const card = document.getElementById('vp-' + id);
     if (card) {
@@ -5923,7 +5906,7 @@ async function approveVideoPurchase(id) {
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
     if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Approuv�'; statusEl.className = 'status-badge status-paid'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('? Acc�s d�bloqu� pour ' + r.userName);
+    _vpShowToast('Acces debloque pour ' + r.userName);
   } catch(e) {
     if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et d�bloquer'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
@@ -5939,8 +5922,8 @@ async function rejectVideoPurchase(id) {
   const confirmBtn = document.querySelector('#vp-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Rejet�', rejectReason: reason });
-    r.statut = 'Rejet�';
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Rejete', rejectReason: reason });
+    r.statut = 'Rejete';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
     const rejectZone = document.getElementById('vp-reject-modal-' + id);
@@ -5956,7 +5939,7 @@ async function rejectVideoPurchase(id) {
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
     if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejet�'; statusEl.className = 'status-badge status-rejected'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('Demande rejet�e' + (reason ? ' — ' + reason : ''), 'error');
+    _vpShowToast('Demande rejetee' + (reason ? ' — ' + reason : ''), 'error');
   } catch(e) {
     if (confirmBtn) { confirmBtn.classList.remove('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Confirmer le rejet'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
@@ -5970,7 +5953,7 @@ function openVideoPurchaseProof(id) {
   const info  = document.getElementById('proofModalInfo');
   const dl    = document.getElementById('proofModalDownload');
   if (!modal || !img) return;
-  if (info) info.textContent = `${r.userName} — ${r.videoTitle || 'Vid�o'} — ${(r.amount||0).toLocaleString('fr-FR')} AR`;
+  if (info) info.textContent = `${r.userName} — ${r.videoTitle || 'Video'} — ${(r.amount||0).toLocaleString('fr-FR')} AR`;
   img.src = r.proof;
   if (dl) dl.href = r.proof;
   modal.style.display = 'flex';
@@ -6037,10 +6020,10 @@ function _renderFilteredSubs() {
   const opColors   = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   container.innerHTML = list.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuv�'   ? 'status-paid'
+                      : r.statut === 'Approuve'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuv�'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
     const user    = _allUsersCache.find(u => u.id === r.userId);
@@ -6088,7 +6071,7 @@ function _renderFilteredSubs() {
         ${r.txRef ? `
         <div class="sub-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>R�f�rence</small></span>
+          <span><strong>${r.txRef}</strong><small>Reference</small></span>
         </div>` : ''}
       </div>
       <!-- PREUVE -->
@@ -6120,11 +6103,11 @@ function _buildSubActions(r) {
         <i class="fas fa-check"></i> Approuver et activer le plan
       </button>`;
   }
-  if (r.statut === 'Rejet�') {
+  if (r.statut === 'Rejete') {
     return `
       <span style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:0.4rem">
         <i class="fas fa-times-circle" style="color:var(--red)"></i>
-        Rejet� le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
         ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">— ${r.rejectReason}</em>` : ''}
       </span>
       <button class="sub-action-approve" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubApprove(${r.id})">
@@ -6135,7 +6118,7 @@ function _buildSubActions(r) {
   return `
     <span style="font-size:0.78rem;color:var(--green);display:flex;align-items:center;gap:0.4rem">
       <i class="fas fa-check-circle"></i>
-      Approuv� le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
     </span>
     <button class="sub-action-reject" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubReject(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -6156,12 +6139,12 @@ function openSubApprove(id) {
         <div>
           <strong>Confirmer l'approbation</strong>
           <p>Activer le plan <strong>${r.plan}</strong> pour <strong>${r.userName}</strong> ?<br>
-          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifi� imm�diatement.</span></p>
+          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifie immediatement.</span></p>
         </div>
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'Approuv�')">
+        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'Approuve')">
           <i class="fas fa-check"></i> Oui, activer le plan ${r.plan}
         </button>
       </div>
@@ -6185,19 +6168,19 @@ function openSubReject(id) {
       </div>
       <div class="sub-reject-reason-wrap">
         <label style="font-size:0.78rem;color:var(--text2);font-weight:600;display:block;margin-bottom:0.4rem">
-          Raison du rejet <span style="opacity:0.6">(optionnel — envoy�e � l\'utilisateur)</span>
+          Raison du rejet <span style="opacity:0.6">(optionnel — envoyee a l\'utilisateur)</span>
         </label>
         <div class="sub-reject-presets">
-          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non re�u')">Paiement non re�u</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non recu')">Paiement non recu</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Montant incorrect')">Montant incorrect</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Preuve invalide')">Preuve invalide</button>
-          <button class="pay-reason-pill" onclick="_setRejectReason('Num�ro non reconnu')">Num�ro non reconnu</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('Numero non reconnu')">Numero non reconnu</button>
         </div>
-        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalis�e..." style="margin-top:0.5rem" />
+        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalisee..." style="margin-top:0.5rem" />
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'Rejet�')">
+        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'Rejete')">
           <i class="fas fa-times"></i> Confirmer le rejet
         </button>
       </div>
@@ -6217,7 +6200,7 @@ function _cancelSubAction(id) {
 async function _confirmSubAction(id, statut) {
   const r = _subsCache.find(x => x.id === id);
   if (!r) return;
-  const rejectReason = statut === 'Rejet�'
+  const rejectReason = statut === 'Rejete'
     ? (document.getElementById(`rejectReasonInput-${id}`)?.value.trim() || '')
     : '';
   const zone = document.getElementById(`sub-actions-${id}`);
@@ -6227,7 +6210,7 @@ async function _confirmSubAction(id, statut) {
     r.statut       = statut;
     r.treatedAt    = new Date().toISOString();
     r.rejectReason = rejectReason;
-    if (statut === 'Approuv�') {
+    if (statut === 'Approuve') {
       const u = _allUsersCache.find(u => u.id === r.userId);
       if (u) u.plan = r.plan;
       // Rafra�chir le token si c'est l\'utilisateur courant (cas rare mais possible)
@@ -6251,8 +6234,8 @@ function _updateSubCard(r) {
   // Badge statut
   const statusEl = document.getElementById(`sub-status-${r.id}`);
   if (statusEl) {
-    const statusClass = r.statut === 'Approuv�' ? 'status-paid' : 'status-rejected';
-    const statusIcon  = r.statut === 'Approuv�' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    const statusClass = r.statut === 'Approuve' ? 'status-paid' : 'status-rejected';
+    const statusIcon  = r.statut === 'Approuve' ? 'fas fa-check-circle' : 'fas fa-times-circle';
     statusEl.className = `status-badge ${statusClass}`;
     statusEl.innerHTML = `<i class="${statusIcon}"></i> ${r.statut}`;
   }
@@ -6264,7 +6247,7 @@ function _updateSubCard(r) {
     zone.innerHTML = _buildSubActions(r);
     // Animation flash
     zone.style.transition = 'background 0.4s';
-    zone.style.background = r.statut === 'Approuv�' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
+    zone.style.background = r.statut === 'Approuve' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
     setTimeout(() => { zone.style.background = ''; }, 1200);
   }
 }
@@ -6312,7 +6295,7 @@ function _renderFilteredUsers() {
     list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }
   if (!list.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouv�.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouve.</p></div>';
     return;
   }
   const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
@@ -6333,7 +6316,7 @@ function _renderFilteredUsers() {
         <span class="admin-user-actions">
           <button class="admin-action-btn view" onclick="openUserCommissions(${u.id})" title="Voir commissions"><i class="fas fa-coins"></i></button>
           <button class="admin-action-btn plan" onclick="openChangePlan(${u.id})" title="Changer le plan"><i class="fas fa-crown"></i></button>
-          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'D�sactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
+          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'Desactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
           <button class="admin-action-btn del" onclick="openDeleteUser(${u.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
         </span>
       </div>`;
@@ -6368,12 +6351,12 @@ async function openUserCommissions(userId) {
   } catch(e) {}
   const total   = comms.reduce((s, c) => s + (c.montant||0), 0);
   const pending = comms.filter(c => c.statut === 'En attente').reduce((s, c) => s + (c.montant||0), 0);
-  const paid    = comms.filter(c => c.statut === 'Vers�').reduce((s, c) => s + (c.montant||0), 0);
+  const paid    = comms.filter(c => c.statut === 'Verse').reduce((s, c) => s + (c.montant||0), 0);
   body.innerHTML = `
     <div class="user-comm-summary">
-      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagn�</span></div>
+      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagne</span></div>
       <div class="user-comm-stat"><strong style="color:var(--gold)">${formatAR(pending)}</strong><span>En attente</span></div>
-      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>Vers�</span></div>
+      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>Verse</span></div>
     </div>
     ${comms.length === 0
       ? '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucune commission.</p></div>'
@@ -6387,7 +6370,7 @@ async function openUserCommissions(userId) {
               <span>${c.filleulName||'—'}</span>
               <span><span class="history-type">${c.type}</span></span>
               <span class="green">${formatAR(c.montant)}</span>
-              <span><span class="status-badge ${c.statut==='Vers�'?'status-paid':'status-pending'}">${c.statut}</span></span>
+              <span><span class="status-badge ${c.statut==='Verse'?'status-paid':'status-pending'}">${c.statut}</span></span>
             </div>`).join('')}
         </div>`
     }`;
@@ -6772,7 +6755,7 @@ async function rejectModulePurchase(id) {
   const confirmBtn = document.querySelector('#mpc-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'Rejet�', rejectReason: reason });
+    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'Rejete', rejectReason: reason });
     r.statut = 'Rejet\u00e9';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
@@ -6993,7 +6976,7 @@ async function loadMyPosts() {
   try {
     const posts = await PaganiAPI.getPostsByUser(user.id);
     if (!posts || !posts.length) {
-      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publi�.</p></div>';
+      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publie.</p></div>';
       return;
     }
     container.innerHTML = '';
