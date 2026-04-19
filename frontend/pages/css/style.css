@@ -59,7 +59,6 @@ ul { list-style: none; }
   font-size: 0.88rem;
   white-space: nowrap;
   max-width: 160px;
-  overflow: hidden;
   transition: opacity 0.2s !important;
 }
 .btn-nav img,
@@ -110,7 +109,7 @@ ul { list-style: none; }
 }
 .btn-outline:hover { background: var(--accent); color: #fff; }
 
-/* ===== COIN BITCOIN ANIMÃ‰ ===== */
+/* ===== COIN BITCOIN ANIMÉ ===== */
 .crypto-coin-anim {
   display: flex;
   align-items: center;
@@ -127,7 +126,7 @@ ul { list-style: none; }
   justify-content: center;
 }
 
-/* Halo lumineux derriÃ¨re le coin */
+/* Halo lumineux derrière le coin */
 .coin-glow {
   position: absolute;
   inset: 0;
@@ -210,7 +209,7 @@ ul { list-style: none; }
   .crypto-coin-anim { display: none; }
 }
 
-/* ===== EN-TÃŠTE COMPACT ===== */
+/* ===== EN-TÊTE COMPACT ===== */
 .site-header {
   background: linear-gradient(135deg, var(--bg2) 0%, var(--bg) 100%);
   border-bottom: 1px solid var(--border);
@@ -821,7 +820,7 @@ ul { list-style: none; }
   transition: border-color 0.25s, box-shadow 0.25s, transform 0.2s;
 }
 
-/* En-tÃªte du post */
+/* En-tête du post */
 .post-header {
   display: flex;
   align-items: center;
@@ -876,12 +875,12 @@ ul { list-style: none; }
   margin-top: 0.4rem;
 }
 
-/* Ligne de sÃ©paration entre titre et contenu si image prÃ©sente */
+/* Ligne de séparation entre titre et contenu si image présente */
 .post-body .post-image-wrap:first-child {
   margin-top: 0;
 }
 
-/* Compteurs rÃ©actions */
+/* Compteurs réactions */
 .post-stats {
   display: flex;
   gap: 1.2rem;
@@ -980,7 +979,7 @@ ul { list-style: none; }
   100% { transform: scale(1) rotate(0deg); }
 }
 
-/* Post mis en Ã©vidence depuis une notification */
+/* Post mis en évidence depuis une notification */
 @keyframes postHighlight {
   0%   { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,0.3); }
   50%  { border-color: var(--accent2); box-shadow: 0 0 0 6px rgba(0,212,170,0.2); }
@@ -991,7 +990,7 @@ ul { list-style: none; }
   border-color: var(--accent) !important;
 }
 
-/* Animation d'entrÃ©e des posts */
+/* Animation d'entrée des posts */
 @keyframes postFadeIn {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -1092,7 +1091,7 @@ ul { list-style: none; }
 .comment-footer { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.35rem; }
 .comment-time { font-size: 0.72rem; color: var(--text2); opacity: 0.7; }
 
-/* Bouton RÃ©pondre */
+/* Bouton Répondre */
 .reply-btn {
   background: transparent;
   border: none;
@@ -1116,7 +1115,7 @@ ul { list-style: none; }
   font-size: 0.85rem;
 }
 
-/* RÃ©ponses (sous-commentaires) */
+/* Réponses (sous-commentaires) */
 .replies-list {
   display: flex;
   flex-direction: column;
@@ -1135,11 +1134,11 @@ ul { list-style: none; }
   border: 1px solid rgba(108,99,255,0.12);
 }
 
-/* Avatar extra-small pour les rÃ©ponses */
+/* Avatar extra-small pour les réponses */
 .avatar-xs { width: 26px !important; height: 26px !important; font-size: 0.62rem !important; flex-shrink: 0; }
 .avatar-photo.avatar-xs { width: 26px; height: 26px; }
 
-/* Zone de saisie de rÃ©ponse */
+/* Zone de saisie de réponse */
 .reply-input-row {
   display: flex;
   gap: 0.5rem;
@@ -1571,7 +1570,7 @@ ul { list-style: none; }
   .admin-users-filters { flex-wrap: wrap; }
 }
 
-/* ===== ACTUALITÃ‰S (ancien style conservÃ© pour admin panel) ===== */
+/* ===== ACTUALITÉS (ancien style conservé pour admin panel) ===== */
 .admin-panel {
   background: var(--bg3);
   border: 1px solid var(--accent);
@@ -2311,7 +2310,7 @@ ul { list-style: none; }
 @media (max-width: 480px) {
   .notif-panel { right: 0.5rem; width: calc(100vw - 1rem); }
 }
-/* Modal vidÃ©o amÃ©liorÃ© */
+/* Modal vidéo amélioré */
 .video-modal { max-width: 540px; gap: 0.9rem; }
 
 .video-modal-header {
@@ -2403,7 +2402,7 @@ ul { list-style: none; }
   margin-top: 0.2rem;
 }
 
-/* ===== GESTION VIDÃ‰OS ADMIN ===== */
+/* ===== GESTION VIDÉOS ADMIN ===== */
 .video-admin-filters {
   display: flex;
   gap: 0.6rem;
@@ -2512,7 +2511,7 @@ ul { list-style: none; }
 }
 .video-action-btn.delete:hover { background: rgba(255,77,109,0.25); }
 
-/* Toggle accÃ¨s dans le modal */
+/* Toggle accès dans le modal */
 .video-access-toggle {
   display: flex;
   align-items: center;
@@ -2570,7 +2569,7 @@ ul { list-style: none; }
 
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
-  /* â”€â”€ Navbar â”€â”€ */
+  /* ── Navbar ── */
   .navbar { padding: 0.75rem 4%; position: relative; }
   .nav-links {
     display: none;
@@ -2593,7 +2592,7 @@ ul { list-style: none; }
   .btn-nav { max-width: 120px; padding: 0.35rem 0.7rem; font-size: 0.82rem; }
   .btn-nav span.nav-name { max-width: 60px; }
 
-  /* â”€â”€ Header â”€â”€ */
+  /* ── Header ── */
   .site-header { padding: 1.5rem 4%; }
   .site-header-inner { flex-direction: column; align-items: flex-start; gap: 1rem; }
   .site-header-text h1 { font-size: 1.5rem; }
@@ -2602,13 +2601,13 @@ ul { list-style: none; }
   .site-header-btns .btn-primary,
   .site-header-btns .btn-outline { width: 100%; text-align: center; justify-content: center; }
 
-  /* â”€â”€ Affiliation â”€â”€ */
+  /* ── Affiliation ── */
   .steps { flex-direction: column; align-items: center; }
   .step-arrow { transform: rotate(90deg); }
   .comm-header, .comm-row { grid-template-columns: 1fr 1fr; font-size: 0.8rem; }
   .comm-header span:nth-child(3), .comm-row span:nth-child(3) { display: none; }
 
-  /* â”€â”€ Dashboard â”€â”€ */
+  /* ── Dashboard ── */
   .dashboard-header { flex-direction: column; align-items: flex-start; padding: 1.5rem 4% 0.8rem; }
   .dashboard-header h1 { font-size: 1.4rem; }
   .user-plan { flex-wrap: wrap; gap: 0.6rem; }
@@ -2617,13 +2616,13 @@ ul { list-style: none; }
   .dash-stat strong { font-size: 1.1rem; }
   .dash-section { padding: 1rem 4%; }
 
-  /* â”€â”€ Feed â”€â”€ */
+  /* ── Feed ── */
   .feed-section { padding: 1.2rem 4%; }
   .feed-layout { grid-template-columns: 1fr; gap: 1rem; }
   .feed-sidebar { position: static; }
   .sidebar-card { padding: 1rem; }
 
-  /* â”€â”€ Profil â”€â”€ */
+  /* ── Profil ── */
   .profile-section { padding: 1rem 4%; }
   .profile-body { flex-direction: column; }
   .profile-card { max-width: 100%; }
@@ -2631,17 +2630,17 @@ ul { list-style: none; }
   .profile-stats { flex-wrap: wrap; }
   .profile-stat { min-width: 80px; }
 
-  /* â”€â”€ Tabs â”€â”€ */
+  /* ── Tabs ── */
   .dash-tabs { overflow-x: auto; padding-bottom: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
   .dash-tabs::-webkit-scrollbar { display: none; }
   .dash-tab { white-space: nowrap; font-size: 0.8rem; padding: 0.5rem 0.8rem; }
 
-  /* â”€â”€ Footer â”€â”€ */
+  /* ── Footer ── */
   .footer { padding: 1.5rem 4%; }
   .footer-content { flex-direction: column; align-items: center; text-align: center; gap: 0.8rem; }
 }
 
-/* â”€â”€ Barre d'outils Ã©diteur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Barre d'outils éditeur ─────────────────────────────── */
 .editor-toolbar {
   display: flex;
   align-items: center;
@@ -2671,7 +2670,7 @@ ul { list-style: none; }
   margin-left: auto;
 }
 
-/* â”€â”€ Liens auto-dÃ©tectÃ©s dans les posts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Liens auto-détectés dans les posts ─────────────────── */
 .post-auto-link {
   color: var(--accent);
   text-decoration: underline;
@@ -2681,7 +2680,7 @@ ul { list-style: none; }
 }
 .post-auto-link:hover { color: var(--accent2); }
 
-/* â”€â”€ Onglets Ã©diteur admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Onglets éditeur admin ───────────────────────────────── */
 .admin-panel-header {
   display: flex;
   align-items: center;
@@ -2715,7 +2714,7 @@ ul { list-style: none; }
 }
 .admin-tab-btn:hover:not(.active) { background: rgba(255,255,255,0.05); }
 
-/* â”€â”€ Zone textarea avec compteur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Zone textarea avec compteur ────────────────────────── */
 .editor-wrap { position: relative; }
 .editor-wrap textarea {
   width: 100%;
@@ -2738,7 +2737,7 @@ ul { list-style: none; }
   margin: 0 0.2rem;
 }
 
-/* â”€â”€ AperÃ§u Ã©diteur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Aperçu éditeur ─────────────────────────────────────── */
 .editor-preview-box {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -2752,7 +2751,7 @@ ul { list-style: none; }
 .editor-preview-box p { margin: 0 0 0.5rem; }
 .editor-preview-box p:last-child { margin-bottom: 0; }
 
-/* â”€â”€ Modal lien & emoji â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Modal lien & emoji ─────────────────────────────────── */
 .link-modal {
   position: fixed;
   inset: 0;
@@ -2788,7 +2787,7 @@ ul { list-style: none; }
 }
 .link-modal-box input:focus { outline: none; border-color: var(--accent); }
 
-/* â”€â”€ Grille emoji â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Grille emoji ───────────────────────────────────────── */
 .emoji-grid {
   display: grid !important;
   grid-template-columns: repeat(4, 1fr);
@@ -2807,7 +2806,7 @@ ul { list-style: none; }
 }
 .emoji-grid button:hover { background: rgba(108,99,255,0.15); }
 
-/* â”€â”€ Bouton emoji commentaire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bouton emoji commentaire ───────────────────────────── */
 .comment-emoji-btn {
   background: transparent;
   border: none;
@@ -2821,7 +2820,7 @@ ul { list-style: none; }
 }
 .comment-emoji-btn:hover { color: var(--accent); transform: scale(1.2); }
 
-/* â”€â”€ Picker emoji commentaire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Picker emoji commentaire ───────────────────────────── */
 .comment-emoji-picker {
   position: absolute;
   bottom: calc(100% + 6px);
@@ -2849,11 +2848,11 @@ ul { list-style: none; }
 }
 .comment-emoji-picker button:hover { background: rgba(108,99,255,0.15); }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   FORMATIONS â€” Design moderne
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   FORMATIONS — Design moderne
+══════════════════════════════════════════════════════════ */
 
-/* â”€â”€ Hero â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Hero ─────────────────────────────────────────────── */
 .formations-hero {
   background: linear-gradient(160deg, rgba(108,99,255,0.08) 0%, transparent 60%),
               radial-gradient(ellipse at 80% 50%, rgba(0,212,170,0.06) 0%, transparent 60%);
@@ -2900,7 +2899,7 @@ ul { list-style: none; }
 .fh-stat strong { font-size: 1.6rem; font-weight: 800; color: var(--text); }
 .fh-stat span { font-size: 0.78rem; color: var(--text2); }
 
-/* â”€â”€ Barre de recherche â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Barre de recherche ───────────────────────────────── */
 .formations-search-wrap {
   flex: 0 0 340px;
   position: relative;
@@ -2943,7 +2942,7 @@ ul { list-style: none; }
 }
 .search-clear:hover { color: var(--red); }
 
-/* â”€â”€ Suggestions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Suggestions ──────────────────────────────────────── */
 .search-suggestions {
   position: absolute;
   top: calc(100% + 6px);
@@ -2975,7 +2974,7 @@ ul { list-style: none; }
   border-radius: 4px;
 }
 
-/* â”€â”€ Toolbar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Toolbar ──────────────────────────────────────────── */
 .formations-toolbar {
   display: flex;
   align-items: center;
@@ -2998,7 +2997,7 @@ ul { list-style: none; }
 .view-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 .view-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 
-/* â”€â”€ BanniÃ¨re rÃ©sultat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bannière résultat ────────────────────────────────── */
 .search-result-banner {
   display: flex;
   align-items: center;
@@ -3014,7 +3013,7 @@ ul { list-style: none; }
 .search-result-banner strong { color: var(--accent); }
 .search-result-banner em { color: var(--text); font-style: normal; }
 
-/* â”€â”€ Grille amÃ©liorÃ©e â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Grille améliorée ─────────────────────────────────── */
 .courses-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -3025,14 +3024,14 @@ ul { list-style: none; }
   gap: 0.8rem;
 }
 
-/* Animation entrÃ©e */
+/* Animation entrée */
 @keyframes courseIn {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .course-animate { animation: courseIn 0.3s ease both; }
 
-/* â”€â”€ Carte grille â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Carte grille ─────────────────────────────────────── */
 .course-card {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -3122,7 +3121,7 @@ ul { list-style: none; }
 .course-meta span { display: flex; align-items: center; gap: 0.3rem; }
 .course-meta i { color: var(--accent); font-size: 0.72rem; }
 
-/* â”€â”€ Vue liste â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Vue liste ────────────────────────────────────────── */
 .course-list-item {
   display: flex !important;
   align-items: center;
@@ -3161,7 +3160,7 @@ ul { list-style: none; }
   font-weight: 600;
 }
 
-/* â”€â”€ Ã‰tat vide â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── État vide ────────────────────────────────────────── */
 .courses-empty {
   flex-direction: column;
   align-items: center;
@@ -3175,7 +3174,7 @@ ul { list-style: none; }
 .courses-empty h3 { font-size: 1.1rem; color: var(--text); }
 .courses-empty p { font-size: 0.9rem; }
 
-/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Responsive ───────────────────────────────────────── */
 @media (max-width: 768px) {
   .formations-hero-inner { flex-direction: column; gap: 1.5rem; }
   .formations-search-wrap { flex: 1 1 100%; }
@@ -3186,7 +3185,7 @@ ul { list-style: none; }
   .course-list-action .btn-primary { width: 100%; justify-content: center; }
 }
 
-/* â”€â”€ Thumbnail vidÃ©o â€” formulaire admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Thumbnail vidéo — formulaire admin ─────────────────── */
 .thumbnail-input-wrap { display: flex; flex-direction: column; gap: 0.6rem; }
 .thumbnail-preview {
   position: relative;
@@ -3233,7 +3232,7 @@ ul { list-style: none; }
 }
 .thumbnail-actions input[type="url"]:focus { outline: none; border-color: var(--accent); }
 
-/* â”€â”€ Thumbnail dans les cartes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Thumbnail dans les cartes ───────────────────────────── */
 .course-thumb { position: relative; overflow: hidden; }
 .course-thumb img {
   width: 100%; height: 100%;
@@ -3244,7 +3243,7 @@ ul { list-style: none; }
 }
 .course-card:hover .course-thumb img { transform: scale(1.05); }
 
-/* â”€â”€ Bouton play visible â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bouton play visible ─────────────────────────────────── */
 .play-overlay {
   position: absolute;
   inset: 0;
@@ -3283,9 +3282,9 @@ ul { list-style: none; }
   color: #fff;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    MODALE UPGRADE DE PLAN
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+══════════════════════════════════════════════════════════ */
 .upgrade-modal {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -3321,7 +3320,7 @@ ul { list-style: none; }
 }
 .upgrade-modal-close:hover { background: var(--red); color: #fff; border-color: var(--red); }
 
-/* â”€â”€ Guest â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Guest ─────────────────────────────────────────────── */
 .upgrade-guest {
   padding: 1.5rem 2rem;
   display: flex;
@@ -3329,7 +3328,7 @@ ul { list-style: none; }
   gap: 0.8rem;
 }
 
-/* â”€â”€ Plans â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Plans ─────────────────────────────────────────────── */
 .upgrade-plans {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -3387,7 +3386,7 @@ ul { list-style: none; }
 .upgrade-plan-btn.elite { background: linear-gradient(135deg, #f59e0b, #ef4444); }
 .upgrade-plan-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
-/* â”€â”€ Paiement â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Paiement ───────────────────────────────────────────── */
 .upgrade-payment { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.2rem; }
 .upgrade-payment-header { display: flex; align-items: center; gap: 0.8rem; }
 .upgrade-back-btn {
@@ -3449,7 +3448,7 @@ ul { list-style: none; }
 }
 .upgrade-input:focus { outline: none; border-color: var(--accent); }
 
-/* â”€â”€ SuccÃ¨s â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Succès ─────────────────────────────────────────────── */
 .upgrade-success {
   padding: 2rem;
   flex-direction: column;
@@ -3465,7 +3464,7 @@ ul { list-style: none; }
   .upgrade-modal { border-radius: 16px; }
 }
 
-/* â”€â”€ SÃ©lecteur numÃ©ros admin (cartes cliquables) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sélecteur numéros admin (cartes cliquables) ─────────── */
 .upgrade-admin-mm-selector {
   display: flex;
   flex-direction: column;
@@ -3567,7 +3566,7 @@ ul { list-style: none; }
   line-height: 1.5;
 }
 
-/* â”€â”€ Instruction envoi MM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Instruction envoi MM ────────────────────────────── */
 .upgrade-mm-instruction {
   display: flex;
   align-items: flex-start;
@@ -3584,7 +3583,7 @@ ul { list-style: none; }
 .upgrade-mm-instruction strong { color: var(--text); }
 .upgrade-mm-instruction em { font-style: normal; }
 
-/* â”€â”€ Notices (info / warning) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Notices (info / warning) ────────────────────────── */
 .upgrade-mm-notice {
   display: flex;
   align-items: flex-start;
@@ -3606,7 +3605,7 @@ ul { list-style: none; }
 }
 .upgrade-mm-notice-warn i { color: var(--red); }
 
-/* â”€â”€ Label formulaire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Label formulaire ───────────────────────────────── */
 .upgrade-form-label {
   display: block;
   font-size: 0.8rem;
@@ -3616,7 +3615,7 @@ ul { list-style: none; }
 }
 .upgrade-form-manual { display: flex; flex-direction: column; gap: 0.3rem; }
 
-/* â”€â”€ SÃ©lecteur compte MM utilisateur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sélecteur compte MM utilisateur ────────────────────────── */
 .upgrade-user-mm-selector {
   display: flex;
   flex-direction: column;
@@ -3679,7 +3678,7 @@ ul { list-style: none; }
 }
 .upgrade-user-mm-option input:checked + .upgrade-user-mm-card .upgrade-user-mm-check { opacity: 1; }
 
-/* Compte unique (pas de sÃ©lecteur) */
+/* Compte unique (pas de sélecteur) */
 .upgrade-user-mm-single {
   display: flex;
   align-items: center;
@@ -3734,7 +3733,7 @@ ul { list-style: none; }
 }
 .mm-register-hint strong { color: var(--red); }
 
-/* â”€â”€ SÃ©lecteur opÃ©rateur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sélecteur opérateur ─────────────────────────────────── */
 .mm-operator-select {
   display: flex;
   gap: 0.5rem;
@@ -3763,7 +3762,7 @@ ul { list-style: none; }
 }
 .mm-op-btn:hover { border-color: var(--accent2); }
 
-/* â”€â”€ Affichage MM verrouillÃ© â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Affichage MM verrouillé ─────────────────────────────── */
 .mm-locked-display {
   display: flex;
   align-items: center;
@@ -3777,7 +3776,7 @@ ul { list-style: none; }
 }
 .mm-locked-display i { flex-shrink: 0; }
 
-/* â”€â”€ Section comptes Mobile Money profil â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Section comptes Mobile Money profil ────────────────── */
 .mm-accounts-section {
   border-top: 1px solid var(--border);
   padding: 1.4rem 1.5rem;
@@ -3806,7 +3805,7 @@ ul { list-style: none; }
   border-radius: 50px;
 }
 
-/* â”€â”€ Ligne compte MM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Ligne compte MM ─────────────────────────────────────── */
 .mm-account-row {
   display: flex;
   align-items: center;
@@ -3865,7 +3864,7 @@ ul { list-style: none; }
 }
 .mm-add-btn:hover { background: rgba(108,99,255,0.2); }
 
-/* â”€â”€ SÃ©lecteur MM retrait â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sélecteur MM retrait ────────────────────────────────── */
 .withdraw-mm-selector {
   display: flex;
   flex-direction: column;
@@ -3926,7 +3925,7 @@ ul { list-style: none; }
 .withdraw-mm-none i { color: var(--red); }
 .withdraw-mm-none a { color: var(--accent); }
 
-/* â”€â”€ Highlight section MM quand naviguÃ© depuis affiliation â”€â”€ */
+/* ── Highlight section MM quand navigué depuis affiliation ── */
 @keyframes mmHighlight {
   0%   { box-shadow: 0 0 0 3px rgba(108,99,255,0.5); }
   100% { box-shadow: none; }
@@ -3936,7 +3935,7 @@ ul { list-style: none; }
   border-radius: 14px;
 }
 
-/* â”€â”€ Section comptes paiement admin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Section comptes paiement admin ─────────────────────── */
 .admin-payment-section {
   background: var(--bg2);
   border: 1px solid var(--border);
@@ -4018,9 +4017,9 @@ ul { list-style: none; }
   border-radius: 50px;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ADMIN â€” Navigation interne + tableau utilisateurs complet
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ADMIN — Navigation interne + tableau utilisateurs complet
+══════════════════════════════════════════════════════════ */
 
 /* Sous-navigation admin */
 .admin-subnav {
@@ -4234,11 +4233,11 @@ ul { list-style: none; }
   .admin-users-search { max-width: 100%; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   COMPTES DE PAIEMENT ADMIN â€” Ã©tats dÃ©sactivÃ© / actif
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   COMPTES DE PAIEMENT ADMIN — états désactivé / actif
+══════════════════════════════════════════════════════════ */
 
-/* Badge dÃ©sactivÃ© */
+/* Badge désactivé */
 .pay-disabled-badge {
   display: inline-flex;
   align-items: center;
@@ -4256,7 +4255,7 @@ ul { list-style: none; }
   text-overflow: ellipsis;
 }
 
-/* Ligne dÃ©sactivÃ©e â€” fond lÃ©gÃ¨rement teintÃ© */
+/* Ligne désactivée — fond légèrement teinté */
 .admin-payment-row:has(.pay-disabled-badge) {
   background: rgba(255,77,109,0.03);
   border-left: 3px solid rgba(255,77,109,0.35);
@@ -4294,9 +4293,9 @@ ul { list-style: none; }
   background: rgba(108,99,255,0.08);
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ADMIN â€” Section Abonnements
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ADMIN — Section Abonnements
+══════════════════════════════════════════════════════════ */
 
 /* Badge compteur sur l'onglet subnav */
 .admin-subnav-badge {
@@ -4332,7 +4331,7 @@ ul { list-style: none; }
   border-left: 3px solid var(--gold);
 }
 
-/* En-tÃªte de la carte */
+/* En-tête de la carte */
 .sub-card-header {
   display: flex;
   align-items: center;
@@ -4367,13 +4366,13 @@ ul { list-style: none; }
   font-weight: 700;
 }
 
-/* Badge statut rejetÃ© */
+/* Badge statut rejeté */
 .status-rejected {
   background: rgba(255,77,109,0.12);
   color: var(--red);
 }
 
-/* DÃ©tails de la demande */
+/* Détails de la demande */
 .sub-card-details {
   display: flex;
   gap: 0;
@@ -4468,9 +4467,9 @@ ul { list-style: none; }
   .sub-detail-item { min-width: 100px; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ABONNEMENTS â€” Modales inline approbation / rejet
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ABONNEMENTS — Modales inline approbation / rejet
+══════════════════════════════════════════════════════════ */
 
 /* Conteneur modale inline */
 .sub-inline-modal {
@@ -4491,7 +4490,7 @@ ul { list-style: none; }
   border: 1px solid rgba(255,77,109,0.2);
 }
 
-/* En-tÃªte de la modale inline */
+/* En-tête de la modale inline */
 .sub-inline-header {
   display: flex;
   align-items: flex-start;
@@ -4501,7 +4500,7 @@ ul { list-style: none; }
 .sub-inline-header strong { display: block; font-size: 0.92rem; font-weight: 700; margin-bottom: 0.2rem; }
 .sub-inline-header p { font-size: 0.83rem; color: var(--text2); margin: 0; line-height: 1.5; }
 
-/* Raisons prÃ©dÃ©finies rejet */
+/* Raisons prédéfinies rejet */
 .sub-reject-reason-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
 .sub-reject-presets { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
@@ -4551,11 +4550,11 @@ ul { list-style: none; }
   .sub-inline-cancel, .sub-inline-confirm { flex: 1; justify-content: center; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ══════════════════════════════════════════════════════════
    ONGLET ABONNEMENT UTILISATEUR
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+══════════════════════════════════════════════════════════ */
 
-/* En-tÃªte */
+/* En-tête */
 .sub-user-header {
   display: flex;
   align-items: flex-start;
@@ -4597,7 +4596,7 @@ ul { list-style: none; }
 .sub-current-name  { font-size: 1.3rem; font-weight: 800; line-height: 1.2; }
 .sub-current-desc  { font-size: 0.82rem; color: var(--text2); margin-top: 0.2rem; }
 
-/* Ã‰tat vide */
+/* État vide */
 .sub-user-empty {
   text-align: center;
   padding: 3rem 1rem;
@@ -4620,7 +4619,7 @@ ul { list-style: none; }
 .sub-user-rejected { border-left: 3px solid var(--red); }
 .sub-user-pending  { border-left: 3px solid var(--gold); }
 
-/* En-tÃªte carte */
+/* En-tête carte */
 .sub-user-card-header {
   display: flex;
   align-items: center;
@@ -4631,7 +4630,7 @@ ul { list-style: none; }
   gap: 0.5rem;
 }
 
-/* DÃ©tails paiement */
+/* Détails paiement */
 .sub-user-details {
   display: flex;
   flex-wrap: wrap;
@@ -4724,9 +4723,9 @@ ul { list-style: none; }
   .sub-user-status-msg > a { width: 100%; justify-content: center; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   HIGHLIGHT TRANSACTION â€” notification abonnement
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   HIGHLIGHT TRANSACTION — notification abonnement
+══════════════════════════════════════════════════════════ */
 
 /* Animation commune admin + utilisateur */
 @keyframes subHighlight {
@@ -4743,7 +4742,7 @@ ul { list-style: none; }
   z-index: 1;
 }
 
-/* Trait colorÃ© Ã  gauche pendant le highlight */
+/* Trait coloré à gauche pendant le highlight */
 .sub-highlight::before {
   content: '';
   position: absolute;
@@ -4754,9 +4753,9 @@ ul { list-style: none; }
   animation: subHighlight 3.5s ease forwards;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ADMIN â€” Gestion des Tarifs
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ADMIN — Gestion des Tarifs
+══════════════════════════════════════════════════════════ */
 .pricing-admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -4799,9 +4798,9 @@ ul { list-style: none; }
   font-size: 0.9rem;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ACHAT VIDÃ‰O Ã€ L'UNITÃ‰
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ACHAT VIDÉO À L'UNITÉ
+══════════════════════════════════════════════════════════ */
 
 /* Badge prix unitaire sur les cartes formations */
 .course-unit-price-tag {
@@ -4827,7 +4826,7 @@ ul { list-style: none; }
   display: inline-flex; align-items: center; gap: 0.3rem;
 }
 
-/* Modale achat vidÃ©o */
+/* Modale achat vidéo */
 .buy-video-modal {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -4950,7 +4949,7 @@ ul { list-style: none; }
 .buy-option-btn.unit { background: linear-gradient(135deg, var(--accent2), #00a884); }
 .buy-option-btn.pro  { background: linear-gradient(135deg, var(--accent), #8b5cf6); }
 
-/* Cartes vidÃ©o unitaires sur plans.html */
+/* Cartes vidéo unitaires sur plans.html */
 .unit-video-card {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -5037,9 +5036,9 @@ ul { list-style: none; }
 .unit-videos-showmore i { transition: transform 0.25s; }
 .unit-videos-showmore.open i { transform: rotate(180deg); }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   ADMIN â€” Onglets Tarifs
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   ADMIN — Onglets Tarifs
+══════════════════════════════════════════════════════════ */
 .pricing-tabs {
   display: flex;
   gap: 0.3rem;
@@ -5072,7 +5071,7 @@ ul { list-style: none; }
 }
 .pricing-tab-content { animation: fadeIn 0.2s ease; }
 
-/* â”€â”€ Prix par vidÃ©o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Prix par vidéo ─────────────────────────────────────── */
 .pricing-video-header {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -5125,7 +5124,7 @@ ul { list-style: none; }
   .video-price-row  span:nth-child(3) { display: none; }
 }
 
-/* â”€â”€ Prix par module â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Prix par module ────────────────────────────────────── */
 .module-pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -5180,7 +5179,7 @@ ul { list-style: none; }
 }
 .module-price-row label small { font-weight: 400; opacity: 0.7; }
 
-/* â”€â”€ Commissions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Commissions ────────────────────────────────────────── */
 .comm-pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -5250,7 +5249,7 @@ ul { list-style: none; }
   margin-bottom: 1rem;
 }
 
-/* â”€â”€ Badge accÃ¨s achat unitaire â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Badge accès achat unitaire ─────────────────────────── */
 .access-toggle-btn.unit {
   background: rgba(0,212,170,0.12);
   color: var(--accent2);
@@ -5266,7 +5265,7 @@ ul { list-style: none; }
 }
 .access-toggle-btn.unit:hover { opacity: 0.8; transform: scale(1.04); }
 
-/* â”€â”€ Menu contextuel changement d'accÃ¨s vidÃ©o â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Menu contextuel changement d'accès vidéo ──────────── */
 .access-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -5298,10 +5297,10 @@ ul { list-style: none; }
 .access-menu button:hover { background: rgba(108,99,255,0.1); }
 .access-menu button + button { border-top: 1px solid var(--border); }
 
-/* Position relative sur la cellule accÃ¨s */
+/* Position relative sur la cellule accès */
 .video-admin-row span:nth-child(4) { position: relative; }
 
-/* â”€â”€ Badge acc\u00e8s Abonnement Pro+ dans le modal vid\u00e9o â”€â”€â”€â”€ */
+/* ── Badge acc\u00e8s Abonnement Pro+ dans le modal vid\u00e9o ──── */
 .access-option input:checked + .access-btn.paid {
   border-color: var(--gold);
   color: var(--gold);
@@ -5311,16 +5310,16 @@ ul { list-style: none; }
   box-shadow: 0 0 0 2px rgba(245,158,11,0.3);
 }
 
-/* â”€â”€ Badge prix unitaire sur les cartes (dashboard) â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Badge prix unitaire sur les cartes (dashboard) ─────── */
 .course-lock[style*="accent2"] {
   background: rgba(0,212,170,0.15);
   backdrop-filter: blur(4px);
   font-weight: 700;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   VALIDATION ACHAT VIDÃ‰O â€” DESIGN DYNAMIQUE ADMIN
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════════════════════════════
+   VALIDATION ACHAT VIDÉO — DESIGN DYNAMIQUE ADMIN
+   ═══════════════════════════════════════════════════════════════ */
 
 /* Animations keyframes */
 @keyframes vp-slide-in {
@@ -5356,7 +5355,7 @@ ul { list-style: none; }
   to   { stroke-dashoffset: 0; }
 }
 
-/* â”€â”€ Carte principale â”€â”€ */
+/* ── Carte principale ── */
 .vp-card {
   background: var(--bg3);
   border: 1.5px solid var(--border);
@@ -5372,7 +5371,7 @@ ul { list-style: none; }
   transform: translateY(-1px);
 }
 
-/* Ã‰tats de la carte */
+/* États de la carte */
 .vp-card.vp-pending {
   border-left: 4px solid var(--gold);
   animation: vp-slide-in 0.3s ease both, vp-pulse-gold 2.5s ease-in-out infinite;
@@ -5387,11 +5386,11 @@ ul { list-style: none; }
   opacity: 0.85;
 }
 
-/* Flash aprÃ¨s action */
+/* Flash après action */
 .vp-card.vp-just-approved { animation: vp-approve-flash 0.8s ease forwards; }
 .vp-card.vp-just-rejected  { animation: vp-reject-flash  0.8s ease forwards; }
 
-/* â”€â”€ En-tÃªte de la carte â”€â”€ */
+/* ── En-tête de la carte ── */
 .vp-card-header {
   display: flex;
   align-items: center;
@@ -5416,7 +5415,7 @@ ul { list-style: none; }
   flex-wrap: wrap;
 }
 
-/* Badge "Nouveau" animÃ© */
+/* Badge "Nouveau" animé */
 .vp-new-badge {
   display: inline-flex;
   align-items: center;
@@ -5450,7 +5449,7 @@ ul { list-style: none; }
 }
 .vp-time-ago.vp-urgent { color: var(--gold); font-weight: 600; }
 
-/* â”€â”€ DÃ©tails â”€â”€ */
+/* ── Détails ── */
 .vp-card-details {
   display: flex;
   flex-wrap: wrap;
@@ -5479,7 +5478,7 @@ ul { list-style: none; }
   letter-spacing: 0.02em;
 }
 
-/* â”€â”€ Zone preuve â”€â”€ */
+/* ── Zone preuve ── */
 .vp-proof-zone {
   padding: 0.65rem 1.2rem;
   border-bottom: 1px solid var(--border);
@@ -5518,7 +5517,7 @@ ul { list-style: none; }
 }
 .vp-proof-thumb:hover { transform: scale(1.08); border-color: var(--accent2); }
 
-/* â”€â”€ Zone actions â”€â”€ */
+/* ── Zone actions ── */
 .vp-actions {
   display: flex;
   align-items: center;
@@ -5582,7 +5581,7 @@ ul { list-style: none; }
   transform: translateY(-1px);
 }
 
-/* Ã‰tat loading des boutons */
+/* État loading des boutons */
 .vp-btn-approve.vp-loading,
 .vp-btn-reject.vp-loading {
   pointer-events: none;
@@ -5612,7 +5611,7 @@ ul { list-style: none; }
 }
 .vp-btn-sm-reject:hover { background: rgba(255,77,109,0.16); }
 
-/* â”€â”€ Statut rÃ©sultat (aprÃ¨s action) â”€â”€ */
+/* ── Statut résultat (après action) ── */
 .vp-status-done {
   display: flex;
   align-items: center;
@@ -5623,7 +5622,7 @@ ul { list-style: none; }
 .vp-status-done.approved { color: var(--accent2); }
 .vp-status-done.rejected { color: var(--red); }
 
-/* â”€â”€ Modale de rejet inline â”€â”€ */
+/* ── Modale de rejet inline ── */
 .vp-reject-modal {
   padding: 1rem 1.2rem;
   background: rgba(255,77,109,0.06);
@@ -5700,7 +5699,7 @@ ul { list-style: none; }
 }
 .vp-reject-confirm:hover { opacity: 0.9; transform: translateY(-1px); }
 
-/* â”€â”€ Compteur en-tÃªte section â”€â”€ */
+/* ── Compteur en-tête section ── */
 .vp-section-counter {
   display: flex;
   align-items: center;
@@ -5722,7 +5721,7 @@ ul { list-style: none; }
 .vp-counter-pill.approved { background: rgba(0,212,170,0.1);   color: var(--accent2); border-color: rgba(0,212,170,0.25); }
 .vp-counter-pill.rejected { background: rgba(255,77,109,0.1);  color: var(--red);     border-color: rgba(255,77,109,0.25); }
 
-/* â”€â”€ Skeleton loader â”€â”€ */
+/* ── Skeleton loader ── */
 .vp-skeleton {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -5740,7 +5739,7 @@ ul { list-style: none; }
   margin-bottom: 0.6rem;
 }
 
-/* â”€â”€ Toast notification â”€â”€ */
+/* ── Toast notification ── */
 .vp-toast {
   position: fixed;
   bottom: 1.5rem;
@@ -5771,7 +5770,7 @@ ul { list-style: none; }
 }
 
 
-/* ===== MODALE CONFIRMATION ACHAT VIDÃ‰O ===== */
+/* ===== MODALE CONFIRMATION ACHAT VIDÉO ===== */
 @keyframes vp-confirm-in {
   from { opacity:0; transform:scale(0.85) translateY(20px); }
   to   { opacity:1; transform:scale(1)    translateY(0); }
@@ -5918,11 +5917,11 @@ ul { list-style: none; }
   box-shadow: 0 4px 14px rgba(239,68,68,0.35);
 }
 
-/* Ligne dÃ©corative sous l'icÃ´ne */
+/* Ligne décorative sous l'icône */
 .vp-confirm-box.vp-confirm-approve .vp-confirm-title { color: #22c55e; }
 .vp-confirm-box.vp-confirm-reject  .vp-confirm-title { color: var(--red); }
 
-/* â”€â”€ POST IMAGE LAZY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── POST IMAGE LAZY ─────────────────────────────── */
 .post-image-wrap { margin: 0.8rem 0; border-radius: 10px; overflow: hidden; }
 .post-image-lazy { display: block; width: 100%; border-radius: 10px; transition: opacity 0.3s; }
 .post-image-lazy[src=""] { opacity: 0; }
@@ -5941,7 +5940,7 @@ ul { list-style: none; }
   flex-wrap: wrap;
 }
 
-/* â”€â”€ Mur de connexion affiliation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Mur de connexion affiliation ───────────────────────── */
 .aff-login-wall {
   text-align: center;
   padding: 3.5rem 2rem;
@@ -5975,9 +5974,9 @@ ul { list-style: none; }
   flex-wrap: wrap;
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MESSAGERIE PRIVÃ‰E
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ══════════════════════════════════════════════════════════
+   MESSAGERIE PRIVÉE
+══════════════════════════════════════════════════════════ */
 
 /* Conteneur principal */
 .msg-layout {
@@ -5990,7 +5989,7 @@ ul { list-style: none; }
   box-shadow: 0 4px 24px rgba(0,0,0,0.18);
 }
 
-/* â”€â”€ Colonne conversations â”€â”€ */
+/* ── Colonne conversations ── */
 .msg-conv-col {
   width: 280px;
   min-width: 240px;
@@ -6089,7 +6088,7 @@ ul { list-style: none; }
 }
 .msg-conv-empty i { font-size: 1.8rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
 
-/* â”€â”€ Zone chat â”€â”€ */
+/* ── Zone chat ── */
 .msg-chat-col {
   flex: 1;
   display: flex;
@@ -6098,7 +6097,7 @@ ul { list-style: none; }
   background: var(--bg3);
 }
 
-/* En-tÃªte chat */
+/* En-tête chat */
 .msg-chat-header {
   display: flex;
   align-items: center;
@@ -6151,7 +6150,7 @@ ul { list-style: none; }
 }
 .msg-chat-back-btn:hover { color: var(--accent); background: rgba(108,99,255,0.1); }
 
-/* Ã‰tat vide (aucune conv sÃ©lectionnÃ©e) */
+/* État vide (aucune conv sélectionnée) */
 .msg-chat-empty {
   flex: 1;
   display: flex;
@@ -6232,11 +6231,11 @@ ul { list-style: none; }
 .msg-bubble-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .msg-bubble-row.mine .msg-bubble-avatar { display: none; }
 
-/* Groupe de messages consÃ©cutifs */
+/* Groupe de messages consécutifs */
 .msg-bubble-row + .msg-bubble-row.mine .msg-bubble.mine { border-bottom-right-radius: 16px; }
 .msg-bubble-row + .msg-bubble-row:not(.mine) .msg-bubble.theirs { border-bottom-left-radius: 16px; }
 
-/* SÃ©parateur de date */
+/* Séparateur de date */
 .msg-date-sep {
   text-align: center;
   font-size: 0.72rem;
@@ -6316,7 +6315,7 @@ ul { list-style: none; }
 .msg-loading span:nth-child(2) { animation-delay: 0.2s; }
 .msg-loading span:nth-child(3) { animation-delay: 0.4s; }
 
-/* â”€â”€ Page messages dÃ©diÃ©e (messages.html) â”€â”€ */
+/* ── Page messages dédiée (messages.html) ── */
 .msg-page-body {
   display: flex;
   flex-direction: column;
@@ -6325,7 +6324,7 @@ ul { list-style: none; }
 }
 .msg-page-body .footer { margin-top: auto; }
 
-/* Layout plein Ã©cran */
+/* Layout plein écran */
 .msg-page-layout {
   flex: 1;
   display: flex;
@@ -6400,7 +6399,7 @@ ul { list-style: none; }
   min-width: 0;
 }
 
-/* En-tÃªte chat page dÃ©diÃ©e */
+/* En-tête chat page dédiée */
 .msg-page-chat-header {
   display: flex;
   align-items: center;
@@ -6419,7 +6418,7 @@ ul { list-style: none; }
 }
 .msg-profile-link:hover { color: var(--accent); }
 
-/* Ã‰tat vide page dÃ©diÃ©e */
+/* État vide page dédiée */
 .msg-page-empty {
   flex: 1;
   display: flex;
@@ -6445,7 +6444,7 @@ ul { list-style: none; }
 .msg-page-empty-inner h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
 .msg-page-empty-inner p { font-size: 0.88rem; color: var(--text2); line-height: 1.6; }
 
-/* Zone de saisie page dÃ©diÃ©e */
+/* Zone de saisie page dédiée */
 .msg-page-input-area {
   padding: 1rem 1.2rem;
   border-top: 1px solid var(--border);
@@ -6555,7 +6554,7 @@ ul { list-style: none; }
   .msg-page-body .footer { display: none; }
 }
 
-/* â”€â”€ Responsive messagerie â”€â”€ */
+/* ── Responsive messagerie ── */
 @media (max-width: 640px) {
   .msg-layout {
     height: calc(100vh - 200px);
@@ -6586,10 +6585,10 @@ ul { list-style: none; }
   .msg-bubble { max-width: 82%; }
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   MESSAGERIE PAGE DÃ‰DIÃ‰E â€” Design dynamique (mpx-*)
+/* ══════════════════════════════════════════════════════════
+   MESSAGERIE PAGE DÉDIÉE — Design dynamique (mpx-*)
    messages.html
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+══════════════════════════════════════════════════════════ */
 
 /* Corps */
 .msg-page-body { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
@@ -6608,7 +6607,7 @@ ul { list-style: none; }
   min-height: 480px;
 }
 
-/* â”€â”€ SIDEBAR â”€â”€ */
+/* ── SIDEBAR ── */
 .mpx-sidebar {
   width: 300px;
   min-width: 260px;
@@ -6722,6 +6721,7 @@ ul { list-style: none; }
 
 /* Avatar conversation */
 .mpx-conv-av { position: relative; flex-shrink: 0; }
+.mpx-conv-av--online::after { content: ""; position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px; background: var(--accent2); border-radius: 50%; border: 2px solid var(--bg2); }
 .mpx-conv-av img,
 .mpx-conv-av .avatar-circle {
   width: 44px; height: 44px;
@@ -6770,8 +6770,30 @@ ul { list-style: none; }
   align-self: flex-start;
   margin-top: 0.1rem;
 }
+.mpx-conv-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 0.2rem;
+}
+.mpx-conv-presence-slot {
+  min-height: 0.9rem;
+}
+.mpx-pres-online {
+  font-size: 0.65rem;
+  color: var(--accent2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.mpx-pres-ago {
+  font-size: 0.65rem;
+  color: var(--text2);
+  opacity: 0.75;
+  white-space: nowrap;
+}
 
-/* Ã‰tat vide liste */
+/* État vide liste */
 .mpx-conv-empty {
   text-align: center;
   padding: 2.5rem 1rem;
@@ -6780,7 +6802,7 @@ ul { list-style: none; }
 .mpx-conv-empty i { font-size: 2rem; display: block; margin-bottom: 0.6rem; opacity: 0.25; }
 .mpx-conv-empty p { font-size: 0.82rem; line-height: 1.5; }
 
-/* â”€â”€ ZONE CHAT â”€â”€ */
+/* ── ZONE CHAT ── */
 .mpx-chat {
   flex: 1;
   display: flex;
@@ -6794,7 +6816,7 @@ ul { list-style: none; }
   position: relative;
 }
 
-/* En-tÃªte chat */
+/* En-tête chat */
 .mpx-chat-header {
   display: flex;
   align-items: center;
@@ -6838,13 +6860,16 @@ ul { list-style: none; }
 }
 .mpx-chat-sub {
   font-size: 0.72rem;
-  color: var(--accent2);
+  color: var(--text2);
   display: flex;
   align-items: center;
   gap: 0.3rem;
   margin-top: 0.1rem;
 }
-.mpx-chat-sub::before {
+.mpx-chat-sub--online {
+  color: var(--accent2);
+}
+.mpx-chat-sub--online::before {
   content: '';
   width: 6px; height: 6px;
   background: var(--accent2);
@@ -6861,7 +6886,17 @@ ul { list-style: none; }
 }
 .mpx-profile-btn:hover { color: var(--accent); }
 
-/* Ã‰tat vide chat */
+/* Avatar + nom cliquables dans le header chat */
+.mpx-chat-avatar[href],
+a.mpx-chat-info {
+  text-decoration: none;
+  transition: opacity 0.2s;
+  border-radius: 8px;
+}
+.mpx-chat-avatar[href]:hover { opacity: 0.8; }
+a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
+
+/* État vide chat */
 .mpx-empty {
   flex: 1;
   display: flex;
@@ -6889,10 +6924,11 @@ ul { list-style: none; }
 .mpx-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 1.2rem 1.4rem;
+  overflow-x: hidden;
+  padding: 0.8rem 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
   scroll-behavior: smooth;
 }
 .mpx-messages::-webkit-scrollbar { width: 3px; }
@@ -6902,7 +6938,9 @@ ul { list-style: none; }
 .mpx-bubble-row {
   display: flex;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0;
+  position: relative;
+  width: 100%;
 }
 .mpx-bubble-row.mpx-bubble-new {
   animation: postFadeIn 0.2s ease both;
@@ -6910,12 +6948,15 @@ ul { list-style: none; }
 .mpx-bubble-row.mine { flex-direction: row-reverse; }
 
 .mpx-bubble {
-  max-width: 65%;
+  max-width: 78%;
+  display: inline-block;
+
   padding: 0.6rem 1rem;
   border-radius: 18px;
   font-size: 0.9rem;
   line-height: 1.5;
   word-break: break-word;
+  position: relative;
 }
 .mpx-bubble.theirs {
   background: var(--bg2);
@@ -6942,7 +6983,7 @@ ul { list-style: none; }
 }
 .mpx-bubble.theirs .mpx-bubble-meta { justify-content: flex-start; }
 
-/* Tick unique : envoyé */
+/* Tick unique : envoy� */
 .mpx-tick {
   display: inline-flex;
   align-items: center;
@@ -6967,7 +7008,7 @@ ul { list-style: none; }
   font-weight: 600;
 }
 
-/* Compatibilité: garder mpx-bubble-time pour ancien code */
+/* Compatibilit�: garder mpx-bubble-time pour ancien code */
 .mpx-bubble-time {
   font-size: 0.65rem;
   opacity: 0.55;
@@ -6991,7 +7032,7 @@ ul { list-style: none; }
 .mpx-bubble-av img { width: 100%; height: 100%; object-fit: cover; }
 .mpx-bubble-row.mine .mpx-bubble-av { display: none; }
 
-/* SÃ©parateur de date */
+/* Séparateur de date */
 .mpx-date-sep {
   text-align: center;
   font-size: 0.72rem;
@@ -7122,7 +7163,7 @@ ul { list-style: none; }
 .mpx-loading span:nth-child(2) { animation-delay: 0.2s; }
 .mpx-loading span:nth-child(3) { animation-delay: 0.4s; }
 
-/* â”€â”€ MODAL NOUVEAU MESSAGE â”€â”€ */
+/* ── MODAL NOUVEAU MESSAGE ── */
 .mpx-modal-overlay {
   position: fixed;
   inset: 0;
@@ -7216,7 +7257,7 @@ ul { list-style: none; }
   gap: 0.5rem;
 }
 
-/* RÃ©sultats recherche */
+/* Résultats recherche */
 .mpx-result-item {
   display: flex;
   align-items: center;
@@ -7266,7 +7307,7 @@ ul { list-style: none; }
 }
 .mpx-result-item:hover .mpx-result-arrow { opacity: 1; transform: translateX(2px); }
 
-/* â”€â”€ Mur de connexion â”€â”€ */
+/* ── Mur de connexion ── */
 .mpx-login-wall {
   flex: 1;
   display: flex;
@@ -7299,7 +7340,7 @@ ul { list-style: none; }
 .mpx-login-card h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 0.5rem; }
 .mpx-login-card p { color: var(--text2); font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.6; }
 
-/* â”€â”€ RESPONSIVE MOBILE â”€â”€ */
+/* ── RESPONSIVE MOBILE ── */
 @media (max-width: 860px) {
   .mpx-app { padding: 1rem 3%; height: calc(100vh - 120px); }
   .mpx-sidebar { width: 260px; min-width: 220px; }
@@ -7312,7 +7353,7 @@ ul { list-style: none; }
     overflow: hidden;
     border-radius: 0;
   }
-  /* Sidebar plein écran sur mobile — visible par défaut */
+  /* Sidebar plein �cran sur mobile � visible par d�faut */
   .mpx-sidebar {
     width: 100%;
     min-width: 0;
@@ -7325,7 +7366,7 @@ ul { list-style: none; }
   .mpx-sidebar.msg-hidden {
     display: none;
   }
-  /* Chat plein écran sur mobile — caché par défaut */
+  /* Chat plein �cran sur mobile � cach� par d�faut */
   .mpx-chat {
     position: absolute;
     inset: 0;
@@ -7345,6 +7386,9 @@ ul { list-style: none; }
   .mpx-bubble { max-width: 82%; }
   /* Input area plus compacte */
   .mpx-input-area { padding: 0.7rem 0.8rem; }
+  /* Mobile : padding minimal, bulles plus larges */
+  .mpx-messages { padding: 0.5rem 0.3rem; }
+
 }
 
 
@@ -7404,13 +7448,13 @@ ul { list-style: none; }
   max-width: 680px;
 }
 
-/* Assurer que les post-cards dans ces contextes ont le mÃªme rendu que le feed */
+/* Assurer que les post-cards dans ces contextes ont le même rendu que le feed */
 #myPostsList .post-card,
 #profilePostsList .post-card {
   margin-bottom: 1.2rem;
 }
 
-/* Panneau publication dans le dashboard â€” fond correct */
+/* Panneau publication dans le dashboard — fond correct */
 #tab-myposts .user-post-panel {
   max-width: 680px;
   background: var(--bg3);
@@ -7418,11 +7462,11 @@ ul { list-style: none; }
 
 
 /* =====================================================
-   RESPONSIVE MOBILE — COMPLEMENT GLOBAL
+   RESPONSIVE MOBILE � COMPLEMENT GLOBAL
    Toutes les sections non couvertes ci-dessus
    ===================================================== */
 
-/* ── Formations : hero, filtres, grille ── */
+/* -- Formations : hero, filtres, grille -- */
 @media (max-width: 768px) {
   .formations-hero { padding: 2rem 4% 1.5rem; }
   .formations-hero-inner { flex-direction: column; gap: 1.2rem; }
@@ -7442,7 +7486,7 @@ ul { list-style: none; }
   .page-header h1 { font-size: 1.8rem; }
 }
 
-/* ── Affiliation : steps, tableau commissions, stats ── */
+/* -- Affiliation : steps, tableau commissions, stats -- */
 @media (max-width: 768px) {
   .affiliation-section { padding: 1rem 4% 3rem; }
   .how-it-works h2,
@@ -7465,7 +7509,7 @@ ul { list-style: none; }
   .withdraw-box { max-width: 100%; }
 }
 
-/* ── Plans / Tarifs ── */
+/* -- Plans / Tarifs -- */
 @media (max-width: 768px) {
   .plans { padding: 2.5rem 4%; }
   .plans h2 { font-size: 1.5rem; }
@@ -7477,7 +7521,7 @@ ul { list-style: none; }
   .plans-compact { padding: 1.2rem 4%; }
 }
 
-/* ── Profil public ── */
+/* -- Profil public -- */
 @media (max-width: 768px) {
   .public-profile-page { margin: 1rem auto; padding: 0 4%; }
   .public-profile-header { flex-direction: column; padding: 0 1rem 1rem; gap: 0.8rem; }
@@ -7488,7 +7532,7 @@ ul { list-style: none; }
   .public-actions { padding: 0.8rem 1rem; }
 }
 
-/* ── Admin : tableau vidéos, tarifs, modules ── */
+/* -- Admin : tableau vid�os, tarifs, modules -- */
 @media (max-width: 768px) {
   .video-admin-header,
   .video-admin-row { grid-template-columns: 2fr 1fr 1fr; font-size: 0.8rem; padding: 0.6rem 0.8rem; }
@@ -7509,7 +7553,7 @@ ul { list-style: none; }
   .admin-payment-op { min-width: 100%; }
 }
 
-/* ── Abonnements admin et utilisateur ── */
+/* -- Abonnements admin et utilisateur -- */
 @media (max-width: 768px) {
   .sub-card-header { flex-direction: column; align-items: flex-start; }
   .sub-card-details { flex-direction: column; }
@@ -7522,7 +7566,7 @@ ul { list-style: none; }
   .sub-current-card { flex-direction: column; align-items: flex-start; }
 }
 
-/* ── Achats vidéo admin (vp-card) ── */
+/* -- Achats vid�o admin (vp-card) -- */
 @media (max-width: 768px) {
   .vp-card-header { flex-direction: column; align-items: flex-start; }
   .vp-card-details { flex-direction: column; }
@@ -7532,7 +7576,7 @@ ul { list-style: none; }
   .vp-section-counter { flex-wrap: wrap; }
 }
 
-/* ── Modales upgrade et achat vidéo ── */
+/* -- Modales upgrade et achat vid�o -- */
 @media (max-width: 480px) {
   .upgrade-modal { border-radius: 16px; max-height: 95vh; }
   .upgrade-plans { grid-template-columns: 1fr; padding: 1rem; }
@@ -7544,7 +7588,7 @@ ul { list-style: none; }
   .buy-video-meta { gap: 0.8rem; }
 }
 
-/* ── Auth card ── */
+/* -- Auth card -- */
 @media (max-width: 480px) {
   .auth-section { padding: 1rem; align-items: flex-start; padding-top: 2rem; }
   .auth-card { padding: 1.5rem 1.2rem; border-radius: 14px; }
@@ -7552,14 +7596,14 @@ ul { list-style: none; }
   .mm-op-btn { justify-content: center; }
 }
 
-/* ── Wallet et commissions ── */
+/* -- Wallet et commissions -- */
 @media (max-width: 480px) {
   .wallet-box { max-width: 100%; }
   .wallet-row { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
   .user-comm-summary { flex-direction: column; }
 }
 
-/* ── Post cards sur mobile ── */
+/* -- Post cards sur mobile -- */
 @media (max-width: 480px) {
   .post-header { padding: 0.8rem 0.9rem 0.5rem; }
   .post-body { padding: 0 0.9rem 0.8rem; }
@@ -7571,7 +7615,7 @@ ul { list-style: none; }
   .comment-input-row { gap: 0.4rem; }
 }
 
-/* ── Dashboard : profil, MM accounts ── */
+/* -- Dashboard : profil, MM accounts -- */
 @media (max-width: 480px) {
   .profile-card { border-radius: 14px; }
   .profile-cover { height: 80px; }
@@ -7586,19 +7630,19 @@ ul { list-style: none; }
   .edit-profile-form { padding: 1rem; }
 }
 
-/* ── Notifications panel ── */
+/* -- Notifications panel -- */
 @media (max-width: 480px) {
   .notif-panel { right: 0.3rem; width: calc(100vw - 0.6rem); top: 62px; }
 }
 
-/* ── Crop modal ── */
+/* -- Crop modal -- */
 @media (max-width: 480px) {
   .crop-modal { padding: 1rem; border-radius: 14px; }
   .crop-actions { flex-direction: column; }
   .crop-actions button { width: 100%; }
 }
 
-/* ── Très petits écrans (320px) ── */
+/* -- Tr�s petits �crans (320px) -- */
 @media (max-width: 360px) {
   .navbar { padding: 0.6rem 3%; }
   .logo { font-size: 1.2rem; }
@@ -7610,10 +7654,10 @@ ul { list-style: none; }
 }
 
 /* =====================================================
-   DESIGN AMÉLIORATIONS — UX & DYNAMISME
+   DESIGN AM�LIORATIONS � UX & DYNAMISME
    ===================================================== */
 
-/* ── Étape 1 : Navbar scroll effect + indicateur actif ── */
+/* -- �tape 1 : Navbar scroll effect + indicateur actif -- */
 .navbar {
   transition: background 0.3s ease, box-shadow 0.3s ease, padding 0.3s ease;
 }
@@ -7652,7 +7696,7 @@ ul { list-style: none; }
 }
 .logo:hover { opacity: 0.85; }
 
-/* ── Étape 2 : Boutons — effet brillance + feedback tactile ── */
+/* -- �tape 2 : Boutons � effet brillance + feedback tactile -- */
 .btn-primary {
   position: relative;
   overflow: hidden;
@@ -7682,7 +7726,7 @@ ul { list-style: none; }
 }
 .btn-outline:active { transform: scale(0.97) !important; }
 
-/* ── Étape 3 : Inputs — focus amélioré ── */
+/* -- �tape 3 : Inputs � focus am�lior� -- */
 .form-group input:focus,
 .form-group textarea:focus,
 .upgrade-input:focus,
@@ -7690,7 +7734,7 @@ ul { list-style: none; }
   box-shadow: 0 0 0 3px rgba(108,99,255,0.15);
 }
 
-/* ── Étape 4 : Cards — hover plus prononcé ── */
+/* -- �tape 4 : Cards � hover plus prononc� -- */
 .feature-card:hover,
 .plan-card:hover,
 .trigger-card:hover,
@@ -7709,7 +7753,7 @@ ul { list-style: none; }
   box-shadow: 0 8px 24px rgba(108,99,255,0.15);
 }
 
-/* ── Étape 5 : Footer amélioré ── */
+/* -- �tape 5 : Footer am�lior� -- */
 .footer {
   background: linear-gradient(180deg, var(--bg2) 0%, rgba(10,14,26,0.98) 100%);
   border-top: 1px solid var(--border);
@@ -7749,7 +7793,7 @@ ul { list-style: none; }
   transform: translateY(-3px);
 }
 
-/* ── Étape 6 : Sidebar cards — légère amélioration ── */
+/* -- �tape 6 : Sidebar cards � l�g�re am�lioration -- */
 .sidebar-card {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -7758,7 +7802,7 @@ ul { list-style: none; }
   box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 }
 
-/* ── Étape 7 : Plan cards — badge populaire animé ── */
+/* -- �tape 7 : Plan cards � badge populaire anim� -- */
 .popular {
   animation: badgePop 0.4s ease both;
 }
@@ -7778,7 +7822,7 @@ ul { list-style: none; }
 }
 .plan-card.featured:hover::after { opacity: 0.8; }
 
-/* ── Étape 8 : Scroll to top button ── */
+/* -- �tape 8 : Scroll to top button -- */
 #scrollTopBtn {
   position: fixed;
   bottom: 1.5rem;
@@ -7810,9 +7854,9 @@ ul { list-style: none; }
   #scrollTopBtn { bottom: 1rem; right: 1rem; width: 38px; height: 38px; }
 }
 
-/* ═══════════════════════════════════════════════
+/* -----------------------------------------------
    TOGGLE SWITCH (bouton navbar admin)
-═══════════════════════════════════════════════ */
+----------------------------------------------- */
 .toggle-switch {
   position: relative;
   display: inline-block;
@@ -7852,9 +7896,9 @@ ul { list-style: none; }
   transform: translateX(20px);
 }
 
-/* ═══════════════════════════════════════════════
+/* -----------------------------------------------
    NAVBAR BUTTON ADMIN PREVIEW
-═══════════════════════════════════════════════ */
+----------------------------------------------- */
 .navbar-btn-admin-form {
   max-width: 500px;
   display: flex;
@@ -7919,7 +7963,7 @@ ul { list-style: none; }
 }
 .share-fb-btn i { font-size: 1rem; }
 
-/* ── MESSAGERIE : bouton photo & images ─────────────────────── */
+/* -- MESSAGERIE : bouton photo & images ----------------------- */
 .mpx-photo-btn {
   display: flex;
   align-items: center;
@@ -7945,7 +7989,7 @@ ul { list-style: none; }
   cursor: zoom-in;
 }
 
-/* ── Masquer l'état vide du chat sur mobile (inutile, la sidebar fait office) ── */
+/* -- Masquer l'�tat vide du chat sur mobile (inutile, la sidebar fait office) -- */
 @media (max-width: 580px) {
   #chatEmpty { display: none !important; }
 }
@@ -7954,7 +7998,7 @@ ul { list-style: none; }
   .mpx-profile-btn { display: none !important; }
 }
 
-/* ── Chat : loader pagination (charger messages plus anciens) ── */
+/* -- Chat : loader pagination (charger messages plus anciens) -- */
 .mpx-load-more {
   display: flex;
   justify-content: center;
@@ -8012,3 +8056,607 @@ ul { list-style: none; }
 }
 .post-menu-dropdown button:hover { background: rgba(108,99,255,0.1); }
 .post-menu-dropdown button + button { border-top: 1px solid var(--border); }
+
+/* ===== MENU SUPPRESSION MESSAGE ===== */
+.mpx-msg-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 4px);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 140px;
+  animation: fadeIn 0.12s ease;
+}
+.mpx-msg-menu button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: none;
+  border: none;
+  color: var(--red);
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.mpx-msg-menu button:hover { background: rgba(255,77,109,0.1); }
+.mpx-bubble-row { user-select: none; position: relative; }
+
+
+
+
+/* -- Bouton supprimer message (desktop hover) -- */
+.mpx-bubble.mine { position: relative; }
+/* -- Pr�sence dans la liste des conversations -- */
+.mpx-conv-av { position: relative; flex-shrink: 0; }
+.mpx-online-dot {
+  position: absolute;
+  bottom: 1px; right: 1px;
+  width: 10px; height: 10px;
+  background: var(--accent2);
+  border-radius: 50%;
+  border: 2px solid var(--bg2);
+  pointer-events: none;
+}
+.mpx-conv-presence-slot { font-size: 0.68rem; min-height: 0.9rem; }
+.mpx-pres-online {
+  color: var(--accent2);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.mpx-pres-online::before {
+  content: '';
+  width: 5px; height: 5px;
+  background: var(--accent2);
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   RÉACTIONS SUR LES MESSAGES — Picker + Bulles + Animations
+══════════════════════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes rxPickerIn {
+  from { opacity: 0; transform: scale(0.6) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0); }
+}
+@keyframes rxPickerOut {
+  from { opacity: 1; transform: scale(1)   translateY(0); }
+  to   { opacity: 0; transform: scale(0.6) translateY(8px); }
+}
+@keyframes rxEmojiHover {
+  0%   { transform: scale(1)    translateY(0); }
+  40%  { transform: scale(1.45) translateY(-6px); }
+  70%  { transform: scale(1.35) translateY(-4px); }
+  100% { transform: scale(1.4)  translateY(-5px); }
+}
+@keyframes rxBadgePop {
+  0%   { transform: scale(0) translateY(4px); opacity: 0; }
+  60%  { transform: scale(1.2) translateY(-2px); opacity: 1; }
+  100% { transform: scale(1)   translateY(0);   opacity: 1; }
+}
+@keyframes rxBadgeBounce {
+  0%,100% { transform: scale(1); }
+  30%     { transform: scale(1.3); }
+  60%     { transform: scale(0.9); }
+}
+@keyframes rxRipple {
+  from { transform: scale(0); opacity: 0.5; }
+  to   { transform: scale(2.5); opacity: 0; }
+}
+
+/* ── Wrapper bulle — nécessaire pour positionner le picker ── */
+.mpx-bubble-row { position: relative; }
+
+/* ── Picker d'emojis ── */
+.mpx-reaction-picker {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 200;
+  animation: rxPickerIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+  white-space: nowrap;
+  user-select: none;
+}
+/* Picker à gauche pour les messages reçus, à droite pour les envoyés */
+.mpx-bubble-row:not(.mine) .mpx-reaction-picker { left: 0; }
+.mpx-bubble-row.mine       .mpx-reaction-picker { right: 0; }
+
+/* Petite flèche sous le picker */
+.mpx-reaction-picker::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  width: 10px; height: 6px;
+  background: var(--bg2);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+}
+.mpx-bubble-row:not(.mine) .mpx-reaction-picker::after { left: 16px; }
+.mpx-bubble-row.mine       .mpx-reaction-picker::after { right: 16px; left: auto; }
+
+/* Animation de fermeture */
+.mpx-reaction-picker.closing {
+  animation: rxPickerOut 0.15s ease forwards;
+}
+
+/* ── Bouton emoji dans le picker ── */
+.mpx-rx-emoji-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.45rem;
+  line-height: 1;
+  padding: 2px 3px;
+  border-radius: 50%;
+  transition: transform 0.15s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.mpx-rx-emoji-btn:hover {
+  animation: rxEmojiHover 0.3s ease forwards;
+}
+/* Ripple au clic */
+.mpx-rx-emoji-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  transform: scale(0);
+  opacity: 0;
+  pointer-events: none;
+}
+.mpx-rx-emoji-btn:active::after {
+  animation: rxRipple 0.35s ease forwards;
+}
+/* Emoji déjà sélectionné par l'utilisateur */
+.mpx-rx-emoji-btn.selected {
+  background: rgba(108,99,255,0.18);
+  border-radius: 50%;
+  transform: scale(1.15);
+}
+
+/* ── Zone réactions sous la bulle ── */
+.mpx-bubble-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+/* Alignement selon l'expéditeur */
+.mpx-bubble-row:not(.mine) + .mpx-bubble-reactions { justify-content: flex-start; padding-left: 36px; }
+.mpx-bubble-row.mine + .mpx-bubble-reactions { justify-content: flex-end; }
+
+/* ── Badge réaction individuel ── */
+.mpx-rx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: var(--bg2);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 2px 7px 2px 5px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  animation: rxBadgePop 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  user-select: none;
+  line-height: 1;
+}
+.mpx-rx-badge:hover {
+  border-color: var(--accent);
+  background: rgba(108,99,255,0.1);
+  transform: scale(1.08);
+}
+/* Badge sélectionné (l'utilisateur a réagi avec cet emoji) */
+.mpx-rx-badge.mine-rx {
+  border-color: var(--accent);
+  background: rgba(108,99,255,0.15);
+}
+.mpx-rx-badge.mine-rx:hover {
+  background: rgba(108,99,255,0.25);
+}
+/* Emoji dans le badge */
+.mpx-rx-badge-emoji {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+/* Compteur dans le badge */
+.mpx-rx-badge-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text2);
+  min-width: 10px;
+  text-align: center;
+}
+.mpx-rx-badge.mine-rx .mpx-rx-badge-count { color: var(--accent); }
+
+/* Animation quand le compteur change */
+.mpx-rx-badge-count.bump {
+  animation: rxBadgeBounce 0.3s ease;
+}
+
+/* ── Bouton déclencheur (hover desktop) ── */
+.mpx-rx-trigger {
+  position: absolute;
+  bottom: 4px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text2);
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, transform 0.15s;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  pointer-events: none;
+}
+/* Trigger dans la bulle : messages reçus à droite, envoyés à gauche */
+.mpx-bubble.theirs .mpx-rx-trigger { right: 4px; }
+.mpx-bubble.mine   .mpx-rx-trigger { left: 4px; }
+
+/* Afficher au hover de la ligne */
+.mpx-bubble-row:hover .mpx-bubble .mpx-rx-trigger {
+  opacity: 1;
+  pointer-events: auto;
+}
+.mpx-rx-trigger:hover {
+  background: rgba(108,99,255,0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.15);
+  opacity: 1;
+}
+
+/* ── Tooltip sur les badges (liste des réacteurs) ── */
+.mpx-rx-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  background: rgba(15,20,35,0.95);
+  color: #fff;
+  font-size: 0.72rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 300;
+  animation: fadeIn 0.12s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.mpx-rx-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: rgba(15,20,35,0.95);
+}
+
+/* ── Responsive mobile ── */
+@media (max-width: 580px) {
+  /* Sur mobile, le trigger est toujours caché (long press à la place) */
+  .mpx-rx-trigger { display: none; }
+
+  /* Picker en position fixe centré en bas d'écran sur mobile */
+  .mpx-reaction-picker {
+    padding: 8px 14px;
+    gap: 6px;
+    z-index: 600;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+  .mpx-reaction-picker::after { display: none; }
+  .mpx-rx-emoji-btn { font-size: 1.5rem; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   REPLY / CITATION — Messagerie privée
+══════════════════════════════════════════════════════════ */
+
+/* Barre de prévisualisation de la citation (zone de saisie) */
+#chatReplyBar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.4rem 0.8rem 0;
+  animation: slideDown 0.18s ease;
+}
+
+.mpx-reply-preview {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  background: rgba(108,99,255,0.08);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  padding: 0.35rem 0.7rem;
+  min-width: 0;
+}
+
+.mpx-reply-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mpx-reply-text {
+  font-size: 0.78rem;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mpx-reply-cancel {
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.85rem;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.mpx-reply-cancel:hover { background: rgba(255,77,109,0.12); color: var(--red); }
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   REPLY / CITATION â€” Style WhatsApp
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* Wrap bulle — prend toute la largeur, bulle alignée par text-align */
+.mpx-bubble-wrap {
+  position: relative;
+  width: 100%;
+}
+/* Mine : bulle collée à droite */
+.mpx-bubble-row.mine .mpx-bubble-wrap {
+  text-align: right;
+}
+/* Theirs : bulle collée à gauche */
+.mpx-bubble-row:not(.mine) .mpx-bubble-wrap {
+  text-align: left;
+  margin-left: 4px;
+  width: calc(100% - 4px);
+}
+
+
+/* Bouton reply — hors du flux, positionné en absolu à l'extérieur de la bulle */
+.mpx-reply-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%) scale(0.7);
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.78rem;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s, transform 0.18s, background 0.15s, color 0.15s;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.22);
+  z-index: 2;
+}
+/* Bouton à droite pour les messages reçus (theirs) */
+.mpx-bubble-row:not(.mine) .mpx-reply-btn {
+  right: -36px;
+}
+/* Bouton à gauche pour les messages envoyés (mine) */
+.mpx-bubble-row.mine .mpx-reply-btn {
+  left: -36px;
+}
+/* Apparaît uniquement au swipe (classe JS) — mobile */
+.mpx-reply-btn--active {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+/* Sur desktop : apparaît discrètement au hover de la row */
+@media (hover: hover) {
+  .mpx-bubble-row:hover .mpx-reply-btn {
+    opacity: 0.5;
+    pointer-events: auto;
+    transform: translateY(-50%) scale(0.9);
+  }
+  .mpx-bubble-row:hover .mpx-reply-btn:hover {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+}
+
+/* ── Citation dans la bulle (style WhatsApp) ── */
+.mpx-bubble-quote {
+  display: flex;
+  align-items: stretch;
+  border-left: 3px solid rgba(255,255,255,0.55);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  background: rgba(0,0,0,0.15);
+  transition: background 0.15s;
+}
+.mpx-bubble.theirs .mpx-bubble-quote {
+  background: rgba(108,99,255,0.1);
+  border-left-color: var(--accent);
+}
+.mpx-bubble-quote:hover {
+  background: rgba(0,0,0,0.25);
+}
+.mpx-bubble.theirs .mpx-bubble-quote:hover {
+  background: rgba(108,99,255,0.18);
+}
+
+/* Barre colorée à gauche via border-left */
+.mpx-bubble.theirs .mpx-bubble-quote::before {
+  background: var(--accent);
+}
+
+/* Contenu de la citation */
+.mpx-bubble-quote-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  min-width: 0;
+}
+.mpx-bubble-quote-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mpx-bubble.theirs .mpx-bubble-quote-name {
+  color: var(--accent);
+}
+.mpx-bubble-quote-text {
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mpx-bubble.theirs .mpx-bubble-quote-text {
+  color: var(--text2);
+}
+
+/* â”€â”€ Barre de prÃ©visualisation reply (zone de saisie) â”€â”€ */
+#chatReplyBar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 6px 12px 0;
+  animation: slideDown 0.18s ease;
+}
+.mpx-reply-preview {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  min-width: 0;
+}
+.mpx-reply-preview::before {
+  content: '';
+  display: block;
+  width: 3px;
+  flex-shrink: 0;
+  background: var(--accent);
+  border-radius: 3px 0 0 3px;
+}
+.mpx-reply-preview-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 8px;
+  min-width: 0;
+}
+.mpx-reply-name {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mpx-reply-text {
+  font-size: 0.78rem;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mpx-reply-cancel {
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.mpx-reply-cancel:hover { background: rgba(255,77,109,0.12); color: var(--red); }
+
+/* â”€â”€ Highlight message citÃ© (scroll vers) â”€â”€ */
+@keyframes msgHighlightBubble {
+  0%   { box-shadow: 0 0 0 3px rgba(108,99,255,0.55); }
+  60%  { box-shadow: 0 0 0 4px rgba(0,212,170,0.3); }
+  100% { box-shadow: none; }
+}
+.mpx-bubble-highlight .mpx-bubble {
+  animation: msgHighlightBubble 1.5s ease forwards;
+  border-radius: 18px;
+}
+
+.mpx-bubble:has(.mpx-bubble-img-wrap):not(:has(.mpx-bubble-img-wrap + *)) .mpx-bubble-img {
+  border-radius: 14px;
+}
+
+/* Bulle image uniquement — background s'adapte à l'image */
+.mpx-bubble.img-only {
+  padding: 3px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.mpx-bubble.img-only .mpx-bubble-img {
+  border-radius: 14px;
+  display: block;
+}
+.mpx-bubble.img-only .mpx-bubble-meta {
+  position: absolute;
+  bottom: 6px;
+  right: 8px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 8px;
+  padding: 1px 5px;
+  opacity: 1;
+  color: #fff;
+}

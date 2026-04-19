@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 //  migrations.js — Migrations automatiques au démarrage
 //  Toutes les migrations sont idempotentes (IF NOT EXISTS)
 // ============================================================
@@ -42,6 +42,17 @@ async function runMigrations(pool) {
     )`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_shares_post ON post_shares(post_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_shares_user ON post_shares(user_id)`);
+  });
+
+  // users : colonne last_seen (présence persistante)
+  await run('users.last_seen', async () => {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen BIGINT DEFAULT NULL`);
+  });
+
+  // message_reactions
+  await run('message_reactions', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_msg_reactions_msg ON message_reactions(message_id)`);
   });
 }
 

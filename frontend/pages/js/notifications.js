@@ -294,6 +294,10 @@ function _connectSSE(userId) {
     try {
       const notif = JSON.parse(e.data);
       if (notif.type === 'PRIVATE_MESSAGE') isPrivateMsg = true;
+      if (notif.type === 'REACTION') {
+        if (typeof _onRxSSE === 'function') _onRxSSE(notif);
+        return;
+      }
     } catch(e) {}
     if (isPrivateMsg) {
       // Mettre à jour le badge messages navbar instantanément

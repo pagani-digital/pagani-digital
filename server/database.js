@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+﻿const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
 // 🔌 Connexion PostgreSQL
@@ -907,13 +907,59 @@ async function countFollowing(userId) {
 // MESSAGES PRIVÉS
 // ═══════════════════════════════════════════════
 
-async function sendPrivateMessage(senderId, receiverId, content, image) {
+
+async function sendPrivateMessage(senderId, receiverId, content, image, replyToId) {
   const res = await query(
-    `INSERT INTO private_messages (sender_id, receiver_id, content, image, read, read_at)
-     VALUES ($1,$2,$3,$4, false, NULL) RETURNING *`,
-    [senderId, receiverId, content, image || '']
+    `INSERT INTO private_messages (sender_id, receiver_id, content, image, read, read_at, reply_to_id)
+     VALUES ($1,$2,$3,$4, false, NULL, $5) RETURNING *`,
+    [senderId, receiverId, content, image || '', replyToId || null]
   );
   return rowToCamel(res.rows[0]);
+}
+
+async function getPrivateMessages(userId, otherId, limit, before) {
+  const lim = parseInt(limit) || 30;
+  const params = [userId, otherId];
+  let whereExtra = '';
+  if (before) {
+    params.push(before);
+    whereExtra = `AND m.created_at < $${params.length}`;
+  }
+  const res = await query(
+    `SELECT m.*,
+       r.id        AS reply_id,
+       r.content   AS reply_content,
+       r.sender_id AS reply_sender_id,
+       rs.name     AS reply_sender_name
+     FROM private_messages m
+     LEFT JOIN private_messages r  ON r.id = m.reply_to_id
+     LEFT JOIN users rs            ON rs.id = r.sender_id
+     WHERE (m.sender_id = $1 AND m.receiver_id = $2)
+        OR (m.sender_id = $2 AND m.receiver_id = $1)
+     ${whereExtra}
+     ORDER BY m.created_at DESC
+     LIMIT ${lim}`,
+    params
+  );
+  await query(
+    `UPDATE private_messages SET read = true, read_at = NOW()
+     WHERE receiver_id = $1 AND sender_id = $2 AND read = false`,
+    [userId, otherId]
+  );
+  const rows = res.rows.map(row => {
+    const base = rowToCamel(row);
+    if (row.reply_id) {
+      base.replyTo = {
+        id:         row.reply_id,
+        content:    row.reply_content,
+        senderId:   row.reply_sender_id,
+        senderName: row.reply_sender_name || ''
+      };
+    }
+    return base;
+  });
+  rows.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  return rows;
 }
 
 async function getConversations(userId) {
@@ -925,7 +971,12 @@ async function getConversations(userId) {
        last_msg.created_at AS last_date,
        last_msg.sender_id AS last_sender_id,
        (SELECT COUNT(*) FROM private_messages
-        WHERE receiver_id = $1 AND sender_id = u.id AND read = false) AS unread_count
+        WHERE receiver_id = $1 AND sender_id = u.id AND read = false) AS unread_count,
+       last_rx.emoji AS last_rx_emoji,
+       last_rx.user_id AS last_rx_user_id,
+       last_rx.created_at AS last_rx_date,
+       last_rx.msg_content AS last_rx_msg_content,
+       last_rx.msg_sender_id AS last_rx_msg_sender_id
      FROM users u
      JOIN LATERAL (
        SELECT content, image, created_at, sender_id FROM private_messages
@@ -933,39 +984,20 @@ async function getConversations(userId) {
           OR (sender_id = u.id AND receiver_id = $1)
        ORDER BY created_at DESC LIMIT 1
      ) last_msg ON true
+     LEFT JOIN LATERAL (
+       SELECT r.emoji, r.user_id, r.created_at, m.content AS msg_content, m.sender_id AS msg_sender_id
+       FROM message_reactions r
+       JOIN private_messages m ON m.id = r.message_id
+       WHERE (m.sender_id = $1 AND m.receiver_id = u.id)
+          OR (m.sender_id = u.id AND m.receiver_id = $1)
+       ORDER BY r.created_at DESC LIMIT 1
+     ) last_rx ON true
      ORDER BY last_msg.created_at DESC`,
     [userId]
   );
   return rowsToCamel(res.rows);
 }
 
-async function getPrivateMessages(userId, otherId, limit, before) {
-  const lim = parseInt(limit) || 30;
-  const params = [userId, otherId];
-  let whereExtra = '';
-  if (before) {
-    params.push(before);
-    whereExtra = `AND created_at < $${params.length}`;
-  }
-  const res = await query(
-    `SELECT * FROM (
-       SELECT * FROM private_messages
-       WHERE (sender_id = $1 AND receiver_id = $2)
-          OR (sender_id = $2 AND receiver_id = $1)
-       ${whereExtra}
-       ORDER BY created_at DESC
-       LIMIT ${lim}
-     ) sub ORDER BY created_at ASC`,
-    params
-  );
-  // Marquer comme lus les messages reçus avec timestamp
-  await query(
-    `UPDATE private_messages SET read = true, read_at = NOW()
-     WHERE receiver_id = $1 AND sender_id = $2 AND read = false`,
-    [userId, otherId]
-  );
-  return rowsToCamel(res.rows);
-}
 
 async function markMessagesRead(receiverId, senderId) {
   await query(
@@ -981,6 +1013,28 @@ async function countUnreadMessages(userId) {
     [userId]
   );
   return parseInt(res.rows[0].count);
+}
+
+async function deletePrivateMessage(msgId, senderId) {
+  const res = await query(
+    `DELETE FROM private_messages WHERE id = $1 AND sender_id = $2 RETURNING id`,
+    [msgId, senderId]
+  );
+  return res.rowCount > 0;
+}
+
+async function updateLastSeen(userId, ts) {
+  await query(
+    `UPDATE users SET last_seen = $1 WHERE id = $2`,
+    [ts, userId]
+  ).catch(() => {});
+}
+
+async function getLastSeen(userId) {
+  try {
+    const res = await query('SELECT last_seen FROM users WHERE id = $1', [userId]);
+    return res.rows[0] ? res.rows[0].last_seen : null;
+  } catch { return null; }
 }
 
 // ═══════════════════════════════════════════════
@@ -1122,6 +1176,10 @@ module.exports = {
   getPrivateMessages,
   markMessagesRead,
   countUnreadMessages,
+  deletePrivateMessage,
+
+  updateLastSeen,
+  getLastSeen,
 
   followUser,
   unfollowUser,

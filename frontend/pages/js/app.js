@@ -1,31 +1,31 @@
-// ===== DONN…ES COURS =====
-// IMPORTANT : videoId est volontairement absent ici pour les vidÈos payantes.
-// Les IDs sont stockÈs sÈparÈment dans _getSecureVideoId() et ne sont jamais
-// injectÈs dans le DOM. Seules les vidÈos gratuites ont leur videoId ici.
+Ôªø// ===== DONNÔøΩES COURS =====
+// IMPORTANT : videoId est volontairement absent ici pour les vidÔøΩos payantes.
+// Les IDs sont stockÔøΩs sÔøΩparÔøΩment dans _getSecureVideoId() et ne sont jamais
+// injectÔøΩs dans le DOM. Seules les vidÔøΩos gratuites ont leur videoId ici.
 const COURSES = [
-  { id: 1,  title: "Introduction ‡ la Blockchain",          desc: "Comprendre les bases de la technologie blockchain.",                          category: "debutant",  duration: "45 min",   level: "DÈbutant",      icon: "fas fa-cube",         free: true,  videoId: "SSo_EIwHSd4" },
-  { id: 2,  title: "Acheter ses premiers Bitcoins",          desc: "Guide complet pour acheter du BTC en toute sÈcuritÈ.",                        category: "debutant",  duration: "30 min",   level: "DÈbutant",      icon: "fab fa-bitcoin",      free: true,  videoId: "Gc2en3nHxA4" },
-  { id: 3,  title: "Analyse Technique Crypto",               desc: "MaÓtrisez les graphiques et indicateurs de trading.",                         category: "trading",   duration: "1h 20 min", level: "IntermÈdiaire",  icon: "fas fa-chart-line",   free: false, videoId: "", unitPrice: 8000 },
-  { id: 4,  title: "StratÈgies de Trading AvancÈes",         desc: "Scalping, swing trading et gestion du risque.",                             category: "trading",   duration: "2h 10 min", level: "AvancÈe",         icon: "fas fa-chart-bar",    free: false, videoId: "", unitPrice: 15000 },
-  { id: 5,  title: "Introduction ‡ la DeFi",                 desc: "DÈcouvrez la finance dÈcentralisÈe et ses opportunitÈs.",                     category: "defi",      duration: "55 min",   level: "IntermÈdiaire",  icon: "fas fa-coins",        free: false, videoId: "", unitPrice: 10000 },
-  { id: 6,  title: "Yield Farming & Staking",                desc: "GÈnÈrez des revenus passifs avec vos cryptos.",                               category: "defi",      duration: "1h 30 min", level: "AvancÈe",         icon: "fas fa-seedling",     free: false, videoId: "", unitPrice: 12000 },
-  { id: 7,  title: "Comprendre les NFTs",                    desc: "Tout savoir sur les tokens non-fongibles.",                                  category: "nft",       duration: "40 min",   level: "DÈbutant",      icon: "fas fa-image",        free: true,  videoId: "" },
-  { id: 8,  title: "CrÈer et Vendre des NFTs",               desc: "Lancez votre collection NFT sur OpenSea.",                                  category: "nft",       duration: "1h 15 min", level: "IntermÈdiaire",  icon: "fas fa-palette",      free: false, videoId: "", unitPrice: 10000 },
-  { id: 9,  title: "Les bases de la crÈation de contenu",    desc: "Comprendre les fondamentaux pour crÈer du contenu engageant.",              category: "contenu",   duration: "50 min",   level: "DÈbutant",      icon: "fas fa-video",        free: true,  videoId: "" },
-  { id: 10, title: "CrÈer des Reels & Shorts viraux",        desc: "Techniques pour produire des vidÈos courtes qui font le buzz.",             category: "contenu",   duration: "1h 10 min", level: "IntermÈdiaire",  icon: "fas fa-film",         free: false, videoId: "", unitPrice: 8000 },
-  { id: 11, title: "MonÈtiser son contenu",                   desc: "Transformez votre audience en revenus durables.",                           category: "contenu",   duration: "1h 25 min", level: "AvancÈe",         icon: "fas fa-dollar-sign",  free: false, videoId: "", unitPrice: 12000 },
-  { id: 12, title: "Outils de crÈation gratuits",            desc: "Canva, CapCut, DaVinci Resolve : maÓtrisez les meilleurs outils.",          category: "contenu",   duration: "45 min",   level: "DÈbutant",      icon: "fas fa-tools",        free: true,  videoId: "" },
-  { id: 13, title: "CrÈer une page Facebook professionnelle", desc: "Configurez et optimisez votre page Facebook de A ‡ Z.",                   category: "facebook",  duration: "35 min",   level: "DÈbutant",      icon: "fab fa-facebook",     free: true,  videoId: "" },
-  { id: 14, title: "StratÈgie de contenu Facebook",           desc: "Planifiez et publiez du contenu qui gÈnËre de l'engagement.",               category: "facebook",  duration: "1h 05 min", level: "IntermÈdiaire",  icon: "fas fa-calendar-alt", free: false, videoId: "", unitPrice: 8000 },
-  { id: 15, title: "Facebook Ads pour dÈbutants",             desc: "CrÈez vos premiËres publicitÈs Facebook avec un petit budget.",             category: "facebook",  duration: "1h 40 min", level: "IntermÈdiaire",  icon: "fas fa-bullhorn",     free: false, videoId: "", unitPrice: 15000 },
-  { id: 16, title: "GÈrer une communautÈ Facebook",           desc: "Animez votre groupe et fidÈlisez votre audience.",                         category: "facebook",  duration: "55 min",   level: "AvancÈe",         icon: "fas fa-users-cog",    free: false, videoId: "", unitPrice: 10000 },
+  { id: 1,  title: "Introduction ÔøΩ la Blockchain",          desc: "Comprendre les bases de la technologie blockchain.",                          category: "debutant",  duration: "45 min",   level: "DÔøΩbutant",      icon: "fas fa-cube",         free: true,  videoId: "SSo_EIwHSd4" },
+  { id: 2,  title: "Acheter ses premiers Bitcoins",          desc: "Guide complet pour acheter du BTC en toute sÔøΩcuritÔøΩ.",                        category: "debutant",  duration: "30 min",   level: "DÔøΩbutant",      icon: "fab fa-bitcoin",      free: true,  videoId: "Gc2en3nHxA4" },
+  { id: 3,  title: "Analyse Technique Crypto",               desc: "MaÔøΩtrisez les graphiques et indicateurs de trading.",                         category: "trading",   duration: "1h 20 min", level: "IntermÔøΩdiaire",  icon: "fas fa-chart-line",   free: false, videoId: "", unitPrice: 8000 },
+  { id: 4,  title: "StratÔøΩgies de Trading AvancÔøΩes",         desc: "Scalping, swing trading et gestion du risque.",                             category: "trading",   duration: "2h 10 min", level: "AvancÔøΩe",         icon: "fas fa-chart-bar",    free: false, videoId: "", unitPrice: 15000 },
+  { id: 5,  title: "Introduction ÔøΩ la DeFi",                 desc: "DÔøΩcouvrez la finance dÔøΩcentralisÔøΩe et ses opportunitÔøΩs.",                     category: "defi",      duration: "55 min",   level: "IntermÔøΩdiaire",  icon: "fas fa-coins",        free: false, videoId: "", unitPrice: 10000 },
+  { id: 6,  title: "Yield Farming & Staking",                desc: "GÔøΩnÔøΩrez des revenus passifs avec vos cryptos.",                               category: "defi",      duration: "1h 30 min", level: "AvancÔøΩe",         icon: "fas fa-seedling",     free: false, videoId: "", unitPrice: 12000 },
+  { id: 7,  title: "Comprendre les NFTs",                    desc: "Tout savoir sur les tokens non-fongibles.",                                  category: "nft",       duration: "40 min",   level: "DÔøΩbutant",      icon: "fas fa-image",        free: true,  videoId: "" },
+  { id: 8,  title: "CrÔøΩer et Vendre des NFTs",               desc: "Lancez votre collection NFT sur OpenSea.",                                  category: "nft",       duration: "1h 15 min", level: "IntermÔøΩdiaire",  icon: "fas fa-palette",      free: false, videoId: "", unitPrice: 10000 },
+  { id: 9,  title: "Les bases de la crÔøΩation de contenu",    desc: "Comprendre les fondamentaux pour crÔøΩer du contenu engageant.",              category: "contenu",   duration: "50 min",   level: "DÔøΩbutant",      icon: "fas fa-video",        free: true,  videoId: "" },
+  { id: 10, title: "CrÔøΩer des Reels & Shorts viraux",        desc: "Techniques pour produire des vidÔøΩos courtes qui font le buzz.",             category: "contenu",   duration: "1h 10 min", level: "IntermÔøΩdiaire",  icon: "fas fa-film",         free: false, videoId: "", unitPrice: 8000 },
+  { id: 11, title: "MonÔøΩtiser son contenu",                   desc: "Transformez votre audience en revenus durables.",                           category: "contenu",   duration: "1h 25 min", level: "AvancÔøΩe",         icon: "fas fa-dollar-sign",  free: false, videoId: "", unitPrice: 12000 },
+  { id: 12, title: "Outils de crÔøΩation gratuits",            desc: "Canva, CapCut, DaVinci Resolve : maÔøΩtrisez les meilleurs outils.",          category: "contenu",   duration: "45 min",   level: "DÔøΩbutant",      icon: "fas fa-tools",        free: true,  videoId: "" },
+  { id: 13, title: "CrÔøΩer une page Facebook professionnelle", desc: "Configurez et optimisez votre page Facebook de A ÔøΩ Z.",                   category: "facebook",  duration: "35 min",   level: "DÔøΩbutant",      icon: "fab fa-facebook",     free: true,  videoId: "" },
+  { id: 14, title: "StratÔøΩgie de contenu Facebook",           desc: "Planifiez et publiez du contenu qui gÔøΩnÔøΩre de l'engagement.",               category: "facebook",  duration: "1h 05 min", level: "IntermÔøΩdiaire",  icon: "fas fa-calendar-alt", free: false, videoId: "", unitPrice: 8000 },
+  { id: 15, title: "Facebook Ads pour dÔøΩbutants",             desc: "CrÔøΩez vos premiÔøΩres publicitÔøΩs Facebook avec un petit budget.",             category: "facebook",  duration: "1h 40 min", level: "IntermÔøΩdiaire",  icon: "fas fa-bullhorn",     free: false, videoId: "", unitPrice: 15000 },
+  { id: 16, title: "GÔøΩrer une communautÔøΩ Facebook",           desc: "Animez votre groupe et fidÔøΩlisez votre audience.",                         category: "facebook",  duration: "55 min",   level: "AvancÔøΩe",         icon: "fas fa-users-cog",    free: false, videoId: "", unitPrice: 10000 },
 ];
-// ===== CHIFFREMENT L…GER DES IDS PRIV…S =====
+// ===== CHIFFREMENT LÔøΩGER DES IDS PRIVÔøΩS =====
 const _ENC_KEY = 'pagani2025secure';
 function _encode(str) {
   if (!str) return '';
   try {
-    // PrÈfixe pour dÈtecter un ID dÈjÈ chiffrÈ
+    // PrÔøΩfixe pour dÔøΩtecter un ID dÔøΩjÔøΩ chiffrÔøΩ
     const prefixed = 'ENC:' + str;
     return btoa(prefixed.split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
@@ -38,35 +38,35 @@ function _decode(str) {
     const decoded = atob(str).split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
     ).join('');
-    // VÈrifier le prÈfixe
+    // VÔøΩrifier le prÔøΩfixe
     if (decoded.startsWith('ENC:')) return decoded.slice(4);
-    // Pas de prÈfixe = ID en clair (ancien format), retourner tel quel
+    // Pas de prÔøΩfixe = ID en clair (ancien format), retourner tel quel
     return str;
   } catch {
-    // Èchec du dÈchiffrement = ID en clair (ancien format)
+    // ÔøΩchec du dÔøΩchiffrement = ID en clair (ancien format)
     return str;
   }
 }
 /**
- * VÈrifie l'accËs et retourne { source, id } pour lire la vidÈo.
+ * VÔøΩrifie l'accÔøΩs et retourne { source, id } pour lire la vidÔøΩo.
  * source : 'youtube' | 'drive'
- * id     : l'identifiant dÈchiffrÈ en mÈmoire ‚Äî JAMAIS exposÈ dans le DOM.
- * Retourne null si accËs refusÈ.
+ * id     : l'identifiant dÔøΩchiffrÔøΩ en mÔøΩmoire ‚Äî JAMAIS exposÔøΩ dans le DOM.
+ * Retourne null si accÔøΩs refusÔøΩ.
  */
 function _getSecureVideo(course, user) {
   const stored = getVideos().find(v => v.id === course.id) || course;
-  // VidÈo gratuite : accessible ‡ tous
+  // VidÔøΩo gratuite : accessible ÔøΩ tous
   if (course.free) {
     const src = stored.videoSource || 'youtube';
     const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
     return id ? { source: src, id } : null;
   }
-  // VidÈo payante : Pro, Elite, ou achat unitaire validÈ
+  // VidÔøΩo payante : Pro, Elite, ou achat unitaire validÔøΩ
   if (!user) return null;
   const hasPlan     = user.plan === 'Pro' || user.plan === 'Elite';
   const hasUnlocked = (user.unlockedCourses || []).includes(course.id);
   if (!hasPlan && !hasUnlocked) return null;
-  // AccËs validÈ : dÈchiffrer l\'ID en mÈmoire uniquement
+  // AccÔøΩs validÔøΩ : dÔøΩchiffrer l\'ID en mÔøΩmoire uniquement
   const src = stored.videoSource || 'youtube';
   const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
   return id ? { source: src, id } : null;
@@ -77,17 +77,17 @@ const COMMISSION_RATES = {
   Pro:     { abonnement: 0.35, formation: 0.25 },
   Elite:   { abonnement: 0.50, formation: 0.40 },
 };
-// Prix de rÈfÈrence en AR
+// Prix de rÔøΩfÔøΩrence en AR
 const PRICES_AR = {
   pro:       30000,
   elite:     90000,
   formation: 10000,
 };
-// DonnÈes de dÈmo supprimÈes ‚Äî credentials gÈrÈs via config.js
+// DonnÔøΩes de dÔøΩmo supprimÔøΩes ‚Äî credentials gÔøΩrÔøΩs via config.js
 
 // ===== UTILITAIRES =====
 function getUser() {
-  // CompatibilitÈ sync pour les fonctions non-async (feed, etc.)
+  // CompatibilitÔøΩ sync pour les fonctions non-async (feed, etc.)
   return window._currentUser || null;
 }
 // ===== PRESENCE PING =====
@@ -109,7 +109,7 @@ async function refreshCurrentUser() {
     try { user = await PaganiAPI.getMe(); } catch(e) { user = null; }
   }
   window._currentUser = user;
-  // Mettre ‡ jour le badge messages navbar si l'utilisateur est connectÈ
+  // Mettre ÔøΩ jour le badge messages navbar si l'utilisateur est connectÔøΩ
   if (user) setTimeout(_updateMsgBadge, 500);
   if (user) _startPresencePing(); else _stopPresencePing();
   return user;
@@ -124,7 +124,7 @@ function esc(str) {
 function getAvatarColor(user) {
   return (user && user.avatarColor) ? user.avatarColor : "#6c63ff";
 }
-// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respectÈs
+// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respectÔøΩs
 function formatPostContent(text) {
   if (!text) return "";
   const markdownLink = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
@@ -147,8 +147,8 @@ function formatPostContent(text) {
       // 2. Gras et italique
       line = line.replace(markdownBold, (_, t) => `<strong>${t}</strong>`);
       line = line.replace(markdownItal, (_, t) => `<em>${t}</em>`);
-      // 3. URLs brutes ‚Äî uniquement celles PAS dÈjÈ dans un attribut href
-      // On dÈcoupe la ligne en segments texte/balise et on ne traite que le texte
+      // 3. URLs brutes ‚Äî uniquement celles PAS dÔøΩjÔøΩ dans un attribut href
+      // On dÔøΩcoupe la ligne en segments texte/balise et on ne traite que le texte
       line = line.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
         if (tag) return tag; // laisser les balises intactes
         return txt.replace(urlRegex, url => {
@@ -162,12 +162,26 @@ function formatPostContent(text) {
 }
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 60) return "‡ l'instant";
+  if (diff < 60) return "ÔøΩ l'instant";
   if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
   if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
   return new Date(dateStr).toLocaleDateString("fr-FR");
 }
-// Met ‡ jour le compteur de stats d'un post dans le DOM
+function _presenceTimeAgo(ts) {
+  if (!ts) return '';
+  var t = Number(ts);
+  if (!t || isNaN(t)) return '';
+  var diff = Math.floor((Date.now() - t) / 1000);
+  if (diff < 0) diff = 0;
+  if (diff < 60)    return 'Vu √† l\'instant';
+  if (diff < 3600)  return 'Il y a ' + Math.floor(diff / 60) + ' min';
+  if (diff < 86400) return 'Il y a ' + Math.floor(diff / 3600) + 'h';
+  var days = Math.floor(diff / 86400);
+  if (days < 7)     return 'Il y a ' + days + 'j';
+  if (days < 30)    return 'Il y a ' + Math.floor(days / 7) + ' sem';
+  return 'Il y a ' + Math.floor(days / 30) + ' mois';
+}
+// Met ÔøΩ jour le compteur de stats d'un post dans le DOM
 function _updatePostStats(postId, post) {
   const el = document.getElementById('post-' + postId);
   if (!el) return;
@@ -180,7 +194,7 @@ function _updatePostStats(postId, post) {
 // ===== EMOJI PICKER COMMENTAIRES =====
 const COMMENT_EMOJIS = ['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','?','??','??','??'];
 function toggleCommentEmoji(inputId, btn) {
-  // Fermer tout picker dÈjÈ ouvert
+  // Fermer tout picker dÔøΩjÔøΩ ouvert
   document.querySelectorAll('.comment-emoji-picker').forEach(p => {
     if (p.dataset.for !== inputId) p.remove();
   });
@@ -220,7 +234,7 @@ let _feedPage = 0;
 let _feedLoading = false;
 let _feedObserver = null;
 const DEFAULT_NEWS = [];
-// Cache local des posts (mis ‡ jour depuis le serveur)
+// Cache local des posts (mis ÔøΩ jour depuis le serveur)
 let _postsCache = [];
 let _feedRendering = false; // verrou anti-race condition
 let _pendingComments = new Map(); // postId -> [commentaires en attente de confirmation serveur]
@@ -230,10 +244,10 @@ function getNews() {
 function saveNews(news) {
   _postsCache = news;
 }
-// RafraÓchissement silencieux du feed (sans reset du scroll)
+// RafraÔøΩchissement silencieux du feed (sans reset du scroll)
 async function _silentRefreshFeed() {
   if (!window.PaganiAPI) return;
-  // Fonctionne pour tous (connectÈs ou non)
+  // Fonctionne pour tous (connectÔøΩs ou non)
   try {
     const fresh = await PaganiAPI.getPosts();
     if (!fresh || !fresh.length) return;
@@ -244,11 +258,11 @@ async function _silentRefreshFeed() {
     // Ne JAMAIS retirer un post du cache ici.
     const freshMap = new Map(fresh.map(p => [p.id, p]));
     // 1. Mettre a jour les posts existants dans le cache
-    // Ne pas Ècraser un post qui a des commentaires en attente de confirmation
+    // Ne pas ÔøΩcraser un post qui a des commentaires en attente de confirmation
     _postsCache = _postsCache.map(p => {
       if (!freshMap.has(p.id)) return p;
       if (_pendingComments.has(p.id)) {
-        // Garder les commentaires locaux, mettre ‡ jour le reste
+        // Garder les commentaires locaux, mettre ÔøΩ jour le reste
         const fresh = freshMap.get(p.id);
         return { ...fresh, comments: p.comments };
       }
@@ -291,7 +305,7 @@ async function _silentRefreshFeed() {
       const commSection = el.querySelector('.comments-section');
       const commList    = el.querySelector('#comments-list-' + post.id);
       if (commSection && commSection.style.display !== 'none' && commList) {
-        // Ne pas Ècraser si des commentaires sont en attente de confirmation serveur
+        // Ne pas ÔøΩcraser si des commentaires sont en attente de confirmation serveur
         if (_pendingComments.has(post.id)) return;
         const isGuest = !user;
         commList.innerHTML = (post.comments||[]).length === 0
@@ -304,7 +318,7 @@ async function _silentRefreshFeed() {
 async function _loadPosts() {
   try {
     const remote = await PaganiAPI.getPosts();
-    // Ne remplacer le cache que si le serveur retourne des donnÈes valides
+    // Ne remplacer le cache que si le serveur retourne des donnÔøΩes valides
     if (remote && remote.length) _postsCache = remote;
     else if (!_postsCache.length) _postsCache = DEFAULT_NEWS;
   } catch(e) {
@@ -312,9 +326,9 @@ async function _loadPosts() {
   }
   return _postsCache;
 }
-// Rendu initial du feed (reset + 1Ère page)
+// Rendu initial du feed (reset + 1ÔøΩre page)
 async function renderFeed() {
-  if (_feedRendering) return; // ignorer les appels simultanÈs
+  if (_feedRendering) return; // ignorer les appels simultanÔøΩs
   _feedRendering = true;
   const container = document.getElementById('feedPosts');
   if (!container) { _feedRendering = false; return; }
@@ -360,7 +374,7 @@ async function renderFeed() {
   container.innerHTML = renderSkeletons(3);
   // Charger les posts depuis le serveur
   try { await _loadPosts(); } catch(e) {}
-  // Pas de setTimeout : on remplace les skeletons immÈdiatement
+  // Pas de setTimeout : on remplace les skeletons immÔøΩdiatement
   container.innerHTML = '';
   if (_postsCache.length === 0) {
     container.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication pour le moment.</p></div>';
@@ -376,7 +390,7 @@ async function renderFeed() {
 // Charge la prochaine tranche de posts ‚Äî lit toujours _postsCache en direct
 function _loadMorePosts(container, user, isAdmin) {
   if (_feedLoading) return;
-  const news  = _postsCache; // rÈfÈrence directe, jamais de snapshot
+  const news  = _postsCache; // rÔøΩfÔøΩrence directe, jamais de snapshot
   const start = _feedPage * POSTS_PER_PAGE;
   const slice = news.slice(start, start + POSTS_PER_PAGE);
   if (slice.length === 0) return;
@@ -384,7 +398,7 @@ function _loadMorePosts(container, user, isAdmin) {
   const oldLoader = document.getElementById("feedLoader");
   if (oldLoader) oldLoader.remove();
   slice.forEach((post, i) => {
-    // Ne pas re-rendre un post dÈj‡ prÈsent dans le DOM (ex: injectÈ par publishNews)
+    // Ne pas re-rendre un post dÔøΩjÔøΩ prÔøΩsent dans le DOM (ex: injectÔøΩ par publishNews)
     if (document.getElementById('post-' + post.id)) return;
     const el = buildPostCard(post, user, isAdmin);
     el.style.animationDelay = `${i * 60}ms`;
@@ -413,14 +427,14 @@ function _loadMorePosts(container, user, isAdmin) {
     container.appendChild(end);
   }
 }
-// IntersectionObserver pour dÈtecter quand la sentinelle est visible
+// IntersectionObserver pour dÔøΩtecter quand la sentinelle est visible
 function _setupInfiniteScroll(container, user, isAdmin) {
   _feedObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !_feedLoading) {
         const sentinel = document.getElementById("feedSentinel");
         if (sentinel) sentinel.remove();
-        // Charger immÈdiatement si dÈj‡ visible (pas de dÈlai artificiel)
+        // Charger immÔøΩdiatement si dÔøΩjÔøΩ visible (pas de dÔøΩlai artificiel)
         _loadMorePosts(container, user, isAdmin);
       }
     });
@@ -464,7 +478,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
       </div>
       <div class="comment-input-wrap">
         <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('reply-input-${cid}', this)" title="Emoji"><i class="fas fa-smile"></i></button>
-        <input type="text" id="reply-input-${cid}" placeholder="RÈpondre ‡ ${esc(c.author)}..."
+        <input type="text" id="reply-input-${cid}" placeholder="RÔøΩpondre ÔøΩ ${esc(c.author)}..."
           onkeydown="if(event.key==='Enter') submitReply(${postId}, '${cid}')" />
         <button onclick="submitReply(${postId}, '${cid}')"><i class="fas fa-paper-plane"></i></button>
       </div>
@@ -480,7 +494,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
           <p>${esc(c.text)}</p>
           <div class="comment-footer">
             <span class="comment-time">${timeAgo(c.date)}</span>
-            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> RÈpondre</button>` : ""}
+            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> RÔøΩpondre</button>` : ""}
           </div>
         </div>
         ${replies ? `<div class="replies-list">${replies}</div>` : ""}
@@ -544,7 +558,7 @@ function buildPostCard(post, user, isAdmin) {
     </div>
     <div class="post-actions">
       ${isGuest ? `
-        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour rÈagir">
+        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour rÔøΩagir">
           <i class="fas fa-heart"></i>
           <span class="reaction-label">J'adore</span>
         </a>
@@ -589,7 +603,7 @@ function buildPostCard(post, user, isAdmin) {
              </div>
              <div class="comment-input-wrap">
                <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('comment-input-'+${post.id}, this)" title="Emoji"><i class="fas fa-smile"></i></button>
-               <input type="text" id="comment-input-${post.id}" placeholder="…crire un commentaire..."
+               <input type="text" id="comment-input-${post.id}" placeholder="ÔøΩcrire un commentaire..."
                  onkeydown="if(event.key==='Enter') submitComment(${post.id})" />
                <button onclick="submitComment(${post.id})"><i class="fas fa-paper-plane"></i></button>
              </div>
@@ -601,13 +615,13 @@ function buildPostCard(post, user, isAdmin) {
 async function toggleLike(postId) {
   const user = getUser();
   if (!user) { window.location.href = 'dashboard.html'; return; }
-  // Mise ‡ jour optimiste locale
+  // Mise ÔøΩ jour optimiste locale
   const post = _postsCache.find(p => p.id === postId) || _profilePostsCache.find(p => p.id === postId);
   if (post) {
     const idx = post.likes.indexOf(user.email);
     if (idx === -1) post.likes.push(user.email); else post.likes.splice(idx, 1);
     _updatePostStats(postId, post);
-    // Mettre ‡ jour le bouton like
+    // Mettre ÔøΩ jour le bouton like
     const el = document.getElementById('post-' + postId);
     if (el) {
       const liked = post.likes.includes(user.email);
@@ -630,7 +644,7 @@ function shareOnFacebook(postId) {
   const url  = base + '?post=' + postId + (ref ? '&ref=' + encodeURIComponent(ref) : '') + '#post-' + postId;
   const fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
   window.open(fbUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
-  // Tracker le partage si connectÈ
+  // Tracker le partage si connectÔøΩ
   if (user && window.PaganiAPI) {
     PaganiAPI.recordShare(postId).catch(() => {});
   }
@@ -670,7 +684,7 @@ async function submitComment(postId) {
   if (section) section.style.display = 'block';
   const post = _postsCache.find(p => p.id === pid);
   if (post) { post.comments.push(newComment); _updatePostStats(pid, post); }
-  // Marquer ce commentaire comme "en attente" pour bloquer l'Ècrasement par _silentRefreshFeed
+  // Marquer ce commentaire comme "en attente" pour bloquer l'ÔøΩcrasement par _silentRefreshFeed
   if (!_pendingComments.has(pid)) _pendingComments.set(pid, []);
   _pendingComments.get(pid).push(newComment.id);
   if (window.PaganiAPI) {
@@ -682,14 +696,14 @@ async function submitComment(postId) {
         if (idx !== -1) post.comments[idx] = { ...newComment, ...saved };
       }
     } catch(e) {
-      // …chec serveur : retirer le commentaire temporaire du cache et du DOM
+      // ÔøΩchec serveur : retirer le commentaire temporaire du cache et du DOM
       if (post) post.comments = post.comments.filter(c => c.id !== newComment.id);
       const cid = String(newComment.id).replace(/[^a-zA-Z0-9_-]/g, '_');
       document.getElementById('comment-' + cid)?.remove();
       _updatePostStats(pid, post);
 
     } finally {
-      // Retirer le verrou aprËs un court dÈlai pour laisser le DOM se stabiliser
+      // Retirer le verrou aprÔøΩs un court dÔøΩlai pour laisser le DOM se stabiliser
       setTimeout(() => {
         const pending = _pendingComments.get(pid);
         if (pending) {
@@ -737,7 +751,7 @@ async function submitReply(postId, commentId) {
   if (window.PaganiAPI) {
     try { await PaganiAPI.addReply(pid, commentId, text, replyTo); }
     catch(e) {
-      // …chec serveur : retirer la rÈponse temporaire du cache et re-render
+      // ÔøΩchec serveur : retirer la rÔøΩponse temporaire du cache et re-render
       if (comment) comment.replies = comment.replies.filter(r => r.id !== newReply.id);
       if (listEl && post) listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
       if (post) _updatePostStats(pid, post);
@@ -745,7 +759,7 @@ async function submitReply(postId, commentId) {
     }
   }
 }
-// ===== …DITEUR ADMIN =====
+// ===== ÔøΩDITEUR ADMIN =====
 function switchEditorTab(tab, btn) {
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -756,7 +770,7 @@ function switchEditorTab(tab, btn) {
 function updateEditorPreview(force) {
   const ta    = document.getElementById('newsContent');
   const count = document.getElementById('editorCharCount');
-  if (ta && count) count.textContent = ta.value.length + ' caractÈres';
+  if (ta && count) count.textContent = ta.value.length + ' caractÔøΩres';
   if (!force) return;
   const box   = document.getElementById('editorPreviewContent');
   const title = document.getElementById('newsTitle')?.value.trim();
@@ -764,7 +778,7 @@ function updateEditorPreview(force) {
   if (!box) return;
   box.innerHTML =
     (title ? `<h3 style="margin:0 0 0.6rem;font-size:1rem">${title}</h3>` : '') +
-    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">AperÁu vide.</p>');
+    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">AperÔøΩu vide.</p>');
 }
 function editorFormat(type) {
   const ta = document.getElementById('newsContent');
@@ -857,7 +871,7 @@ document.addEventListener('keydown', e => {
     if (lm && lm.style.display !== 'none') { e.preventDefault(); confirmInsertLink(); }
   }
 });
-// ===== GESTION THUMBNAIL VID…O =====
+// ===== GESTION THUMBNAIL VIDÔøΩO =====
 let _thumbnailBase64 = '';
 function uploadThumbnail(input) {
   const file = input.files[0];
@@ -953,7 +967,7 @@ async function publishNews(e) {
           el.classList.add('post-animate');
           container.insertBefore(el, container.firstChild);
         }
-        // Mettre ‡ jour la sentinelle/fin selon le nouvel Ètat du cache
+        // Mettre ÔøΩ jour la sentinelle/fin selon le nouvel ÔøΩtat du cache
         const oldEnd = container.querySelector('.feed-end');
         if (oldEnd) oldEnd.remove();
         const renderedCount = container.querySelectorAll('.post-card:not(.skeleton-card)').length;
@@ -1002,7 +1016,7 @@ function togglePostMenu(postId) {
   }, 10);
 }
 
-let _editPostImageBase64 = null; // null = pas de changement, '' = supprimÈe, 'data:...' = nouvelle
+let _editPostImageBase64 = null; // null = pas de changement, '' = supprimÔøΩe, 'data:...' = nouvelle
 
 function openEditPostModal(postId) {
   document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
@@ -1081,11 +1095,11 @@ async function submitEditPost() {
   const id      = Number(document.getElementById('editPostId').value);
   const content = document.getElementById('editPostContent').value.trim();
   const msg     = document.getElementById('editPostMsg');
-  if (!content) { msg.textContent = 'Le contenu ne peut pas Ítre vide.'; return; }
+  if (!content) { msg.textContent = 'Le contenu ne peut pas ÔøΩtre vide.'; return; }
   msg.textContent = '';
   const user = getUser();
   const isAdmin = user && user.role === 'admin';
-  // Construire le payload : image seulement si modifiÈe
+  // Construire le payload : image seulement si modifiÔøΩe
   const payload = { content };
   if (_editPostImageBase64 !== null) payload.image = _editPostImageBase64;
   try {
@@ -1103,7 +1117,7 @@ async function submitEditPost() {
     if (el) {
       const contentEl = el.querySelector('.post-content');
       if (contentEl) contentEl.innerHTML = formatPostContent(content);
-      // Mettre ‡ jour l'image dans le DOM
+      // Mettre ÔøΩ jour l'image dans le DOM
       if (_editPostImageBase64 !== null) {
         const wrap = el.querySelector('.post-image-wrap');
         if (_editPostImageBase64 === '') {
@@ -1131,7 +1145,7 @@ async function deleteUserPost(postId) {
     await PaganiAPI.deleteUserPost(postId);
     _postsCache = _postsCache.filter(p => p.id !== postId);
     document.getElementById('post-' + postId)?.remove();
-    // RafraÓchir la liste dashboard si on y est
+    // RafraÔøΩchir la liste dashboard si on y est
     if (document.getElementById('myPostsList')) loadMyPosts();
   } catch(e) { alert('Erreur : ' + e.message); }
 }
@@ -1178,7 +1192,7 @@ function openPostImage(postId) {
       <i class="fas fa-times"></i>
     </button>
     <img src="${post.image}" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.6)" />
-    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe o˘ ou appuyez sur Echap pour fermer</p>
+    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe oÔøΩ ou appuyez sur Echap pour fermer</p>
   `;
   // Fermer au clic sur l'overlay (pas sur l\'image)
   overlay.addEventListener("click", (e) => {
@@ -1238,7 +1252,7 @@ async function openPublicProfileByName(name) {
     if (found) window.location.href = `profil.html?id=${found.id}`;
   } catch(e) {}
 }
-// DÈfilement vers un post cible depuis une notification (ancre #post-ID)
+// DÔøΩfilement vers un post cible depuis une notification (ancre #post-ID)
 function scrollToTargetPost(retries) {
   if (retries === undefined) retries = 10;
   const hash = window.location.hash;
@@ -1289,11 +1303,11 @@ async function login(e) {
     showDashboard(user);
   } catch (ex) {
     const msgs = {
-      USER_NOT_FOUND:   "Aucun compte trouvÈ avec cet email.",
+      USER_NOT_FOUND:   "Aucun compte trouvÔøΩ avec cet email.",
       WRONG_PASSWORD:   "Mot de passe incorrect.",
-      ACCOUNT_DISABLED: "Ce compte a ÈtÈ dÈsactivÈ.",
+      ACCOUNT_DISABLED: "Ce compte a ÔøΩtÔøΩ dÔøΩsactivÔøΩ.",
     };
-    err.textContent = msgs[ex.message] || "Erreur de connexion. VÈrifiez que le serveur est dÈmarrÈ.";
+    err.textContent = msgs[ex.message] || "Erreur de connexion. VÔøΩrifiez que le serveur est dÔøΩmarrÔøΩ.";
   }
 }
 async function register(e) {
@@ -1309,15 +1323,15 @@ async function register(e) {
   const err = document.getElementById("regError");
   if (err) err.textContent = "";
   if (pass.length < 6) {
-    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractÈres.";
+    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractÔøΩres.";
     return;
   }
   if (!mmPhone) {
-    if (err) err.textContent = "Le numÈro Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le numÔøΩro Mobile Money est obligatoire.";
     return;
   }
   if (!mmName) {
-    if (err) err.textContent = "Le nom attachÈ au compte Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le nom attachÔøΩ au compte Mobile Money est obligatoire.";
     return;
   }
   try {
@@ -1326,8 +1340,8 @@ async function register(e) {
     if (window.PaganiNotif) await PaganiNotif.newUser(name);
     window.location.href = 'index.html';
   } catch (ex) {
-    const msgs = { EMAIL_TAKEN: "Cet email est dÈjÈ utilisÈ.", MM_PHONE_REQUIS: "Le numÈro Mobile Money est obligatoire." };
-    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. VÈrifiez que le serveur est dÈmarrÈ.";
+    const msgs = { EMAIL_TAKEN: "Cet email est dÔøΩjÔøΩ utilisÔøΩ.", MM_PHONE_REQUIS: "Le numÔøΩro Mobile Money est obligatoire." };
+    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. VÔøΩrifiez que le serveur est dÔøΩmarrÔøΩ.";
   }
 }
 async function logout() {
@@ -1355,7 +1369,7 @@ function showDashboard(user) {
   document.getElementById("dashEarnings").textContent = formatAR(user.earningsAR || 0);
   document.getElementById("coursesWatched").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("dashLevel").textContent = _getUserLevel(user);
-  // Afficher les onglets selon le rÈle
+  // Afficher les onglets selon le rÔøΩle
   const adminTabBtn  = document.getElementById("adminTabBtn");
   const videosTabBtn = document.getElementById("videosTabBtn");
   const subTabBtn    = document.getElementById("subTabBtn");
@@ -1393,14 +1407,14 @@ function showDashboard(user) {
     PaganiNotif.refreshBadge();
     PaganiNotif.startPolling();
   }
-  // Polling admin pour les badges en temps rÈel
+  // Polling admin pour les badges en temps rÔøΩel
   if (user.role === 'admin') _startAdminPolling();
-  // VÈrifier si on doit ouvrir l'onglet messages depuis une notification
+  // VÔøΩrifier si on doit ouvrir l'onglet messages depuis une notification
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam  = urlParams.get('tab');
   const withParam = urlParams.get('with');
   if (tabParam === 'messages') {
-    // Rediriger vers la page dÈdiÈe
+    // Rediriger vers la page dÔøΩdiÔøΩe
     window.location.href = 'messages.html' + (withParam ? '?with=' + withParam : '');
     return;
   }
@@ -1455,7 +1469,7 @@ function _renderWithdrawMmSelector(user) {
         </span>
       </label>`;
   }).join('');
-  // SÈlectionner le premier par dÈfaut
+  // SÔøΩlectionner le premier par dÔøΩfaut
   if (filled.length) _selectWithdrawMm(filled[0].operator, filled[0].phone);
 }
 function _selectWithdrawMm(operator, phone) {
@@ -1472,10 +1486,10 @@ let _mmAddingOperator = null;
 function renderMmAccounts(user) {
   const list = document.getElementById('mmAccountsList');
   if (!list) return;
-  // Construire la liste complËte des 3 opÈrateurs
+  // Construire la liste complÔøΩte des 3 opÔøΩrateurs
   // en fusionnant avec les comptes existants dans mmAccounts
   let savedAccounts = user.mmAccounts || [];
-  // Migration : si mmAccounts est vide mais mmPhone existe, l'intÈgrer
+  // Migration : si mmAccounts est vide mais mmPhone existe, l'intÔøΩgrer
   if (!savedAccounts.length && user.mmPhone) {
     savedAccounts = [{
       operator: user.mmOperator || 'MVola',
@@ -1484,7 +1498,7 @@ function renderMmAccounts(user) {
       locked: true
     }];
   }
-  // Toujours afficher les 3 opÈrateurs, remplis ou non
+  // Toujours afficher les 3 opÔøΩrateurs, remplis ou non
   const accounts = MM_OPERATORS.map(op => {
     const saved = savedAccounts.find(a => a.operator === op.key);
     return saved
@@ -1503,12 +1517,12 @@ function renderMmAccounts(user) {
           <strong>${acc.operator}</strong>
           ${filled
             ? `<span>${acc.phone}</span><span class="mm-account-name">${acc.name}</span>`
-            : `<span class="mm-account-empty">Non renseignÈ</span>`
+            : `<span class="mm-account-empty">Non renseignÔøΩ</span>`
           }
         </div>
         <div class="mm-account-status">
           ${filled
-            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> VerrouillÈ</span>`
+            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> VerrouillÔøΩ</span>`
             : `<button class="mm-add-btn" onclick="openAddMmModal('${acc.operator}')">
                  <i class="fas fa-plus"></i> Ajouter
                </button>`
@@ -1530,8 +1544,8 @@ async function confirmAddMmAccount() {
   const phone = document.getElementById('mmAddPhone').value.trim();
   const name  = document.getElementById('mmAddName').value.trim();
   const msg   = document.getElementById('mmAddMsg');
-  if (!phone) { msg.textContent = 'Entrez le numÈro.'; return; }
-  if (!name)  { msg.textContent = 'Entrez le nom attachÈ au compte.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numÔøΩro.'; return; }
+  if (!name)  { msg.textContent = 'Entrez le nom attachÔøΩ au compte.'; return; }
   msg.textContent = '';
   try {
     const updated = await PaganiAPI.addMmAccount(_mmAddingOperator, phone, name);
@@ -1541,9 +1555,9 @@ async function confirmAddMmAccount() {
     renderProfile(updated);
   } catch(e) {
     const msgs = {
-      COMPTE_VERROUILLE:  'Ce compte est dÈjÈ verrouillÈ.',
-      COMPTE_DEJA_AJOUTE: 'Ce compte a dÈjÈ ÈtÈ ajoutÈ.',
-      OPERATEUR_INVALIDE: 'OpÈrateur invalide.',
+      COMPTE_VERROUILLE:  'Ce compte est dÔøΩjÔøΩ verrouillÔøΩ.',
+      COMPTE_DEJA_AJOUTE: 'Ce compte a dÔøΩjÔøΩ ÔøΩtÔøΩ ajoutÔøΩ.',
+      OPERATEUR_INVALIDE: 'OpÔøΩrateur invalide.',
     };
     msg.textContent = msgs[e.message] || 'Erreur lors de l\'ajout.';
   }
@@ -1583,7 +1597,7 @@ function renderProfile(user) {
   const pubLink = document.getElementById("btnViewPublicProfile");
   if (pubLink) pubLink.href = "profil.html?id=" + user.id;
   document.getElementById("profilePlanBadge").textContent = "Plan " + user.plan;
-  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignÈe.";
+  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignÔøΩe.";
   document.getElementById("pStatCourses").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("pStatRefs").textContent = user.refs || 0;
   document.getElementById("pStatEarnings").textContent = formatAR(user.earningsAR || 0);
@@ -1643,7 +1657,7 @@ const _crop = {
 };
 function uploadAvatarPhoto(input) {
   const file = input.files[0];
-  input.value = ""; // reset pour permettre re-sÈlection
+  input.value = ""; // reset pour permettre re-sÔøΩlection
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { alert("Image trop grande (max 5 Mo)."); return; }
   const reader = new FileReader();
@@ -1687,7 +1701,7 @@ function updateCrop() {
   const s = baseScale * _crop.scale;
   const w = naturalW * s;
   const h = naturalH * s;
-  // Limiter le dÈplacement pour ne pas sortir du cadre
+  // Limiter le dÔøΩplacement pour ne pas sortir du cadre
   const maxX = 0;
   const minX = wrapSize - w;
   const maxY = 0;
@@ -1769,10 +1783,10 @@ async function changePassword(e) {
   const newPass = document.getElementById("newPassword").value;
   const msg     = document.getElementById("passwordMsg");
   if (!user) return;
-  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractÈres."; msg.style.color="var(--red)"; return; }
+  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractÔøΩres."; msg.style.color="var(--red)"; return; }
   try {
     await PaganiAPI.changePassword(oldPass, newPass);
-    msg.textContent = "? Mot de passe modifiÈ avec succËs.";
+    msg.textContent = "? Mot de passe modifiÔøΩ avec succÔøΩs.";
     msg.style.color = "var(--green)";
     document.getElementById("changePasswordForm").reset();
   } catch(ex) {
@@ -1816,7 +1830,7 @@ async function loadAdminStats() {
   document.getElementById("kpiElite").textContent      = stats.eliteMembers;
   document.getElementById("kpiRevenue").textContent    = formatAR(stats.totalRevenueAR);
   document.getElementById("kpiPending").textContent    = formatAR(stats.pendingWithdraws);
-  // Barre de rÈpartition des plans
+  // Barre de rÔøΩpartition des plans
   const total = stats.totalMembers || 1;
   const plans = [
     { label: "Starter", count: stats.starterMembers,  color: "var(--text2)" },
@@ -1896,7 +1910,7 @@ async function loadAdminPaymentAccounts() {
     const isOff   = !!acc.disabled;
     return `
     <div class="admin-payment-row" id="pay-row-${key}">
-      <!-- OpÈrateur -->
+      <!-- OpÔøΩrateur -->
       <div class="admin-payment-op">
         <span class="admin-payment-icon" style="background:${op.color}22;color:${op.color}">
           <i class="fas fa-mobile-alt"></i>
@@ -1911,30 +1925,30 @@ async function loadAdminPaymentAccounts() {
             <span class="admin-payment-name">${acc.name}</span>
           </span>
           ${isOff
-            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> DÈsactivÈ${acc.disabledReason ? ' ‚Äî ' + acc.disabledReason : ''}</span>`
+            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> DÔøΩsactivÔøΩ${acc.disabledReason ? ' ‚Äî ' + acc.disabledReason : ''}</span>`
             : `<span class="admin-pay-saved"><i class="fas fa-check-circle"></i> Actif</span>`
           }
           <div class="admin-payment-actions">
-            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'RÈactiver' : 'DÈsactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
+            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'RÔøΩactiver' : 'DÔøΩsactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
               <i class="fas fa-${isOff ? 'check-circle' : 'ban'}"></i>
             </button>
             <button class="admin-action-btn edit" title="Modifier" onclick="editPaymentAccount('${acc.operator}')">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="admin-action-btn del" title="Supprimer le numÈro" onclick="openClearPayment('${acc.operator}')">
+            <button class="admin-action-btn del" title="Supprimer le numÔøΩro" onclick="openClearPayment('${acc.operator}')">
               <i class="fas fa-trash"></i>
             </button>
           </div>` : `
-          <span class="admin-payment-empty">Non configurÈ</span>
+          <span class="admin-payment-empty">Non configurÔøΩ</span>
           <button class="admin-payment-edit-btn" onclick="editPaymentAccount('${acc.operator}')">
             <i class="fas fa-plus"></i> Ajouter
           </button>`
         }
       </div>
-      <!-- Formulaire inline Èdition -->
+      <!-- Formulaire inline ÔøΩdition -->
       <div class="admin-payment-edit-form" id="pay-edit-${key}" style="display:none">
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;width:100%">
-          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="NumÈro ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
+          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="NumÔøΩro ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
           <input type="text" id="pay-name-${key}"  class="upgrade-input" placeholder="Nom du compte" value="${acc.name||''}" style="flex:1;min-width:140px" />
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
@@ -1963,7 +1977,7 @@ function cancelPaymentEdit(operator) {
   document.getElementById(`pay-fields-${key}`).style.display = 'flex';
   document.getElementById(`pay-edit-${key}`).style.display   = 'none';
 }
-// ===== TOGGLE D…SACTIVER / R…ACTIVER COMPTE PAIEMENT =====
+// ===== TOGGLE DÔøΩSACTIVER / RÔøΩACTIVER COMPTE PAIEMENT =====
 let _togglePayTarget = null;
 function openTogglePayment(operator, isCurrentlyDisabled) {
   _togglePayTarget = { operator, isCurrentlyDisabled };
@@ -1973,18 +1987,18 @@ function openTogglePayment(operator, isCurrentlyDisabled) {
   const reasonInput = document.getElementById('togglePayReason');
   const confirmBtn  = document.getElementById('togglePayConfirmBtn');
   if (isCurrentlyDisabled) {
-    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> RÈactiver ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> RÔøΩactiver ${operator} ?`;
     reasonWrap.style.display = 'none';
     confirmBtn.style.background = 'var(--green)';
-    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> RÈactiver';
+    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> RÔøΩactiver';
   } else {
-    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> DÈsactiver ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> DÔøΩsactiver ${operator} ?`;
     reasonWrap.style.display = 'block';
     if (reasonInput) reasonInput.value = '';
     confirmBtn.style.background = '';
     confirmBtn.className = 'btn-primary';
     confirmBtn.style.cssText = 'width:100%;background:var(--red);border:none';
-    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> DÈsactiver';
+    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> DÔøΩsactiver';
   }
   modal.style.display = 'flex';
   if (!isCurrentlyDisabled) setTimeout(() => reasonInput?.focus(), 50);
@@ -2006,7 +2020,7 @@ async function confirmTogglePayment() {
   } catch(e) { alert('Erreur : ' + e.message); }
   _togglePayTarget = null;
 }
-// ===== SUPPRIMER NUM…RO COMPTE PAIEMENT =====
+// ===== SUPPRIMER NUMÔøΩRO COMPTE PAIEMENT =====
 let _clearPayTarget = null;
 function openClearPayment(operator) {
   _clearPayTarget = operator;
@@ -2032,7 +2046,7 @@ async function savePaymentAccount(operator) {
   const phone = document.getElementById(`pay-phone-${key}`).value.trim();
   const name  = document.getElementById(`pay-name-${key}`).value.trim();
   const msg   = document.getElementById(`pay-msg-${key}`);
-  if (!phone) { msg.textContent = 'Entrez le numÈro.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numÔøΩro.'; return; }
   if (!name)  { msg.textContent = 'Entrez le nom du compte.'; return; }
   msg.textContent = '';
   try {
@@ -2044,12 +2058,12 @@ async function savePaymentAccount(operator) {
   await loadAdminPaymentAccounts();
 }
 // ===== DASHBOARD =====
-// Calcule le niveau textuel d'un utilisateur selon ses cours dÈbloquÈs et son plan
+// Calcule le niveau textuel d'un utilisateur selon ses cours dÔøΩbloquÔøΩs et son plan
 function _getUserLevel(user) {
   const unlocked = (user.unlockedCourses || []).length;
   if (user.plan === 'Elite' || unlocked >= 8) return 'Expert';
-  if (user.plan === 'Pro'   || unlocked >= 3) return 'IntermÈdiaire';
-  return 'DÈbutant';
+  if (user.plan === 'Pro'   || unlocked >= 3) return 'IntermÔøΩdiaire';
+  return 'DÔøΩbutant';
 }
 function renderProgress() {
   const list = document.getElementById("progressList");
@@ -2063,7 +2077,7 @@ function renderProgress() {
     .filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
     .slice(0, 5);
   if (!toShow.length) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commencÈe.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commencÔøΩe.</p></div>';
     return;
   }
   list.innerHTML = toShow.map(v => {
@@ -2077,19 +2091,19 @@ function renderProgress() {
 }
 
 function requestWithdraw() {
-  alert("Demande de retrait envoyÈe ! Vous recevrez vos fonds sous 24-72h.");
+  alert("Demande de retrait envoyÔøΩe ! Vous recevrez vos fonds sous 24-72h.");
 }
 // ===== FORMATIONS =====
-// Table de correspondance cours -> index DOM (jamais l\'ID rÈel en attribut HTML)
+// Table de correspondance cours -> index DOM (jamais l\'ID rÔøΩel en attribut HTML)
 let _courseIndexMap = [];
 function renderCourses(filter = "all") {
   const grid = document.getElementById("coursesGrid");
   if (!grid) return;
-  const videos   = getVideos(); // source de vÈritÈ (localStorage ou COURSES)
+  const videos   = getVideos(); // source de vÔøΩritÔøΩ (localStorage ou COURSES)
   const all      = videos.length ? videos : COURSES;
   const filtered = filter === "all" ? all : all.filter(c => c.category === filter);
   const user     = getUser();
-  // Construire la map index -> id rÈel (jamais exposÈe dans le HTML)
+  // Construire la map index -> id rÔøΩel (jamais exposÔøΩe dans le HTML)
   _courseIndexMap = filtered.map(c => c.id);
   grid.innerHTML = filtered.map((c, idx) => {
     const hasAccess = c.free || (user && (user.plan === 'Pro' || user.plan === 'Elite')) || (user && (user.unlockedCourses||[]).includes(c.id));
@@ -2131,7 +2145,7 @@ function _applyFiltersAndSearch() {
   const videos = getVideos().length ? getVideos() : COURSES;
   const activeBtn = document.querySelector('.filter-btn.active');
   const activeCat = activeBtn ? (activeBtn.onclick ? '' : '') : 'all';
-  // Lire la catÈgorie depuis le bouton actif
+  // Lire la catÔøΩgorie depuis le bouton actif
   let cat = 'all';
   document.querySelectorAll('.filter-btn').forEach(b => {
     if (b.classList.contains('active')) {
@@ -2159,7 +2173,7 @@ function _applyFiltersAndSearch() {
   if (banner) {
     if (_searchQuery) {
       banner.style.display = 'block';
-      banner.textContent = filtered.length + ' rÈsultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
+      banner.textContent = filtered.length + ' rÔøΩsultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
     } else {
       banner.style.display = 'none';
     }
@@ -2204,7 +2218,7 @@ function setView(view, btn) {
     grid.classList.add('courses-grid-view');
   }
 }
-// Met ‡ jour les stats hero de la page formations
+// Met ÔøΩ jour les stats hero de la page formations
 function updateFormationsStats() {
   const videos = getVideos().length ? getVideos() : COURSES;
   const total = videos.length;
@@ -2217,22 +2231,22 @@ function updateFormationsStats() {
   if (elFree)  elFree.textContent  = free;
   if (elPaid)  elPaid.textContent  = paid;
 }
-// ===== PLAYER VID…O (YouTube IFrame API + Google Drive) =====
+// ===== PLAYER VIDÔøΩO (YouTube IFrame API + Google Drive) =====
 let _ytPlayer     = null;
 let _ytApiReady   = false;
 let _ytPendingId  = null;
-// Callback appelÈ automatiquement par l'API YouTube quand elle est chargÈe
+// Callback appelÔøΩ automatiquement par l'API YouTube quand elle est chargÔøΩe
 function onYouTubeIframeAPIReady() {
   _ytApiReady = true;
   if (_ytPendingId) { _loadYT(_ytPendingId); _ytPendingId = null; }
 }
 function _loadYT(videoId) {
   _showVideoSlot('youtube');
-  // DÈtruire l\'ancien player s'il existe pour repartir propre
+  // DÔøΩtruire l\'ancien player s'il existe pour repartir propre
   if (_ytPlayer) {
     try { _ytPlayer.destroy(); } catch(e) {}
     _ytPlayer = null;
-    // RecrÈer le div cible (destroy() le vide)
+    // RecrÔøΩer le div cible (destroy() le vide)
     const container = document.getElementById('videoContainer');
     if (container && !document.getElementById('ytPlayer')) {
       const div = document.createElement('div');
@@ -2262,10 +2276,10 @@ function _loadDrive(driveId) {
   const frame = document.getElementById('driveFrame');
   if (!frame) return;
   frame.src = `https://drive.google.com/file/d/${driveId}/preview`;
-  // DÈtecter si Drive ouvre un nouvel onglet et le fermer immÈdiatement
+  // DÔøΩtecter si Drive ouvre un nouvel onglet et le fermer immÔøΩdiatement
   const onBlur = () => {
     setTimeout(() => {
-      // Si la fenÍtre a perdu le focus È cause d'un nouvel onglet Drive
+      // Si la fenÔøΩtre a perdu le focus ÔøΩ cause d'un nouvel onglet Drive
       if (document.hidden) return;
       // Tenter de fermer le dernier onglet ouvert
       try {
@@ -2304,7 +2318,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
       <!-- Header -->
       <div class="upgrade-modal-header">
         <div class="upgrade-lock-icon">??</div>
-        <h2>${isGuest ? 'Connectez-vous pour accÈder' : 'Passez ‡ un plan supÈrieur'}</h2>
+        <h2>${isGuest ? 'Connectez-vous pour accÔøΩder' : 'Passez ÔøΩ un plan supÔøΩrieur'}</h2>
         <p>${isGuest
           ? (isFree
               ? 'Connectez-vous pour regarder cette formation gratuite.'
@@ -2357,7 +2371,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </button>
           </div>
         </div>
-        <!-- Formulaire paiement (masquÈ par dÈfaut) -->
+        <!-- Formulaire paiement (masquÔøΩ par dÔøΩfaut) -->
         <div class="upgrade-payment" id="upgradePayment" style="display:none">
           <div class="upgrade-payment-header">
             <button class="upgrade-back-btn" onclick="_backToPlans()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -2367,15 +2381,15 @@ async function _showUpgradeModal(user, courseName, isFree) {
             <div class="upgrade-step">
               <div class="upgrade-step-num">1</div>
               <div style="width:100%">
-                <strong>Choisissez votre mÈthode de paiement</strong>
-                <p style="margin-bottom:0.8rem">SÈlectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
+                <strong>Choisissez votre mÔøΩthode de paiement</strong>
+                <p style="margin-bottom:0.8rem">SÔøΩlectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
                 <div id="upgradeUserMmWrap"></div>
               </div>
             </div>
             <div class="upgrade-step" id="upgradeStep2">
               <div class="upgrade-step-num">2</div>
               <div style="width:100%">
-                <strong>Envoyez le montant ‡ ce numÈro</strong>
+                <strong>Envoyez le montant ÔøΩ ce numÔøΩro</strong>
                 <p style="margin-bottom:0.6rem">Envoyez exactement <strong id="upgradeAmountRepeat" style="color:var(--accent2)"></strong> au compte ci-dessous :</p>
                 <div id="upgradeMmTargets" class="upgrade-mm-targets"></div>
               </div>
@@ -2384,9 +2398,9 @@ async function _showUpgradeModal(user, courseName, isFree) {
               <div class="upgrade-step-num">3</div>
               <div style="width:100%">
                 <strong>Confirmez votre envoi</strong>
-                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous aprËs avoir effectuÈ le transfert :</p>
+                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous aprÔøΩs avoir effectuÔøΩ le transfert :</p>
                 <div class="upgrade-form">
-                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="RÈfÈrence transaction (optionnel)" />
+                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="RÔøΩfÔøΩrence transaction (optionnel)" />
                   <!-- PREUVE DE PAIEMENT -->
                   <div id="upgradeProofWrap" style="margin-top:0.6rem">
                     <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
@@ -2403,7 +2417,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     onmouseover="this.style.borderColor='var(--accent)'"
                     onmouseout="this.style.borderColor=document.getElementById('upgradeProofImg').src?'var(--accent2)':'var(--border)'">
                       <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'Ècran</span>
+                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'ÔøΩcran</span>
                       <input type="file" id="upgradeProofInput" accept="image/*" style="display:none"
                         onchange="_previewUpgradeProof(this)" />
                     </label>
@@ -2422,7 +2436,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     </div>
                   </div>
                   <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitUpgradeRequest()">
-                    <i class="fas fa-paper-plane"></i> J'ai envoyÈ le paiement
+                    <i class="fas fa-paper-plane"></i> J'ai envoyÔøΩ le paiement
                   </button>
                   <p id="upgradeMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
                 </div>
@@ -2430,11 +2444,11 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </div>
           </div>
         </div>
-        <!-- SuccËs -->
+        <!-- SuccÔøΩs -->
         <div class="upgrade-success" id="upgradeSuccess" style="display:none">
           <div style="font-size:3rem">?</div>
-          <h3>Demande envoyÈe !</h3>
-          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a ÈtÈ reÁue.<br>Votre compte sera activÈ sous <strong>24h</strong> aprËs vÈrification du paiement.</p>
+          <h3>Demande envoyÔøΩe !</h3>
+          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a ÔøΩtÔøΩ reÔøΩue.<br>Votre compte sera activÔøΩ sous <strong>24h</strong> aprÔøΩs vÔøΩrification du paiement.</p>
           <button class="btn-outline" onclick="document.getElementById('upgradeModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
         </div>
       `}
@@ -2460,7 +2474,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
 let _selectedPlan     = null;
 let _selectedAmount   = 0;
 let _adminPayAccounts = [];
-// Charge les comptes admin UNE SEULE FOIS et met ‡ jour le cache
+// Charge les comptes admin UNE SEULE FOIS et met ÔøΩ jour le cache
 async function _loadAdminPayAccounts() {
   try {
     const data = await PaganiAPI.getPaymentAccounts ? PaganiAPI.getPaymentAccounts() : fetch(API_URL + '/payment-accounts').then(r => r.json());
@@ -2502,11 +2516,11 @@ async function _selectUpgradePlan(plan, amount) {
 }
 /**
  * Construit toute la vue de paiement :
- * - RÈcupÈre les comptes MM de l\'utilisateur
- * - Filtre les opÈrateurs admin disponibles
- * - Si l\'utilisateur a plusieurs comptes ‚Üí sÈlecteur de cartes
+ * - RÔøΩcupÔøΩre les comptes MM de l\'utilisateur
+ * - Filtre les opÔøΩrateurs admin disponibles
+ * - Si l\'utilisateur a plusieurs comptes ‚Üí sÔøΩlecteur de cartes
  * - Si un seul ‚Üí affichage direct
- * - Quand l\'utilisateur choisit un opÈrateur ‚Üí affiche le numÈro admin correspondant
+ * - Quand l\'utilisateur choisit un opÔøΩrateur ‚Üí affiche le numÔøΩro admin correspondant
  */
 function _buildPaymentView(user, adminAccounts) {
   const adminConfigured = adminAccounts.filter(a => a.phone);
@@ -2519,18 +2533,18 @@ function _buildPaymentView(user, adminAccounts) {
       userAccounts = [{ operator: user.mmOperator || 'MVola', phone: user.mmPhone, name: user.mmName || user.name }];
     }
   }
-  // Trouver les opÈrateurs en commun (user a le compte ET admin a le numÈro)
+  // Trouver les opÔøΩrateurs en commun (user a le compte ET admin a le numÔøΩro)
   const commonOps = userAccounts.filter(ua =>
     adminConfigured.some(aa => aa.operator === ua.operator)
   );
-  // Construire le sÈlecteur utilisateur
+  // Construire le sÔøΩlecteur utilisateur
   _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured);
-  // Afficher le numÈro admin du premier opÈrateur commun par dÈfaut
+  // Afficher le numÔøΩro admin du premier opÔøΩrateur commun par dÔøΩfaut
   if (commonOps.length) {
     _showAdminTargetFor(commonOps[0].operator, adminConfigured);
     _setUpgradeFields(commonOps[0].operator, commonOps[0].phone);
   } else if (userAccounts.length) {
-    // L'utilisateur a des comptes mais aucun opÈrateur admin correspondant
+    // L'utilisateur a des comptes mais aucun opÔøΩrateur admin correspondant
     _showAdminTargetFor(null, adminConfigured);
     _setUpgradeFields(userAccounts[0].operator, userAccounts[0].phone);
   } else {
@@ -2541,17 +2555,17 @@ function _showAdminTargetFor(operator, adminAccounts) {
   const wrap = document.getElementById('upgradeMmTargets');
   if (!wrap) return;
   const colors     = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Filtrer les comptes dÈsactivÈs ‚Äî non visibles aux membres
+  // Filtrer les comptes dÔøΩsactivÔøΩs ‚Äî non visibles aux membres
   const configured = adminAccounts.filter(a => a.phone && !a.disabled);
   if (!configured.length) {
     wrap.innerHTML = `
       <div class="upgrade-mm-no-admin">
         <i class="fas fa-exclamation-circle"></i>
-        Aucun numÈro de paiement configurÈ. Contactez l\'administrateur.
+        Aucun numÔøΩro de paiement configurÔøΩ. Contactez l\'administrateur.
       </div>`;
     return;
   }
-  // DÈterminer le compte sÈlectionnÈ par dÈfaut
+  // DÔøΩterminer le compte sÔøΩlectionnÔøΩ par dÔøΩfaut
   const defaultAcc = operator
     ? (configured.find(a => a.operator === operator) || configured[0])
     : configured[0];
@@ -2604,7 +2618,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
         onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'"
         onclick="_toggleAdminMmAll()">
-        <i class="fas fa-exchange-alt"></i> Changer de mÈthode
+        <i class="fas fa-exchange-alt"></i> Changer de mÔøΩthode
       </button>` : ''}`;
 }
 function _toggleAdminMmAll() {
@@ -2614,15 +2628,15 @@ function _toggleAdminMmAll() {
   const btn  = document.getElementById('upgradeAdminMmChangeBtn');
   const allVisible = [...opts].every(o => o.style.display !== 'none');
   if (allVisible) {
-    // Recacher les non-sÈlectionnÈes
+    // Recacher les non-sÔøΩlectionnÔøΩes
     opts.forEach(o => {
       const card = o.querySelector('div');
       const isSelected = card && card.style.borderColor.includes('accent2') || card && card.style.border.includes('accent2');
-      // DÈtecter via le badge "Envoyer ici"
+      // DÔøΩtecter via le badge "Envoyer ici"
       const hasBadge = o.querySelector('[style*="Envoyer"]') || o.innerHTML.includes('Envoyer ici');
       if (!hasBadge) o.style.display = 'none';
     });
-    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de mÈthode';
+    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de mÔøΩthode';
   } else {
     opts.forEach(o => o.style.display = 'block');
     if (btn) btn.innerHTML = '<i class="fas fa-times"></i> Annuler';
@@ -2659,41 +2673,41 @@ function _onAdminMmSelect(selectedIdx) {
     }
   });
   const btn = document.getElementById('upgradeAdminMmChangeBtn');
-  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de mÈthode';
+  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de mÔøΩthode';
 }
 /**
- * Construit le sÈlecteur de compte MM utilisateur.
- * - Si pas connectÈ ‚Üí champs manuels
- * - Si connectÈ sans compte ‚Üí alerte + champs manuels
- * - Si 1 seul compte È affichage fixe (pas de choix)
+ * Construit le sÔøΩlecteur de compte MM utilisateur.
+ * - Si pas connectÔøΩ ‚Üí champs manuels
+ * - Si connectÔøΩ sans compte ‚Üí alerte + champs manuels
+ * - Si 1 seul compte ÔøΩ affichage fixe (pas de choix)
  * - Si plusieurs comptes ‚Üí cartes radio cliquables
- *   È seuls les opÈrateurs avec numÈro admin sont mis en avant
+ *   ÔøΩ seuls les opÔøΩrateurs avec numÔøΩro admin sont mis en avant
  */
 function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
   const wrap = document.getElementById('upgradeUserMmWrap');
   if (!wrap) return;
   const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Cas 1 : visiteur non connectÈ
+  // Cas 1 : visiteur non connectÔøΩ
   if (!user) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice">
         <i class="fas fa-info-circle"></i>
-        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistrÈ.</span>
+        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistrÔøΩ.</span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre opÈrateur</label>
+        <label class="upgrade-form-label">Votre opÔøΩrateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.map(a =>
             `<option value="${a.operator}">${a.operator}</option>`
           ).join('')}
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numÈro Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numÔøΩro Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 2 : connectÈ sans aucun compte MM
+  // Cas 2 : connectÔøΩ sans aucun compte MM
   if (!userAccounts.length) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice upgrade-mm-notice-warn">
@@ -2703,20 +2717,20 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
         </span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre opÈrateur</label>
+        <label class="upgrade-form-label">Votre opÔøΩrateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.length
             ? adminConfigured.map(a => `<option value="${a.operator}">${a.operator}</option>`).join('')
             : `<option value="MVola">MVola</option><option value="Orange Money">Orange Money</option><option value="Airtel Money">Airtel Money</option>`
           }
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numÈro Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numÔøΩro Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 3 : 1 seul compte MM È affichage fixe, pas de sÈlecteur
+  // Cas 3 : 1 seul compte MM ÔøΩ affichage fixe, pas de sÔøΩlecteur
   if (userAccounts.length === 1) {
     const acc   = userAccounts[0];
     const color = colors[acc.operator] || 'var(--accent)';
@@ -2738,14 +2752,14 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
       ${!hasAdmin ? `
         <div class="upgrade-mm-notice upgrade-mm-notice-warn" style="margin-top:0.5rem">
           <i class="fas fa-exclamation-triangle"></i>
-          <span>L'opÈrateur <strong>${acc.operator}</strong> n'est pas encore configurÈ par l\'admin.
-            Choisissez un autre numÈro admin ci-dessus pour envoyer.</span>
+          <span>L'opÔøΩrateur <strong>${acc.operator}</strong> n'est pas encore configurÔøΩ par l\'admin.
+            Choisissez un autre numÔøΩro admin ci-dessus pour envoyer.</span>
         </div>` : ''}
       <input type="hidden" id="upgradeOperator" value="${acc.operator}" />
       <input type="hidden" id="upgradePhone"    value="${acc.phone}" />`;
     return;
   }
-  // Cas 4 : plusieurs comptes MM ‚Üí sÈlecteur de cartes
+  // Cas 4 : plusieurs comptes MM ‚Üí sÔøΩlecteur de cartes
   wrap.innerHTML = `
     <p class="upgrade-form-label" style="margin-bottom:0.5rem">
       <i class="fas fa-hand-pointer" style="color:var(--accent)"></i>
@@ -2772,7 +2786,7 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
               <span class="upgrade-user-mm-right">
                 ${hasAdmin
                   ? `<span class="upgrade-mm-match"><i class="fas fa-check-circle"></i></span>`
-                  : `<span class="upgrade-mm-nomatch" title="Pas de numÈro admin pour cet opÈrateur"><i class="fas fa-exclamation-circle"></i></span>`
+                  : `<span class="upgrade-mm-nomatch" title="Pas de numÔøΩro admin pour cet opÔøΩrateur"><i class="fas fa-exclamation-circle"></i></span>`
                 }
                 <span class="upgrade-user-mm-check"><i class="fas fa-check-circle"></i></span>
               </span>
@@ -2783,12 +2797,12 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
     <input type="hidden" id="upgradeOperator" value="${(commonOps[0] || userAccounts[0]).operator}" />
     <input type="hidden" id="upgradePhone"    value="${(commonOps[0] || userAccounts[0]).phone}" />`;
 }
-// AppelÈ quand l\'utilisateur change de compte MM (sÈlecteur cartes)
+// AppelÔøΩ quand l\'utilisateur change de compte MM (sÔøΩlecteur cartes)
 function _onUserMmChange(operator, phone) {
   _setUpgradeFields(operator, phone);
   _showAdminTargetFor(operator, _adminPayAccounts);
 }
-// AppelÈ quand l\'utilisateur change l'opÈrateur dans le select manuel
+// AppelÔøΩ quand l\'utilisateur change l'opÔøΩrateur dans le select manuel
 function _onManualOpChange(operator) {
   const opEl = document.getElementById('upgradeOperator');
   if (opEl) opEl.value = operator;
@@ -2876,7 +2890,7 @@ function _removeUpgradeProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'Ècran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ÔøΩcran";
 }
 function _backToPlans() {
   document.querySelector('.upgrade-plans').style.display = 'grid';
@@ -2888,11 +2902,11 @@ async function _submitUpgradeRequest() {
   const txRef    = document.getElementById('upgradeTxRef').value.trim();
   const proof    = _upgradeProofBase64;
   const msg      = document.getElementById('upgradeMsg');
-  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numÈro Mobile Money.'; return; }
+  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numÔøΩro Mobile Money.'; return; }
   if (!proof)  {
     msg.style.color = 'var(--red)';
-    msg.textContent = '?? La preuve de paiement est obligatoire. Veuillez joindre une capture d\'Ècran.';
-    // Mettre en Èvidence la zone de preuve
+    msg.textContent = '?? La preuve de paiement est obligatoire. Veuillez joindre une capture d\'ÔøΩcran.';
+    // Mettre en ÔøΩvidence la zone de preuve
     const label = document.getElementById('upgradeProofLabel');
     if (label) {
       label.style.borderColor = 'var(--red)';
@@ -2925,19 +2939,19 @@ async function _submitUpgradeRequest() {
       }
       throw new Error(err.error || 'ERREUR_SERVEUR');
     }
-    // SuccËs rÈel ‚Äî l'API a confirmÈ la rÈception
+    // SuccÔøΩs rÔøΩel ‚Äî l'API a confirmÔøΩ la rÔøΩception
     _upgradeProofBase64 = '';
     document.getElementById('upgradePayment').style.display = 'none';
     document.getElementById('upgradeSuccess').style.display = 'flex';
     document.getElementById('upgradeSuccessPlan').textContent = _selectedPlan;
   } catch(e) {
-    // Erreur rÈelle ‚Äî on affiche le message, on ne cache PAS le formulaire
+    // Erreur rÔøΩelle ‚Äî on affiche le message, on ne cache PAS le formulaire
     const errMsgs = {
-      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. VÈrifiez votre connexion.',
-      NON_AUTHENTIFIE:      'Session expirÈe. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:       'Session expirÈe. Veuillez vous reconnecter.',
+      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. VÔøΩrifiez votre connexion.',
+      NON_AUTHENTIFIE:      'Session expirÔøΩe. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:       'Session expirÔøΩe. Veuillez vous reconnecter.',
       PREUVE_REQUISE:       'La preuve de paiement est obligatoire.',
-      ERREUR_SERVEUR:       'Erreur serveur. RÈessayez dans quelques instants.',
+      ERREUR_SERVEUR:       'Erreur serveur. RÔøΩessayez dans quelques instants.',
     };
     msg.style.color = 'var(--red)';
     msg.textContent = '? ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
@@ -2946,7 +2960,7 @@ async function _submitUpgradeRequest() {
 async function openCourse(idx) {
   const realId = _courseIndexMap[idx];
   if (realId === undefined) return;
-  // Utiliser le cache dÈjÈ chargÈ, sinon COURSES hardcodÈes
+  // Utiliser le cache dÔøΩjÔøΩ chargÔøΩ, sinon COURSES hardcodÔøΩes
   const allVideos = getVideos().length ? getVideos() : COURSES;
   let course = allVideos.find(c => c.id === realId || c.id === Number(realId));
   // Si pas dans le cache local, charger depuis le serveur
@@ -2963,9 +2977,9 @@ async function openCourse(idx) {
     try { user = await PaganiAPI.getMe(); window._currentUser = user; } catch(e) {}
   }
   if (!course.free && !user) { _showUpgradeModal(null, course.title); return; }
-  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'accËs
+  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'accÔøΩs
   if (!course.free && user && user.plan === 'Starter') {
-    // RafraÓchir le user depuis le serveur pour avoir unlockedCourses ‡ jour
+    // RafraÔøΩchir le user depuis le serveur pour avoir unlockedCourses ÔøΩ jour
     if (window.PaganiAPI) {
       try {
         const fresh = await PaganiAPI.getMe();
@@ -2987,7 +3001,7 @@ async function openCourse(idx) {
   if (!modal) return;
   document.getElementById('modalTitle').textContent = course.title;
   document.getElementById('modalDesc').textContent  = course.desc;
-  // Description dÈtaillÈe admin
+  // Description dÔøΩtaillÔøΩe admin
   const descWrap    = document.getElementById('modalVideoDesc');
   const descContent = document.getElementById('modalVideoDescContent');
   const descToggle  = document.getElementById('modalVideoDescToggle');
@@ -3011,7 +3025,7 @@ async function openCourse(idx) {
       descWrap.style.display = 'none';
     }
   }
-  // VidÈo gratuite : connexion requise pour lire
+  // VidÔøΩo gratuite : connexion requise pour lire
   if (course.free) {
     if (!user) { _showUpgradeModal(null, course.title, true); return; }
     modal.classList.add('open');
@@ -3022,14 +3036,14 @@ async function openCourse(idx) {
     else { _ytApiReady ? _loadYT(id) : (_ytPendingId = id, _showVideoSlot('youtube')); }
     return;
   }
-  // VidÈo payante : demander un token au serveur
+  // VidÔøΩo payante : demander un token au serveur
   if (window.PaganiAPI) {
     modal.classList.add('open');
     _showVideoSlot('youtube'); // afficher un loader
     try {
       const result = await PaganiAPI.getVideoToken(realId);
       if (result.source === 'drive') {
-        // RÈsoudre le token en driveId rÈel
+        // RÔøΩsoudre le token en driveId rÔøΩel
         const { driveId } = await PaganiAPI.resolveVideoToken(result.token);
         _loadDrive(driveId);
       } else {
@@ -3039,19 +3053,19 @@ async function openCourse(idx) {
       _showVideoError(
         e.message === 'ACCES_REFUSE'
           ? '?? Cette formation est reservee aux membres Pro et Elite.'
-          : 'È VidÈo bientÙt disponible.'
+          : 'ÔøΩ VidÔøΩo bientÔøΩt disponible.'
       );
     }
     return;
   }
-  // Fallback : ancien systËme sans serveur
+  // Fallback : ancien systÔøΩme sans serveur
   const video = _getSecureVideo(course, user);
   modal.classList.add('open');
   if (!video) {
     _showVideoError(
       !user || (user.plan === 'Starter')
         ? '?? Cette formation est reservee aux membres Pro et Elite.'
-        : 'È VidÈo bientÙt disponible.'
+        : 'ÔøΩ VidÔøΩo bientÔøΩt disponible.'
     );
     return;
   }
@@ -3062,7 +3076,7 @@ function closeModal() {
   const modal = document.getElementById('videoModal');
   if (!modal) return;
   modal.classList.remove('open');
-  // Mettre en pause sans dÈtruire
+  // Mettre en pause sans dÔøΩtruire
   if (_ytPlayer && typeof _ytPlayer.pauseVideo === 'function') {
     try { _ytPlayer.pauseVideo(); } catch(e) {}
   }
@@ -3071,18 +3085,18 @@ function closeModal() {
   if (drive) drive.src = '';
   _showVideoSlot('youtube');
 }
-// ===== Achat vidÈo unitaire =====
+// ===== Achat vidÔøΩo unitaire =====
 async function _showBuyVideoModal(user, course) {
   const existing = document.getElementById('buyVideoModalOverlay');
   if (existing) existing.remove();
-  // RÈcupÈrer le prix dynamique depuis le serveur si disponible
+  // RÔøΩcupÔøΩrer le prix dynamique depuis le serveur si disponible
   let unitPrice = course.unitPrice || 10000;
   try {
     if (window.PaganiAPI) { const fv = await PaganiAPI.getVideos(); if (fv && fv.length) _adminVideosCache = fv; }
     const stored2 = _adminVideosCache.find(v => v.id === course.id);
     if (stored2 && stored2.unitPrice) unitPrice = stored2.unitPrice;
     const p = await PaganiAPI.getPricing();
-    // Prix spÈcifique È la vidÈo (stockÈ dans la vidÈo elle-mÍme) ou prix global
+    // Prix spÔøΩcifique ÔøΩ la vidÔøΩo (stockÔøΩ dans la vidÔøΩo elle-mÔøΩme) ou prix global
     const stored = getVideos().find(v => v.id === course.id);
     unitPrice = (stored && stored.unitPrice) || course.unitPrice || p.video || 10000;
   } catch(e) {}
@@ -3108,15 +3122,15 @@ async function _showBuyVideoModal(user, course) {
           <div class="buy-option-header">
             <span class="buy-option-badge unit"><i class="fas fa-film"></i> Achat unique</span>
             <div class="buy-option-price">${unitPrice.toLocaleString('fr-FR')} <span>AR</span></div>
-            <p>AccËs permanent È cette vidÈo uniquement.</p>
+            <p>AccÔøΩs permanent ÔøΩ cette vidÔøΩo uniquement.</p>
           </div>
           <ul class="buy-option-features">
-            <li><i class="fas fa-check"></i> AccËs ‡ vie È cette formation</li>
+            <li><i class="fas fa-check"></i> AccÔøΩs ÔøΩ vie ÔøΩ cette formation</li>
             <li><i class="fas fa-check"></i> Paiement unique, pas d'abonnement</li>
             <li class="muted"><i class="fas fa-times"></i> Autres formations non incluses</li>
           </ul>
           <button class="buy-option-btn unit" onclick="_selectBuyOption('unit', ${unitPrice})">
-            Acheter cette vidÈo <i class="fas fa-arrow-right"></i>
+            Acheter cette vidÔøΩo <i class="fas fa-arrow-right"></i>
           </button>
         </div>
         <!-- Option 2 : Abonnement Pro -->
@@ -3138,7 +3152,7 @@ async function _showBuyVideoModal(user, course) {
           </button>
         </div>
       </div>
-      <!-- Formulaire paiement (masquÈ par dÈfaut) -->
+      <!-- Formulaire paiement (masquÔøΩ par dÔøΩfaut) -->
       <div id="buyVideoPayment" style="display:none;padding:1.5rem">
         <div class="upgrade-payment-header">
           <button class="upgrade-back-btn" onclick="_backToBuyOptions()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -3148,8 +3162,8 @@ async function _showBuyVideoModal(user, course) {
           <div class="upgrade-step">
             <div class="upgrade-step-num">1</div>
             <div style="width:100%">
-              <strong>SÈlectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
-              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilisÈ pour vÈrifier votre paiement.</p>
+              <strong>SÔøΩlectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
+              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilisÔøΩ pour vÔøΩrifier votre paiement.</p>
               <div id="buyUserMmWrap"></div>
             </div>
           </div>
@@ -3165,7 +3179,7 @@ async function _showBuyVideoModal(user, course) {
             <div style="width:100%">
               <strong>Confirmez votre paiement</strong>
               <div class="upgrade-form" style="margin-top:0.6rem">
-                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="RÈfÈrence transaction (optionnel)" />
+                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="RÔøΩfÔøΩrence transaction (optionnel)" />
                 <div id="buyProofWrap" style="margin-top:0.6rem">
                   <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
                     <i class="fas fa-camera" style="color:var(--accent)"></i>
@@ -3173,7 +3187,7 @@ async function _showBuyVideoModal(user, course) {
                   </label>
                   <label id="buyProofLabel" style="display:flex;align-items:center;gap:0.6rem;background:var(--bg2);border:2px dashed var(--border);border-radius:10px;padding:0.75rem 1rem;cursor:pointer;font-size:0.85rem;color:var(--text2)">
                     <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                    <span id="buyProofText">Cliquez pour ajouter une capture d\'Ècran</span>
+                    <span id="buyProofText">Cliquez pour ajouter une capture d\'ÔøΩcran</span>
                     <input type="file" id="buyProofInput" accept="image/*" style="display:none" onchange="_previewBuyProof(this)" />
                   </label>
                   <div id="buyProofPreview" style="display:none;margin-top:0.5rem;position:relative">
@@ -3182,7 +3196,7 @@ async function _showBuyVideoModal(user, course) {
                   </div>
                 </div>
                 <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitBuyRequest(${course.id})">
-                  <i class="fas fa-paper-plane"></i> J'ai envoyÈ le paiement
+                  <i class="fas fa-paper-plane"></i> J'ai envoyÔøΩ le paiement
                 </button>
                 <p id="buyMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
               </div>
@@ -3190,10 +3204,10 @@ async function _showBuyVideoModal(user, course) {
           </div>
         </div>
       </div>
-      <!-- SuccËs -->
+      <!-- SuccÔøΩs -->
       <div id="buyVideoSuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
         <div style="font-size:3rem">?</div>
-        <h3>Demande envoyÈe !</h3>
+        <h3>Demande envoyÔøΩe !</h3>
         <p id="buySuccessMsg" style="color:var(--text2);font-size:0.9rem;line-height:1.6"></p>
         <button class="btn-outline" onclick="document.getElementById('buyVideoModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
       </div>
@@ -3206,7 +3220,7 @@ async function _showBuyVideoModal(user, course) {
     const fmt = n => Number(n).toLocaleString('fr-FR');
     const elPro = document.getElementById('buyModalPricePro');
     if (elPro) elPro.innerHTML = `${fmt(p.pro || 30000)} <span>AR</span><small>/mois</small>`;
-    // Mettre È jour le bouton Pro avec le bon prix
+    // Mettre ÔøΩ jour le bouton Pro avec le bon prix
     const btnPro = overlay.querySelector('.buy-option-btn.pro');
     if (btnPro) btnPro.onclick = () => _selectBuyOption('pro', p.pro || 30000);
   } catch(e) {}
@@ -3444,14 +3458,14 @@ function _removeBuyProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'Ècran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ÔøΩcran";
 }
 async function _submitBuyRequest(courseId) {
   const txRef = document.getElementById('buyTxRef')?.value.trim() || '';
   const proof = _buyProofBase64;
   const msg   = document.getElementById('buyMsg');
   const user  = getUser();
-  // Lire les champs dynamiques injectÈs par _buildBuyPaymentView
+  // Lire les champs dynamiques injectÔøΩs par _buildBuyPaymentView
   const operator = document.getElementById('buyOperator')?.value || '';
   const phone    = document.getElementById('buyPhone')?.value    || '';
   const mmName   = document.getElementById('buyMmName')?.value   || '';
@@ -3469,7 +3483,7 @@ async function _submitBuyRequest(courseId) {
     const course = allVideos.find(c => c.id === courseId || c.id === Number(courseId));
     if (user && window.PaganiNotif) {
       const purchaseId = result && result.id ? result.id : null;
-      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'VidÈo', purchaseId);
+      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'VidÔøΩo', purchaseId);
     }
     _buyProofBase64 = '';
     document.getElementById('buyVideoPayment').style.display = 'none';
@@ -3477,14 +3491,14 @@ async function _submitBuyRequest(courseId) {
     if (successEl) {
       successEl.style.display = 'flex';
       const successMsg = document.getElementById('buySuccessMsg');
-      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a ÈtÈ reÁue.<br>Votre accËs sera activÈ sous <strong>24h</strong> aprËs vÈrification du paiement.';
+      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a ÔøΩtÔøΩ reÔøΩue.<br>Votre accÔøΩs sera activÔøΩ sous <strong>24h</strong> aprÔøΩs vÔøΩrification du paiement.';
     }
   } catch(e) {
     const errMsgs = {
-      NON_AUTHENTIFIE:   'Session expirÈe. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:    'Session expirÈe. Veuillez vous reconnecter.',
+      NON_AUTHENTIFIE:   'Session expirÔøΩe. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:    'Session expirÔøΩe. Veuillez vous reconnecter.',
       PREUVE_REQUISE:    'La preuve de paiement est obligatoire.',
-      DEJA_ACHETE:       'Vous avez dÈj‡ achetÈ cette formation.',
+      DEJA_ACHETE:       'Vous avez dÔøΩjÔøΩ achetÔøΩ cette formation.',
       VIDEO_INTROUVABLE: 'Formation introuvable.',
     };
     msg.style.color = 'var(--red)';
@@ -3500,7 +3514,7 @@ function copyLink() {
   if (user) input.value = `https://paganidigital.com/ref/${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
-    msg.textContent = "? Lien copiÈ dans le presse-papiers !";
+    msg.textContent = "? Lien copiÔøΩ dans le presse-papiers !";
     setTimeout(() => msg.textContent = "", 3000);
   });
 }
@@ -3539,7 +3553,7 @@ async function renderCommissionHistory(user) {
       <span>${h.filleulName}</span>
       <span><span class="history-type">${h.type}</span></span>
       <span class="green">${formatAR(h.montant)}</span>
-      <span><span class="status-badge ${h.statut === 'VersÈ' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
+      <span><span class="status-badge ${h.statut === 'VersÔøΩ' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
     </div>`).join("");
 }
 async function requestWithdrawAR(e) {
@@ -3550,13 +3564,13 @@ async function requestWithdrawAR(e) {
   const msg      = document.getElementById("withdrawMsg");
   const user     = getUser();
   if (!user) { msg.textContent = "Connectez-vous pour faire une demande."; return; }
-  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "SÈlectionnez un compte Mobile Money."; return; }
+  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "SÔøΩlectionnez un compte Mobile Money."; return; }
   try {
     await PaganiAPI.requestWithdraw({ montant: amount, phone, operator });
     const updated = await PaganiAPI.getMe();
     if (updated) { window._currentUser = updated; updateAffiliateStats(updated); }
     msg.style.color = "var(--green)";
-    msg.textContent = `? Demande de ${formatAR(amount)} envoyÈe vers ${operator} (${phone}). Traitement sous 24-72h.`;
+    msg.textContent = `? Demande de ${formatAR(amount)} envoyÔøΩe vers ${operator} (${phone}). Traitement sous 24-72h.`;
   } catch(ex) {
     msg.style.color = "var(--red)";
     const errs = { MONTANT_MIN: "Montant minimum : 5 000 AR.", SOLDE_INSUFFISANT: "Solde insuffisant." };
@@ -3696,10 +3710,10 @@ async function saveSocialLinks() {
       body: JSON.stringify(payload)
     });
     const data = await r.json();
-    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? SauvegardÈ !' : (data.error || 'Erreur'); }
+    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? SauvegardÔøΩ !' : (data.error || 'Erreur'); }
     setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
   } catch(e) {
-    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur rÈseau'; }
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur rÔøΩseau'; }
   }
 }
 
@@ -3719,30 +3733,30 @@ async function loadAdminShares() {
     const uniq    = new Set(shares.map(s => s.userId)).size;
     const topPost = shares.reduce((acc, s) => { acc[s.postId] = (acc[s.postId] || 0) + 1; return acc; }, {});
     const topId   = Object.entries(topPost).sort((a,b) => b[1]-a[1])[0];
-    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : 'ó';
+    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : 'ÔøΩ';
     kpisEl.innerHTML = `
       <div class="video-stat-card"><i class="fab fa-facebook" style="color:#1877f2"></i><strong>${total}</strong><span>Partages total</span></div>
       <div class="video-stat-card"><i class="fas fa-users" style="color:var(--accent)"></i><strong>${uniq}</strong><span>Membres actifs</span></div>
-      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partagÈ</span></div>`;
+      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partagÔøΩ</span></div>`;
   }
   if (!shares.length) {
-    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistrÈ pour le moment.</p></div>';
+    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistrÔøΩ pour le moment.</p></div>';
     return;
   }
   tableEl.innerHTML = `
     <div class="video-admin-header" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span>Membre</span><span>Post partagÈ</span><span>Code parrain</span><span>Date</span>
+      <span>Membre</span><span>Post partagÔøΩ</span><span>Code parrain</span><span>Date</span>
     </div>
     ${shares.map(s => `
     <div class="video-admin-row" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || 'ó')}</span>
+      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || 'ÔøΩ')}</span>
       <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Post #' + s.postId)}</span>
-      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || 'ó')}</code></span>
+      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || 'ÔøΩ')}</code></span>
       <span style="font-size:0.78rem;color:var(--text2)">${timeAgo(s.createdAt)}</span>
     </div>`).join('')}`;
 }
 
-// ===== COMPTEUR ANIM… (hero stats) =====
+// ===== COMPTEUR ANIMÔøΩ (hero stats) =====
 function animateCounters() {
   document.querySelectorAll(".stat strong[data-target]").forEach(el => {
     const target = parseInt(el.dataset.target);
@@ -3760,9 +3774,9 @@ function animateCounters() {
 function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("open");
 }
-// ===== GESTION VID…OS ADMIN =====
+// ===== GESTION VIDÔøΩOS ADMIN =====
 let _editingVideoId = null;
-let _adminVideosCache = []; // cache local pour Èviter des appels rÈpÈtÈs
+let _adminVideosCache = []; // cache local pour ÔøΩviter des appels rÔøΩpÔøΩtÔøΩs
 function getVideos() {
   return _adminVideosCache.length ? _adminVideosCache : COURSES.map(c => ({ ...c }));
 }
@@ -3803,12 +3817,12 @@ async function renderAdminVideos(filter = 'all') {
   else if (filter === 'pro')   filtered = videos.filter(v => !v.free && !v.unitPrice);
   else if (filter !== 'all')   filtered = videos.filter(v => v.category === filter);
   if (filtered.length === 0) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidÈo dans cette catÈgorie.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidÔøΩo dans cette catÔøΩgorie.</p></div>';
     return;
   }
   list.innerHTML = `
     <div class="video-admin-header">
-      <span>Titre</span><span>CatÈgorie</span><span>Niveau</span><span>AccËs</span><span>Actions</span>
+      <span>Titre</span><span>CatÔøΩgorie</span><span>Niveau</span><span>AccÔøΩs</span><span>Actions</span>
     </div>
     ${filtered.map(v => `
     <div class="video-admin-row" id="vrow-${v.id}">
@@ -3849,7 +3863,7 @@ async function setVideoAccess(id, targetType) {
   if (!v.free && v.unitPrice && targetType === 'pro') {
     const row = document.getElementById(`vrow-${id}`);
     if (!row) return;
-    // VÈrifier si un menu existe dÈjÈ
+    // VÔøΩrifier si un menu existe dÔøΩjÔøΩ
     if (row.querySelector('.access-menu')) { row.querySelector('.access-menu').remove(); return; }
     const menu = document.createElement('div');
     menu.className = 'access-menu';
@@ -3890,7 +3904,7 @@ function _currentAdminFilter() {
 function _onAccessTypeChange(type) {
   const priceGroup = document.getElementById('vPriceGroup');
   if (priceGroup) priceGroup.style.display = type === 'unit' ? 'block' : 'none';
-  // Synchroniser les radios si appelÈ programmatiquement
+  // Synchroniser les radios si appelÔøΩ programmatiquement
   const map = { free: 'vFree', paid: 'vPaid', unit: 'vUnit', pro: 'vPaid' };
   const radioId = map[type];
   if (radioId) {
@@ -3901,10 +3915,10 @@ function _onAccessTypeChange(type) {
 function openVideoModal() {
   _editingVideoId = null;
   _thumbnailBase64 = '';
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une vidÈo';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une vidÔøΩo';
   ['vTitle','vDesc','vVideoDescription','vDuration','vVideoId','vDriveId','vThumbnailUrl','vPrice'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('vCategory').value = 'debutant';
-  document.getElementById('vLevel').value    = 'DÈbutant';
+  document.getElementById('vLevel').value    = 'DÔøΩbutant';
   document.getElementById('vFree').checked   = true;
   if (document.getElementById('vUnit')) document.getElementById('vUnit').checked = false;
   if (document.getElementById('vPaid')) document.getElementById('vPaid').checked = false;
@@ -3928,17 +3942,17 @@ async function editVideo(id) {
   if (!v) v = getVideos().find(x => x.id === id);
   if (!v) return;
   _editingVideoId = id;
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la vidÈo';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la vidÔøΩo';
   document.getElementById('vTitle').value    = v.title    || '';
   document.getElementById('vDesc').value     = v.description || v.desc || '';
   document.getElementById('vVideoDescription').value = v.videoDescription || '';
   document.getElementById('vDuration').value = v.duration || '';
   document.getElementById('vVideoId').value  = v.videoId  || '';
-  // Le serveur retourne le driveId en clair, localStorage le retourne chiffrÈ
+  // Le serveur retourne le driveId en clair, localStorage le retourne chiffrÔøΩ
   document.getElementById('vDriveId').value  = window.PaganiAPI ? (v.driveId || '') : (v.driveId ? _decode(v.driveId) : '');
   document.getElementById('vCategory').value = v.category || 'debutant';
-  document.getElementById('vLevel').value    = v.level    || 'DÈbutant';
-  // DÈterminer le type d'accËs
+  document.getElementById('vLevel').value    = v.level    || 'DÔøΩbutant';
+  // DÔøΩterminer le type d'accÔøΩs
   const accessType = v.free ? 'free' : (v.accessType === 'unit' || v.unitPrice ? 'unit' : 'paid');
   const radioEl = document.getElementById(accessType === 'free' ? 'vFree' : accessType === 'unit' ? 'vUnit' : 'vPaid');
   if (radioEl) radioEl.checked = true;
@@ -4121,7 +4135,7 @@ function closeDashFollowModal() {
   const modal = document.getElementById('dashFollowModal');
   if (modal) modal.style.display = 'none';
 }
-// ===== MESSAGERIE PRIV…E =====
+// ===== MESSAGERIE PRIVÔøΩE =====
 let _currentChatUserId   = null;
 let _currentChatUserName = null;
 let _chatPollingTimer    = null;
@@ -4145,7 +4159,7 @@ function _initVirtualKeyboard() {
   window.addEventListener('resize', _applyHeight);
   _applyHeight();
 }
-// AppelÈ une fois au chargement de la page messages
+// AppelÔøΩ une fois au chargement de la page messages
 if (document.getElementById('msgApp')) {
   document.addEventListener('DOMContentLoaded', _initVirtualKeyboard);
 }
@@ -4157,6 +4171,28 @@ function _msgAvatar(u, size) {
   }
   return `<div class="avatar-circle msg-bubble-avatar" style="width:${s}px;height:${s}px;min-width:${s}px;font-size:${Math.round(s*0.3)}px;background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
 }
+// Aper√ßu du dernier √©v√©nement dans la liste des conversations (message ou r√©action)
+function _convPreview(c) {
+  const me = getUser();
+  const myId = me ? me.id : null;
+  // Comparer les dates : r√©action vs dernier message
+  const rxDate  = c.lastRxDate  ? new Date(c.lastRxDate).getTime()  : 0;
+  const msgDate = c.lastDate    ? new Date(c.lastDate).getTime()    : 0;
+  if (c.lastRxEmoji && rxDate >= msgDate) {
+    // La r√©action est plus r√©cente (ou √©gale) au dernier message
+    const iMReacted = String(c.lastRxUserId) === String(myId);
+    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'‚Ä¶' : c.lastRxMsgContent) : 'üì∑';
+    if (iMReacted) {
+      return c.lastRxEmoji + ' Vous avez r√©agi : ' + preview;
+    } else {
+      return c.lastRxEmoji + ' ' + c.name.split(' ')[0] + ' a r√©agi : ' + preview;
+    }
+  }
+  // Sinon : dernier message normal
+  if (!c.lastContent && c.lastImage) return 'üì∑ Photo';
+  return esc(c.lastContent) || 'D√©marrer la conversation';
+}
+
 async function loadConversations() {
   const list = document.getElementById('convList');
   if (!list) return;
@@ -4186,30 +4222,39 @@ async function loadConversations() {
           </div>
           <div class="mpx-conv-body">
             <div class="mpx-conv-name">${esc(c.name)}</div>
-            <div class="mpx-conv-preview">${esc(c.lastContent) || 'DÈmarrer la conversation'}</div>
+            <div class="mpx-conv-preview">${_convPreview(c)}</div>
           </div>
-          ${timeStr ? `<div class="mpx-conv-time">${timeStr}</div>` : ''}
+          <div class="mpx-conv-right">
+            ${timeStr ? `<span class="mpx-conv-time">${timeStr}</span>` : ''}
+            <div class="mpx-conv-presence-slot" id="pres-${c.id}"></div>
+          </div>
         </div>`;
     }).join('');
-    // Statut en ligne sur les avatars
+    // Statut de pr√©sence dans le slot d√©di√© (colonne droite)
     if (window.PaganiAPI && convs.length) {
-      var ids = convs.map(function(cv) { return cv.id; });
-      PaganiAPI.presenceBatch(ids).then(function(res) {
-        Object.keys(res).forEach(function(uid) {
-          if (!res[uid]) return;
-          var item = list.querySelector('[data-userid="'+uid+'"]');
+      convs.forEach(function(cv) {
+        PaganiAPI.getPresence(cv.id).then(function(p) {
+          var item = list.querySelector('[data-userid="'+cv.id+'"]');
           if (!item) return;
+          // Point vert sur l'avatar via classe CSS (::after)
           var av = item.querySelector('.mpx-conv-av');
-          if (!av || av.querySelector('.mpx-online-dot')) return;
-          var dot = document.createElement('span');
-          dot.className = 'mpx-online-dot';
-          dot.style.cssText = 'position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:var(--accent2);border-radius:50%;border:2px solid var(--bg2);';
-          av.style.position = 'relative';
-          av.appendChild(dot);
-        });
-      }).catch(function(){});
+          if (av) {
+            if (p && p.online) av.classList.add('mpx-conv-av--online');
+            else av.classList.remove('mpx-conv-av--online');
+          }
+          // Texte de pr√©sence dans le slot d√©di√© (colonne droite, sous le time)
+          var slot = document.getElementById('pres-'+cv.id);
+          if (slot) {
+            if (p && p.online) {
+              slot.innerHTML = '<span class="mpx-pres-online">En ligne</span>';
+            } else {
+              slot.innerHTML = '';
+            }
+          }
+        }).catch(function(){});
+      });
     }
-    // Ouvrir automatiquement si redirigÈ depuis une notification
+    // Ouvrir automatiquement si redirigÔøΩ depuis une notification
     if (window._openChatWith) {
       const target = convs.find(c => c.id === window._openChatWith);
       if (target) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '', target.plan || '');
@@ -4221,6 +4266,7 @@ async function loadConversations() {
 }
 async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   _currentChatUserId   = userId;
+  window.__typingChatUserId = userId;
   _currentChatUserName = userName;
   _chatMsgsCache = []; // Reinitialiser le cache a chaque nouvelle conversation
   _chatOldestTs  = null; // Reset pagination
@@ -4236,18 +4282,22 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   const inputRow = document.getElementById('chatInputRow');
   const profLink = document.getElementById('chatProfileLink');
   if (!messages) return;
-  // Mettre ‡ jour l'URL pour persister l'Ètat au refresh
+  // Mettre ÔøΩ jour l'URL pour persister l'ÔøΩtat au refresh
   const newUrl = window.location.pathname + '?with=' + userId;
   if (window.location.search !== '?with=' + userId) {
     history.pushState({ chatWith: userId, chatName: userName }, '', newUrl);
   }
-  // Afficher les ÈlÈments
+  // Afficher les ÔøΩlÔøΩments
   if (header)   header.style.display   = 'flex';
   if (empty)    empty.style.display    = 'none';
   if (messages) messages.style.display = 'flex';
   if (inputRow) inputRow.style.display = 'block';
   if (profLink) profLink.href = `profil.html?id=${userId}`;
-  // Avatar + nom dans l'en-tÍte
+  const avatarLink = document.getElementById('chatHeaderAvatar');
+  const infoLink   = document.getElementById('chatHeaderInfoLink');
+  if (avatarLink) avatarLink.href = `profil.html?id=${userId}`;
+  if (infoLink)   infoLink.href   = `profil.html?id=${userId}`;
+  // Avatar + nom dans l'en-tÔøΩte
   if (headerAv) {
     headerAv.className = 'mpx-chat-avatar';
     headerAv.innerHTML = avatarPhoto
@@ -4262,19 +4312,24 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
       ? `<span style="color:${color}">Plan ${userPlan}</span>`
       : '';
     headerSub.innerHTML = '';
-    // VÈrifier le statut en ligne
+    // VÔøΩrifier le statut en ligne
     if (window.PaganiAPI) {
+      var _presenceForUserId = userId;
       PaganiAPI.getPresence(userId).then(function(p) {
+        // Ignorer si l'utilisateur a change entre temps
+        if (_currentChatUserId !== _presenceForUserId) return;
         const isOnline = p && p.online;
         if (headerAv) { if (isOnline) headerAv.classList.add('mpx-chat-avatar-online'); else headerAv.classList.remove('mpx-chat-avatar-online'); }
-        const onlineHtml = isOnline
-          ? '<span style="color:var(--accent2)">En ligne</span>'
-          : '<span style="color:var(--text2)">Hors ligne</span>';
-        if (document.getElementById('chatHeaderSub') === headerSub) headerSub.innerHTML = onlineHtml + (planHtml ? ' &nbsp;' + planHtml : '');
+        const onlineText = isOnline ? 'En ligne' : _presenceTimeAgo(p && p.lastSeen);
+        if (document.getElementById('chatHeaderSub') === headerSub) {
+          headerSub.className = 'mpx-chat-sub' + (isOnline ? ' mpx-chat-sub--online' : '');
+          headerSub.textContent = onlineText;
+          headerSub.style.display = onlineText ? 'flex' : 'none';
+        }
       }).catch(function(){});
     }
   }
-  document.title = `${userName} ó Messages`;
+  document.title = `${userName} ÔøΩ Messages`;
   // Loader
   messages.innerHTML = '<div class="mpx-loading"><span></span><span></span><span></span></div>';
   // Mobile : afficher la colonne chat
@@ -4289,18 +4344,39 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
     chat.classList.add('mpx-chat-entering');
     chat.addEventListener('animationend', () => chat.classList.remove('mpx-chat-entering'), { once: true });
   }
-  // Mettre ‡ jour la liste (marquer actif)
+  // Mettre ÔøΩ jour la liste (marquer actif)
   loadConversations();
   await _loadChatMessages(userId, true);
+  _rxCache = {};
   // Marquer les messages comme lus (ticks ??)
   if (window.PaganiAPI) PaganiAPI.markMessagesRead(userId).catch(() => {});
   _initChatScrollBtn(document.getElementById('chatMessages'));
   // Polling toutes les 5s
   if (_chatPollingTimer) clearInterval(_chatPollingTimer);
+  var _presenceRefreshCount = 0;
   _chatPollingTimer = setInterval(() => {
     if (_currentChatUserId === userId && !_chatBusy) {
       _loadChatMessages(userId);
+      loadConversations();
       _updateMsgBadge();
+      // Rafra√Æchir le statut de pr√©sence toutes les 30s (1 fois sur 6)
+      _presenceRefreshCount++;
+      if (_presenceRefreshCount % 6 === 0 && window.PaganiAPI) {
+        PaganiAPI.getPresence(userId).then(function(p) {
+          var hSub = document.getElementById('chatHeaderSub');
+          var hAv  = document.getElementById('chatHeaderAvatar');
+          if (!hSub) return;
+          var planColors = { Pro: 'var(--accent)', Elite: 'var(--gold)', Starter: 'var(--text2)' };
+          var color = planColors[userPlan] || 'var(--text2)';
+          var planHtml = userPlan ? '<span style="color:'+color+'">Plan '+userPlan+'</span>' : '';
+          var isOnline = p && p.online;
+          if (hAv) { if (isOnline) hAv.classList.add('mpx-chat-avatar-online'); else hAv.classList.remove('mpx-chat-avatar-online'); }
+          var onlineText = isOnline ? 'En ligne' : _presenceTimeAgo(p && p.lastSeen);
+          hSub.className = 'mpx-chat-sub' + (isOnline ? ' mpx-chat-sub--online' : '');
+          hSub.textContent = onlineText;
+          hSub.style.display = onlineText ? 'flex' : 'none';
+        }).catch(function(){});
+      }
     }
   }, 5000);
 }
@@ -4310,14 +4386,15 @@ function closeChatMobile() {
   document.body.classList.remove('chat-open');
   const body = document.querySelector('.msg-page-body');
   if (body) body.style.height = '';
-  // Retour immÈdiat ‡ la sidebar sans attendre animationend
+  // Retour immÔøΩdiat ÔøΩ la sidebar sans attendre animationend
   if (chat)    { chat.classList.remove('msg-visible'); chat.classList.remove('mpx-chat-entering'); chat.classList.remove('mpx-chat-leaving'); }
   if (sidebar) sidebar.classList.remove('msg-hidden');
   _currentChatUserId   = null;
+  window.__typingChatUserId = null;
   _currentChatUserName = null;
   if (_chatPollingTimer) { clearInterval(_chatPollingTimer); _chatPollingTimer = null; }
   history.pushState({}, '', window.location.pathname);
-  document.title = 'Messages ó Pagani Digital';
+  document.title = 'Messages ÔøΩ Pagani Digital';
   const header   = document.getElementById('chatHeader');
   const messages = document.getElementById('chatMessages');
   const inputRow = document.getElementById('chatInputRow');
@@ -4326,12 +4403,12 @@ function closeChatMobile() {
   if (messages) messages.style.display = 'none';
   if (inputRow) inputRow.style.display = 'none';
 }
-// GÈrer le bouton retour du navigateur
+// GÔøΩrer le bouton retour du navigateur
 window.addEventListener('popstate', (e) => {
   if (!document.getElementById('mpxChat')) return;
   const params = new URLSearchParams(window.location.search);
   if (!params.get('with')) {
-    // Retour ‡ la liste
+    // Retour ÔøΩ la liste
     const sidebar = document.getElementById('mpxSidebar');
     const chat    = document.getElementById('mpxChat');
     if (sidebar) sidebar.classList.remove('msg-hidden');
@@ -4354,10 +4431,45 @@ function _formatMsgTime(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
+// ===== NOTIFICATION SONORE MESSAGES =====
+function _playMsgSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch(e) {}
+}
 // Cache local des messages affiches (id -> true) pour eviter de reconstruire le DOM
 let _chatMsgsCache = [];
 
 let _chatImageBase64 = '';
+let _replyMsg = null; // { id, content, senderName, isMine }
+
+function _setReply(msgId, content, senderName, isMine) {
+  _replyMsg = { id: msgId, content, senderName, isMine };
+  const bar = document.getElementById('chatReplyBar');
+  const name = document.getElementById('chatReplyName');
+  const text = document.getElementById('chatReplyText');
+  if (!bar) return;
+  if (name) name.textContent = isMine ? 'Vous' : senderName;
+  if (text) text.textContent = content || 'üì∑ Photo';
+  bar.style.display = 'flex';
+  document.getElementById('chatInput')?.focus();
+}
+
+function _clearReply() {
+  _replyMsg = null;
+  const bar = document.getElementById('chatReplyBar');
+  if (bar) bar.style.display = 'none';
+}
 
 function _previewChatImage(input) {
   const file2 = input.files[0];
@@ -4391,7 +4503,7 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
   const avatarHtml = (!isMine && !nextIsSame)
     ? `<div class="mpx-bubble-av">${otherAv}</div>`
     : (!isMine ? `<div class="mpx-bubble-av" style="visibility:hidden"></div>` : '');
-  const timeStr = _formatMsgTime(m.createdAt);
+  const timeStr   = _formatMsgTime(m.createdAt);
   const animClass = isNew ? ' mpx-bubble-new' : '';
   const imageHtml = m.image ? '<div class="mpx-bubble-img-wrap"><img src="' + m.image + '" class="mpx-bubble-img" onclick="_openMsgImage(this.src)" /></div>' : '';
   const textHtml  = m.content ? esc(m.content) : '';
@@ -4400,16 +4512,141 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
         ? '<span class="mpx-tick mpx-tick-read" title="Vu"><i class="fas fa-check-double"></i></span>'
         : '<span class="mpx-tick" title="Envoy\u00e9"><i class="fas fa-check"></i></span>')
     : '';
-  return dateSep + `<div class="mpx-bubble-row${isMine ? ' mine' : ''}${animClass}" data-msgid="${m.id}">
+  const senderName = isMine ? 'Vous' : (_currentChatUserName || '');
+  const quoteHtml = m.replyTo
+    ? `<div class="mpx-bubble-quote" onclick="_scrollToMsg(${m.replyTo.id})">
+        <div class="mpx-bubble-quote-inner">
+          <span class="mpx-bubble-quote-name">${esc(m.replyTo.senderName || '')}</span>
+          <span class="mpx-bubble-quote-text">${esc(m.replyTo.content || 'üì∑ Photo')}</span>
+        </div>
+       </div>`
+    : '';
+  const safeContent = (m.content || '').replace(/\\/g, '\\\\').replace(/'/g, '\x27');
+  const safeSender  = senderName.replace(/\\/g, '\\\\').replace(/'/g, '\x27');
+  const rowSwipeAttr = `data-msgid="${m.id}" ontouchstart="_onBubbleTouchStart(event,${m.id},'${safeContent}','${safeSender}',${isMine})" ontouchend="_onBubbleTouchEnd(event)" ontouchcancel="_onBubbleTouchEnd(event)" ontouchmove="_onBubbleTouchMove(event)"`;
+  const bubbleLpAttr = `ontouchstart="_startMsgLongPress(event,${m.id})" ontouchend="_cancelMsgLongPress()" ontouchcancel="_cancelMsgLongPress()"`;
+  const rxTrigger = `<button class="mpx-rx-trigger" title="R\u00e9agir" onclick="event.stopPropagation();_showRxPicker(event,${m.id})"><i class="fas fa-smile"></i></button>`;
+  const replyBtn  = `<button class="mpx-reply-btn" title="R\u00e9pondre" onclick="event.stopPropagation();_setReply(${m.id},'${safeContent}','${safeSender}',${isMine})"><i class="fas fa-reply"></i></button>`;
+  const rxZone = `<div class="mpx-bubble-reactions" id="rx-zone-${m.id}"></div>`;
+  return dateSep + `<div class="mpx-bubble-row${isMine ? ' mine' : ''}${animClass}" ${rowSwipeAttr} id="msg-${m.id}">
     ${avatarHtml}
-    <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}">
-      ${imageHtml}${textHtml}
-      <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
+    <div class="mpx-bubble-wrap">
+      ${replyBtn}
+      <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr}>
+        ${quoteHtml}${imageHtml}${textHtml}
+        <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
+        ${rxTrigger}
+      </div>
     </div>
-  </div>`;
+  </div>
+  ${rxZone}`;
 }
 
-// Met ‡ jour les ticks ?/?? dans le DOM sans re-render
+// Met ÔøΩ jour les ticks ?/?? dans le DOM sans re-render
+
+// ===== SUPPRESSION MESSAGE (LONG PRESS) =====
+let _msgLPT = null;
+function _startMsgLongPress(e, id) {
+  _cancelMsgLongPress();
+  // Long press uniquement sur mobile (touch)
+  if (e.type !== 'touchstart') return;
+  _msgLPT = setTimeout(function() {
+    _msgLPT = null;
+    _closeRxPicker();
+    _showRxPicker(e, id);
+  }, 500);
+}
+function _cancelMsgLongPress() { if (_msgLPT) { clearTimeout(_msgLPT); _msgLPT = null; } }
+// ===== SWIPE POUR REPONDRE =====
+var _swipeStartX = 0, _swipeStartY = 0, _swipeEl = null, _swipeActive = false;
+var _swipeMsgId = null, _swipeMsgContent = null, _swipeMsgSender = null, _swipeMsgIsMine = false;
+
+function _onBubbleTouchStart(e, id, content, sender, isMine) {
+  if (e.touches.length !== 1) return;
+  _swipeStartX   = e.touches[0].clientX;
+  _swipeStartY   = e.touches[0].clientY;
+  _swipeEl       = e.currentTarget;
+  _swipeActive   = false;
+  _swipeMsgId      = id;
+  _swipeMsgContent = content;
+  _swipeMsgSender  = sender;
+  _swipeMsgIsMine  = isMine;
+}
+
+function _onBubbleTouchMove(e) {
+  if (!_swipeEl || e.touches.length !== 1) return;
+  var dx = e.touches[0].clientX - _swipeStartX;
+  var dy = e.touches[0].clientY - _swipeStartY;
+  // Swipe horizontal uniquement (pas de scroll vertical)
+  if (!_swipeActive && Math.abs(dy) > Math.abs(dx)) { _swipeEl = null; return; }
+  if (Math.abs(dx) < 8) return;
+  _swipeActive = true;
+  e.preventDefault();
+  // Limiter le d√É¬©placement √É¬† 72px
+  var clamped = Math.max(-72, Math.min(72, dx));
+  var wrap = _swipeEl.querySelector('.mpx-bubble-wrap');
+  if (wrap) wrap.style.transform = 'translateX(' + clamped + 'px)';
+  // Afficher l'ic√É¬¥ne reply quand on d√É¬©passe 40px
+  var btn = _swipeEl.querySelector('.mpx-reply-btn');
+  if (btn) btn.classList.toggle('mpx-reply-btn--active', Math.abs(clamped) >= 40);
+}
+
+function _onBubbleTouchEnd(e) {
+  if (!_swipeEl) return;
+  var wrap = _swipeEl.querySelector('.mpx-bubble-wrap');
+  var btn  = _swipeEl.querySelector('.mpx-reply-btn');
+  var dx   = (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : _swipeStartX) - _swipeStartX;
+  if (wrap) { wrap.style.transition = 'transform 0.2s ease'; wrap.style.transform = 'translateX(0)'; setTimeout(function(){ if(wrap) wrap.style.transition = ''; }, 220); }
+  if (btn)  btn.classList.remove('mpx-reply-btn--active');
+  if (_swipeActive && Math.abs(dx) >= 40) {
+    _setReply(_swipeMsgId, _swipeMsgContent, _swipeMsgSender, _swipeMsgIsMine);
+  }
+  _swipeEl = null; _swipeActive = false;
+}
+
+function _scrollToMsg(msgId) {
+  var el = document.getElementById('msg-' + msgId);
+  if (!el) return;
+  var container = document.getElementById('chatMessages');
+  if (container) {
+    var elTop    = el.offsetTop;
+    var elHeight = el.offsetHeight;
+    var target   = elTop - (container.clientHeight / 2) + (elHeight / 2);
+    container.scrollTo({ top: target, behavior: 'smooth' });
+  } else {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  el.classList.add('mpx-bubble-highlight');
+  setTimeout(function(){ el.classList.remove('mpx-bubble-highlight'); }, 1500);
+}
+function _showMsgMenu(id) {
+  document.querySelectorAll('.mpx-msg-menu').forEach(function(m) { m.remove(); });
+  var menu = document.createElement('div');
+  menu.className = 'mpx-msg-menu';
+  menu.innerHTML = '<button onclick="_deleteChatMessage(' + id + ')"><i class="fas fa-trash"></i> Supprimer</button>';
+  var row = document.querySelector('[data-msgid="' + id + '"]');
+  if (!row) return;
+  row.style.position = 'relative';
+  row.appendChild(menu);
+  function blockClick(ev) { ev.stopPropagation(); row.removeEventListener('click', blockClick, true); }
+  row.addEventListener('click', blockClick, true);
+  setTimeout(function() {
+    row.removeEventListener('click', blockClick, true);
+    document.addEventListener('click', function c(ev) {
+      if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', c, true); }
+    }, true);
+  }, 500);
+}
+async function _deleteChatMessage(id) {
+  document.querySelectorAll('.mpx-msg-menu').forEach(function(m) { m.remove(); });
+  if (!_currentChatUserId || !window.PaganiAPI) return;
+  try {
+    await PaganiAPI.deleteMessage(_currentChatUserId, id);
+    var row = document.querySelector('[data-msgid="' + id + '"]');
+    if (row) row.remove();
+    _chatMsgsCache = _chatMsgsCache.filter(function(m) { return m.id !== id; });
+  } catch(e) {}
+}
 function _updateReadTicks(msgs, container) {
   if (!container) return;
   msgs.forEach(m => {
@@ -4431,7 +4668,7 @@ function _updateReadTicks(msgs, container) {
   });
 }
 
-// Curseur pour la pagination (oldest createdAt chargÈ)
+// Curseur pour la pagination (oldest createdAt chargÔøΩ)
 let _chatOldestTs = null;
 let _chatAllLoaded = false;
 let _chatLoadingMore = false;
@@ -4497,8 +4734,9 @@ async function _loadChatMessages(userId, forceScrollBottom) {
 
       messages.scrollTop = messages.scrollHeight;
       messages.style.scrollBehavior = '';
-
       _chatBusy = false;
+      // Charger les reactions apres que les rx-zone soient dans le DOM
+      _loadRxForConv(userId);
 
     } else {
       // ‚îÄ‚îÄ POLLING : ajouter uniquement les nouveaux messages ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
@@ -4506,6 +4744,9 @@ async function _loadChatMessages(userId, forceScrollBottom) {
       const newMsgs   = msgs.filter(m => !cachedIds.has(m.id));
 
       if (newMsgs.length > 0) {
+        // Son discret si au moins un message re√ßu (pas de moi)
+        const hasIncoming = newMsgs.some(m => m.senderId !== (user && user.id));
+        if (hasIncoming) _playMsgSound();
         newMsgs.forEach(m => {
           const globalPrev = _chatMsgsCache[_chatMsgsCache.length - 1];
           const isMine     = m.senderId === (user && user.id);
@@ -4538,7 +4779,6 @@ async function _loadChatMessages(userId, forceScrollBottom) {
           }
           _chatMsgsCache.push(m);
         });
-
         if (shouldScroll) {
           messages.scrollTop = messages.scrollHeight;
         } else {
@@ -4548,6 +4788,8 @@ async function _loadChatMessages(userId, forceScrollBottom) {
 
       // Mettre √† jour les ticks m√™me sans nouveaux messages
       _updateReadTicks(msgs, messages);
+      // Refresh r√©actions √† chaque cycle polling
+      _loadRxForConv(userId);
     }
 
     _updateMsgBadge();
@@ -4654,6 +4896,9 @@ async function sendChatMessage() {
   if (!content && !image) return;
   if (!_currentChatUserId) return;
 
+  const reply = _replyMsg ? { id: _replyMsg.id, content: _replyMsg.content, senderName: _replyMsg.senderName } : null;
+  _clearReply();
+
   if (input) input.value = '';
   if (input) input.focus();
   _removeChatImage();
@@ -4663,23 +4908,21 @@ async function sendChatMessage() {
     const row = document.createElement('div');
     row.className = 'mpx-bubble-row mine mpx-bubble-new';
     row.setAttribute('data-optimistic', '1');
-    const timeStr = _formatMsgTime(new Date().toISOString());
-    const imgHtml = image ? '<div class="mpx-bubble-img-wrap"><img src="' + image + '" class="mpx-bubble-img" /></div>' : '';
-    row.innerHTML = '<div class="mpx-bubble mine">' + imgHtml + (content ? esc(content) : '') + '<span class="mpx-bubble-meta">' + timeStr + '<span class="mpx-tick" title="Envoy√©"><i class="fas fa-check"></i></span></span></div>';
+    const timeStr  = _formatMsgTime(new Date().toISOString());
+    const imgHtml  = image ? '<div class="mpx-bubble-img-wrap"><img src="' + image + '" class="mpx-bubble-img" /></div>' : '';
+    const quoteHtml = reply
+      ? '<div class="mpx-bubble-quote"><div class="mpx-bubble-quote-inner"><span class="mpx-bubble-quote-name">' + esc(reply.senderName || '') + '</span><span class="mpx-bubble-quote-text">' + esc(reply.content || '\ud83d\udcf7 Photo') + '</span></div></div>'
+      : '';
+    row.innerHTML = '<div class="mpx-bubble-wrap"><div class="mpx-bubble mine">' + quoteHtml + imgHtml + (content ? esc(content) : '') + '<span class="mpx-bubble-meta">' + timeStr + '<span class="mpx-tick" title="Envoy\u00e9"><i class="fas fa-check"></i></span></span></div></div>';
     messages.appendChild(row);
     messages.scrollTop = messages.scrollHeight;
   }
 
   try {
-    await PaganiAPI.sendMessage(_currentChatUserId, content, image);
-    // Le polling remplacera l'optimiste par le vrai message via replaceWith
+    await PaganiAPI.sendMessage(_currentChatUserId, content, image, reply ? reply.id : null);
     loadConversations();
   } catch(e) {
-    // Echec : retirer l'optimiste et remettre le texte
-    if (messages) {
-      const opt = messages.querySelector('[data-optimistic]');
-      if (opt) opt.remove();
-    }
+    if (messages) { const opt = messages.querySelector('[data-optimistic]'); if (opt) opt.remove(); }
     if (input && content) input.value = content;
   }
 }
@@ -4777,8 +5020,8 @@ async function renderUserSubscriptions() {
     const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
     const planIcons  = { Starter: 'fas fa-user', Pro: 'fas fa-crown', Elite: 'fas fa-gem' };
     const planDescs  = {
-      Starter: 'AccËs aux formations gratuites et au programme d\'affiliation.',
-      Pro:     'AccËs ‡ toutes les formations + commission 35%.',
+      Starter: 'AccÔøΩs aux formations gratuites et au programme d\'affiliation.',
+      Pro:     'AccÔøΩs ÔøΩ toutes les formations + commission 35%.',
       Elite:   'Acces complet + coaching 1-on-1 + commission 50%.'
     };
     planBox.innerHTML = `
@@ -4825,17 +5068,17 @@ async function renderUserSubscriptions() {
     <i class="fas fa-history"></i> Historique des demandes
   </h3>` + subs.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'ApprouvÈ'   ? 'status-paid'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'ApprouvÈ'   ? 'fas fa-check-circle'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
-    const canRetry = r.statut === 'RejetÈ';
+    const canRetry = r.statut === 'RejetÔøΩ';
     const isPending = r.statut === 'En attente';
     return `
-    <div class="sub-user-card ${r.statut === 'ApprouvÈ' ? 'sub-user-approved' : r.statut === 'RejetÈ' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
-      <!-- EN-TÈTE -->
+    <div class="sub-user-card ${r.statut === 'ApprouvÔøΩ' ? 'sub-user-approved' : r.statut === 'RejetÔøΩ' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
+      <!-- EN-TÔøΩTE -->
       <div class="sub-user-card-header">
         <div style="display:flex;align-items:center;gap:0.7rem">
           <span class="sub-plan-badge" style="background:${planColors[r.plan]||'var(--accent)'}22;color:${planColors[r.plan]||'var(--accent)'}">
@@ -4846,14 +5089,14 @@ async function renderUserSubscriptions() {
           </span>
         </div>
         <span style="font-size:0.78rem;color:var(--text2)">
-          ${new Date(r.createdAt).toLocaleDateString('fr-FR')} È ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+          ${new Date(r.createdAt).toLocaleDateString('fr-FR')} ÔøΩ ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
         </span>
       </div>
-      <!-- DÈTAILS PAIEMENT -->
+      <!-- DÔøΩTAILS PAIEMENT -->
       <div class="sub-user-details">
         <div class="sub-user-detail">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
-          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoyÈ</small></span>
+          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoyÔøΩ</small></span>
         </div>
         <div class="sub-user-detail">
           <i class="fas fa-mobile-alt" style="color:${opColor}"></i>
@@ -4862,15 +5105,15 @@ async function renderUserSubscriptions() {
         ${r.txRef ? `
         <div class="sub-user-detail">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>RÈfÈrence</small></span>
+          <span><strong>${r.txRef}</strong><small>RÔøΩfÔøΩrence</small></span>
         </div>` : ''}
       </div>
       <!-- MESSAGE STATUT -->
-      ${r.statut === 'ApprouvÈ' ? `
+      ${r.statut === 'ApprouvÔøΩ' ? `
       <div class="sub-user-status-msg approved">
         <i class="fas fa-check-circle"></i>
         <div>
-          <strong>Abonnement activÈe !</strong>
+          <strong>Abonnement activÔøΩe !</strong>
           <p>Votre plan ${r.plan} est actif. Profitez de toutes les formations.</p>
         </div>
         <a href="formations.html" class="btn-primary" style="padding:0.45rem 1rem;font-size:0.82rem;white-space:nowrap">
@@ -4881,18 +5124,18 @@ async function renderUserSubscriptions() {
       <div class="sub-user-status-msg pending">
         <i class="fas fa-clock"></i>
         <div>
-          <strong>En cours de vÈrification</strong>
-          <p>Votre paiement est en cours de vÈrification par l\'administrateur. Activation sous 24h.</p>
+          <strong>En cours de vÔøΩrification</strong>
+          <p>Votre paiement est en cours de vÔøΩrification par l\'administrateur. Activation sous 24h.</p>
         </div>
       </div>` : ''}
-      ${r.statut === 'RejetÈ' ? `
+      ${r.statut === 'RejetÔøΩ' ? `
       <div class="sub-user-status-msg rejected">
         <i class="fas fa-times-circle"></i>
         <div>
-          <strong>Demande rejetÈe</strong>
+          <strong>Demande rejetÔøΩe</strong>
           ${r.rejectReason
             ? `<p><strong>Raison :</strong> ${r.rejectReason}</p>`
-            : `<p>Votre demande n'a pas pu Ítre validÈe. Contactez le support si besoin.</p>`
+            : `<p>Votre demande n'a pas pu ÔøΩtre validÔøΩe. Contactez le support si besoin.</p>`
           }
         </div>
       </div>` : ''}
@@ -4911,7 +5154,7 @@ async function renderUserSubscriptions() {
       <div class="sub-user-actions">
         <p style="font-size:0.78rem;color:var(--text2)">
           <i class="fas fa-info-circle" style="color:var(--gold)"></i>
-          Si vous n'avez pas encore envoyÈ le paiement, vous pouvez le faire maintenant.
+          Si vous n'avez pas encore envoyÔøΩ le paiement, vous pouvez le faire maintenant.
         </p>
       </div>` : ''}
     </div>`;
@@ -4922,7 +5165,7 @@ function _retrySubscription(plan, amount) {
   if (!user) return;
   // Ouvrir directement la modale de paiement sur le bon plan
   _showUpgradeModal(user, `Plan ${plan}`);
-  // AprÈs que la modale s'ouvre, sÈlectionner automatiquement le bon plan
+  // AprÔøΩs que la modale s'ouvre, sÔøΩlectionner automatiquement le bon plan
   setTimeout(() => {
     const btn = document.querySelector(`.upgrade-plan-btn${plan === 'Elite' ? '.elite' : ':not(.elite)'}`);
     if (btn) btn.click();
@@ -4935,7 +5178,7 @@ function _scrollToSubCard(subId) {
   // Carte admin : sub-{id} | carte utilisateur : sub-user-{id}
   const card = document.getElementById('sub-' + subId) || document.getElementById('sub-user-' + subId);
   if (!card) {
-    // Liste pas encore rendue ‚Äî rÈessayer dans 400ms (max 3 fois)
+    // Liste pas encore rendue ‚Äî rÔøΩessayer dans 400ms (max 3 fois)
     if (!_scrollToSubCard._retries) _scrollToSubCard._retries = {};
     const key = String(subId);
     _scrollToSubCard._retries[key] = (_scrollToSubCard._retries[key] || 0) + 1;
@@ -5022,14 +5265,14 @@ async function loadAdminPricingSubscriptions() {
           <input type="number" id="priceElite" class="upgrade-input" value="${p.elite}" min="0" step="1000" />
         </div>
       </div>
-      <!-- VidÈo unitaire -->
+      <!-- VidÔøΩo unitaire -->
       <div class="pricing-admin-card">
         <div class="pricing-admin-card-header">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          <strong>Achat vidÈo unitaire</strong>
+          <strong>Achat vidÔøΩo unitaire</strong>
         </div>
         <div class="pricing-admin-row">
-          <label>Prix par vidÈo <small>(AR)</small></label>
+          <label>Prix par vidÔøΩo <small>(AR)</small></label>
           <input type="number" id="priceVideo" class="upgrade-input" value="${p.video}" min="0" step="500" />
         </div>
         <div class="pricing-admin-row">
@@ -5089,7 +5332,7 @@ async function loadAdminPricingSubscriptions() {
       </button>
       <p id="pricingMsg" style="font-size:0.82rem;min-height:1rem"></p>
     </div>
-    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> DerniËre mise ‡ jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
+    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> DerniÔøΩre mise ÔøΩ jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
 }
 async function saveAdminPricing() {
   const msg = document.getElementById('pricingMsg');
@@ -5113,14 +5356,14 @@ async function saveAdminPricing() {
   };
   try {
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Tarifs mis ‡ jour avec succËs.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Tarifs mis ÔøΩ jour avec succÔøΩs.'; }
     setTimeout(() => loadAdminPricingSubscriptions(), 800);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== TARIFS ADMIN ‚Äî PRIX PAR VID…O =====
+// ===== TARIFS ADMIN ‚Äî PRIX PAR VIDÔøΩO =====
 async function loadAdminVideoPricing() {
   const container = document.getElementById('adminVideoPricingContent');
   if (!container) return;
@@ -5140,9 +5383,9 @@ async function loadAdminVideoPricing() {
       <div class="pricing-video-global">
         <div class="pricing-admin-card-header">
           <i class="fas fa-tag" style="color:var(--accent2)"></i>
-          <strong>Prix global par dÈfaut</strong>
+          <strong>Prix global par dÔøΩfaut</strong>
         </div>
-        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux vidÈos sans prix individuel dÈfini.</p>
+        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux vidÔøΩos sans prix individuel dÔøΩfini.</p>
         <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
           <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1;min-width:160px">
             <label style="font-size:0.78rem;color:var(--text2);font-weight:600">Prix global <small>(AR)</small></label>
@@ -5159,15 +5402,15 @@ async function loadAdminVideoPricing() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
         <h3 style="font-size:0.95rem;font-weight:700">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          Prix individuels ‚Äî VidÈos payantes (${paid.length})
+          Prix individuels ‚Äî VidÔøΩos payantes (${paid.length})
         </h3>
         <span style="font-size:0.78rem;color:var(--text2)">Laissez vide pour utiliser le prix global</span>
       </div>
       ${paid.length === 0
-        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidÈo payante.</p></div>'
+        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidÔøΩo payante.</p></div>'
         : `<div class="video-price-list">
             <div class="video-price-header">
-              <span>VidÈo</span><span>CatÈgorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
+              <span>VidÔøΩo</span><span>CatÔøΩgorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
             </div>
             ${paid.map(v => `
             <div class="video-price-row" id="vpr-${v.id}">
@@ -5200,7 +5443,7 @@ async function saveGlobalVideoPrice() {
   try {
     const p = await PaganiAPI.getPricing();
     await PaganiAPI.admin.updatePricing({ ...p, video: val });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? SauvegardÈ'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? SauvegardÔøΩ'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
@@ -5228,7 +5471,7 @@ async function saveVideoPrice(videoId) {
       row.style.background = 'rgba(0,212,170,0.06)';
       setTimeout(() => row.style.background = '', 1200);
     }
-    // Mettre È jour le cache local
+    // Mettre ÔøΩ jour le cache local
     const v = _adminVideosCache.find(x => x.id === videoId);
     if (v) { v.unitPrice = price; v.accessType = price ? 'unit' : 'pro'; }
   } catch(e) { alert('Erreur : ' + e.message); }
@@ -5241,13 +5484,13 @@ async function loadAdminModulePricing() {
   let modules = [];
   try { modules = await PaganiAPI.admin.getVideoModules(); } catch(e) {}
   if (!modules.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module crÈÈ. CrÈez d\'abord des modules dans la section Modules.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module crÔøΩÔøΩ. CrÔøΩez d\'abord des modules dans la section Modules.</p></div>';
     return;
   }
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      DÈfinissez un prix d'accËs par module. Un utilisateur qui achËte un module dÈbloque toutes ses vidÈos.
+      DÔøΩfinissez un prix d'accÔøΩs par module. Un utilisateur qui achÔøΩte un module dÔøΩbloque toutes ses vidÔøΩos.
     </p>
     <div class="module-pricing-grid">
       ${modules.map(m => `
@@ -5280,7 +5523,7 @@ async function saveModulePrice(moduleId) {
   const msg   = document.getElementById(`mpm-${moduleId}`);
   try {
     await PaganiAPI.admin.updateVideoModule(moduleId, { modulePrice: price });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '‚úì SauvegardÈ'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '‚úì SauvegardÔøΩ'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
@@ -5308,7 +5551,7 @@ async function loadAdminCommissions() {
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      Les commissions sont calculÈes sur le montant payÈ par le filleul lors d'un abonnement ou d'un achat de formation.
+      Les commissions sont calculÔøΩes sur le montant payÔøΩ par le filleul lors d'un abonnement ou d'un achat de formation.
     </p>
     <div class="comm-pricing-grid">
       ${plans.map(pl => `
@@ -5333,7 +5576,7 @@ async function loadAdminCommissions() {
         </div>
         <div class="comm-pricing-example">
           <i class="fas fa-calculator" style="color:var(--text2)"></i>
-          <span>Ex: abonnement Pro 30 000 AR È <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
+          <span>Ex: abonnement Pro 30 000 AR ÔøΩ <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
         </div>
       </div>`).join('')}
     </div>
@@ -5393,13 +5636,13 @@ async function saveAdminCommissions() {
       },
     };
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Commissions mises ‡ jour.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Commissions mises ÔøΩ jour.'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== ACHATS VID…OS ADMIN =====
+// ===== ACHATS VIDÔøΩOS ADMIN =====
 let _videoPurchasesCache = [];
 let _videoPurchasesFilter = 'all';
 async function renderAdminVideoPurchases() {
@@ -5414,7 +5657,7 @@ async function renderAdminVideoPurchases() {
   }
   _updateVideoPurchasesBadge();
   _renderFilteredVideoPurchases();
-  // Scroller vers une demande spÈcifique si paramÍtre URL
+  // Scroller vers une demande spÔøΩcifique si paramÔøΩtre URL
   const urlParams = new URLSearchParams(window.location.search);
   const purchaseId = urlParams.get('purchase');
   if (purchaseId) setTimeout(() => _scrollToVideoPurchaseCard(purchaseId), 400);
@@ -5450,13 +5693,13 @@ function _vpConfirm(type, r) {
     if (type === 'approve') {
       iconEl.textContent  = '?';
       titleEl.textContent = 'Approuver cet achat ?';
-      subEl.textContent   = 'L\'accËs È la vidÈo sera dÈbloquÈ immÈdiatement pour ce membre.';
+      subEl.textContent   = 'L\'accÔøΩs ÔøΩ la vidÔøΩo sera dÔøΩbloquÔøΩ immÔøΩdiatement pour ce membre.';
       okLabel.textContent = 'Oui, approuver';
       okBtn.querySelector('i').className = 'fas fa-check';
     } else {
       iconEl.textContent  = '?';
       titleEl.textContent = 'Rejeter cette demande ?';
-      subEl.textContent   = 'Le membre sera notifiÈ du rejet. Cette action peut Ítre annulÈe.';
+      subEl.textContent   = 'Le membre sera notifiÔøΩ du rejet. Cette action peut ÔøΩtre annulÔøΩe.';
       okLabel.textContent = 'Oui, rejeter';
       okBtn.querySelector('i').className = 'fas fa-ban';
     }
@@ -5465,7 +5708,7 @@ function _vpConfirm(type, r) {
     const av    = (user && user.avatarPhoto)
       ? '<img src="' + user.avatarPhoto + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover" />'
       : '<div class="vp-confirm-user-avatar" style="background:' + color + '">' + getInitials(r.userName || '?') + '</div>';
-    const videoLabel = (r.videoTitle || ('VidÈo #' + r.courseId));
+    const videoLabel = (r.videoTitle || ('VidÔøΩo #' + r.courseId));
     const amtLabel   = (r.amount || 0).toLocaleString('fr-FR') + ' AR';
     userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' ‚Äî ' + amtLabel + '</small></div>';
     okBtn.onclick = function() { _vpConfirmClose(); _vpConfirmResolve = null; resolve(true); };
@@ -5482,7 +5725,7 @@ function _vpConfirmClose() {
 }
 function _vpTimeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
-  if (diff < 1)  return { text: 'È l\'instant', urgent: true };
+  if (diff < 1)  return { text: 'ÔøΩ l\'instant', urgent: true };
   if (diff < 60) return { text: `Il y a ${diff} min`, urgent: diff < 30 };
   if (diff < 1440) return { text: `Il y a ${Math.floor(diff/60)}h`, urgent: false };
   return { text: new Date(dateStr).toLocaleDateString('fr-FR'), urgent: false };
@@ -5503,26 +5746,26 @@ function _renderFilteredVideoPurchases() {
     : _videoPurchasesCache.filter(r => r.statut === _videoPurchasesFilter);
   // Compteurs
   const pending  = _videoPurchasesCache.filter(r => r.statut === 'En attente').length;
-  const approved = _videoPurchasesCache.filter(r => r.statut === 'ApprouvÈ').length;
-  const rejected = _videoPurchasesCache.filter(r => r.statut === 'RejetÈ').length;
+  const approved = _videoPurchasesCache.filter(r => r.statut === 'ApprouvÔøΩ').length;
+  const rejected = _videoPurchasesCache.filter(r => r.statut === 'RejetÔøΩ').length;
   const counterHTML = `
     <div class="vp-section-counter">
       ${pending  ? `<span class="vp-counter-pill pending"><i class="fas fa-clock"></i> ${pending} en attente</span>` : ''}
-      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuvÈe${approved>1?'s':''}</span>` : ''}
-      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejetÈe${rejected>1?'s':''}</span>` : ''}
+      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuvÔøΩe${approved>1?'s':''}</span>` : ''}
+      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejetÔøΩe${rejected>1?'s':''}</span>` : ''}
     </div>`;
   if (!list.length) {
-    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat vidÈo.</p></div>';
+    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat vidÔøΩo.</p></div>';
     return;
   }
   const opColors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   const now = Date.now();
   container.innerHTML = counterHTML + list.map((r, idx) => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'ApprouvÈ'   ? 'status-paid'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'ApprouvÈ'   ? 'fas fa-check-circle'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor  = opColors[r.operator] || 'var(--accent)';
     const user     = _allUsersCache.find(u => u.id === r.userId);
@@ -5531,7 +5774,7 @@ function _renderFilteredVideoPurchases() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     const timeInfo = _vpTimeAgo(r.createdAt);
     const isNew    = r.statut === 'En attente' && (now - new Date(r.createdAt)) < 3600000;
-    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'ApprouvÈ' ? 'vp-approved' : 'vp-rejected';
+    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'ApprouvÔøΩ' ? 'vp-approved' : 'vp-rejected';
     return `
     <div class="vp-card ${vpClass}" id="vp-${r.id}" style="animation-delay:${idx * 50}ms">
       <div class="vp-card-header">
@@ -5545,7 +5788,7 @@ function _renderFilteredVideoPurchases() {
         <div class="vp-card-meta">
           ${isNew ? '<span class="vp-new-badge">Nouveau</span>' : ''}
           <span class="sub-plan-badge" style="background:rgba(245,158,11,0.15);color:var(--gold)">
-            <i class="fas fa-film"></i> Achat vidÈo
+            <i class="fas fa-film"></i> Achat vidÔøΩo
           </span>
           <span class="status-badge ${statusClass}" id="vp-status-${r.id}">
             <i class="${statusIcon}"></i> ${r.statut}
@@ -5558,7 +5801,7 @@ function _renderFilteredVideoPurchases() {
       <div class="vp-card-details">
         <div class="vp-detail-item">
           <i class="fas fa-play-circle" style="color:var(--accent)"></i>
-          <span><strong>${r.videoTitle || 'VidÈo #' + r.courseId}</strong><small>Formation</small></span>
+          <span><strong>${r.videoTitle || 'VidÔøΩo #' + r.courseId}</strong><small>Formation</small></span>
         </div>
         <div class="vp-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -5572,7 +5815,7 @@ function _renderFilteredVideoPurchases() {
         ${r.txRef ? `
         <div class="vp-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>RÈfÈrence</small></span>
+          <span><strong>${r.txRef}</strong><small>RÔøΩfÔøΩrence</small></span>
         </div>` : ''}
       </div>
       <div class="vp-proof-zone">
@@ -5598,24 +5841,24 @@ function _buildVideoPurchaseActions(r) {
         <i class="fas fa-times"></i> Rejeter
       </button>
       <button class="vp-btn-approve" id="vp-btn-approve-${r.id}" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-check"></i> Approuver et dÈbloquer
+        <i class="fas fa-check"></i> Approuver et dÔøΩbloquer
       </button>`;
   }
-  if (r.statut === 'RejetÈ') {
+  if (r.statut === 'RejetÔøΩ') {
     return `
       <span class="vp-status-done rejected">
         <i class="fas fa-times-circle"></i>
-        RejetÈ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
+        RejetÔøΩ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
         ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> ‚Äî ${r.rejectReason}</em>` : ''}
       </span>
       <button class="vp-btn-sm-approve" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand mÍme
+        <i class="fas fa-undo"></i> Approuver quand mÔøΩme
       </button>`;
   }
   return `
     <span class="vp-status-done approved">
       <i class="fas fa-check-circle"></i>
-      ApprouvÈ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
+      ApprouvÔøΩ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
     </span>
     <button class="vp-btn-sm-reject" onclick="_vpShowRejectModal(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -5627,12 +5870,12 @@ function _vpShowRejectModal(id) {
   const zone = document.getElementById('vp-reject-modal-' + id);
   if (!zone) return;
   const r = _videoPurchasesCache.find(x => x.id === id);
-  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non reÁu', 'Doublon'];
+  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non reÔøΩu', 'Doublon'];
   zone.innerHTML = `
     <div class="vp-reject-modal">
       <div class="vp-reject-modal-header">
         <i class="fas fa-exclamation-triangle"></i>
-        <strong>Rejeter ‚Äî ${r ? (r.videoTitle || 'VidÈo #' + r.courseId) : ''}</strong>
+        <strong>Rejeter ‚Äî ${r ? (r.videoTitle || 'VidÔøΩo #' + r.courseId) : ''}</strong>
       </div>
       <div class="vp-reject-presets">
         ${presets.map(p => `<button class="vp-reject-preset" onclick="_vpSelectPreset(this,'vp-reject-reason-${id}')">${p}</button>`).join('')}
@@ -5666,8 +5909,8 @@ async function approveVideoPurchase(id) {
   const btn = document.getElementById('vp-btn-approve-' + id);
   if (btn) { btn.classList.add('vp-loading'); btn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'ApprouvÈ' });
-    r.statut = 'ApprouvÈ';
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'ApprouvÔøΩ' });
+    r.statut = 'ApprouvÔøΩ';
     r.treatedAt = new Date().toISOString();
     const card = document.getElementById('vp-' + id);
     if (card) {
@@ -5678,11 +5921,11 @@ async function approveVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> ApprouvÈ'; statusEl.className = 'status-badge status-paid'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> ApprouvÔøΩ'; statusEl.className = 'status-badge status-paid'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('? AccËs dÈbloquÈ pour ' + r.userName);
+    _vpShowToast('? AccÔøΩs dÔøΩbloquÔøΩ pour ' + r.userName);
   } catch(e) {
-    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et dÈbloquer'; }
+    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et dÔøΩbloquer'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
   }
 }
@@ -5696,8 +5939,8 @@ async function rejectVideoPurchase(id) {
   const confirmBtn = document.querySelector('#vp-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'RejetÈ', rejectReason: reason });
-    r.statut = 'RejetÈ';
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'RejetÔøΩ', rejectReason: reason });
+    r.statut = 'RejetÔøΩ';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
     const rejectZone = document.getElementById('vp-reject-modal-' + id);
@@ -5711,9 +5954,9 @@ async function rejectVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> RejetÈ'; statusEl.className = 'status-badge status-rejected'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> RejetÔøΩ'; statusEl.className = 'status-badge status-rejected'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('Demande rejetÈe' + (reason ? ' ‚Äî ' + reason : ''), 'error');
+    _vpShowToast('Demande rejetÔøΩe' + (reason ? ' ‚Äî ' + reason : ''), 'error');
   } catch(e) {
     if (confirmBtn) { confirmBtn.classList.remove('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Confirmer le rejet'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
@@ -5727,7 +5970,7 @@ function openVideoPurchaseProof(id) {
   const info  = document.getElementById('proofModalInfo');
   const dl    = document.getElementById('proofModalDownload');
   if (!modal || !img) return;
-  if (info) info.textContent = `${r.userName} ‚Äî ${r.videoTitle || 'VidÈo'} ‚Äî ${(r.amount||0).toLocaleString('fr-FR')} AR`;
+  if (info) info.textContent = `${r.userName} ‚Äî ${r.videoTitle || 'VidÔøΩo'} ‚Äî ${(r.amount||0).toLocaleString('fr-FR')} AR`;
   img.src = r.proof;
   if (dl) dl.href = r.proof;
   modal.style.display = 'flex';
@@ -5749,7 +5992,7 @@ async function renderAdminSubscriptions() {
   container.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
   try {
     if (window.PaganiAPI) {
-      // Charger les users si cache vide (nÈcessaire pour rÈcupÈrer les noms MM)
+      // Charger les users si cache vide (nÔøΩcessaire pour rÔøΩcupÔøΩrer les noms MM)
       if (!_allUsersCache.length) _allUsersCache = await PaganiAPI.admin.getUsers();
       _subsCache = await PaganiAPI.admin.getUpgradeRequests();
     }
@@ -5770,11 +6013,11 @@ function filterSubsByStatus(status, btn) {
   if (btn) btn.classList.add('active');
   _renderFilteredSubs();
 }
-// RÈcupÈre le nom MM depuis le cache utilisateurs si absent de la demande
+// RÔøΩcupÔøΩre le nom MM depuis le cache utilisateurs si absent de la demande
 function _getMmNameFromCache(r) {
   const user = _allUsersCache.find(u => u.id === r.userId);
   if (!user) return '‚Äî';
-  // Chercher dans mmAccounts le compte correspondant ‡ l'opÈrateur utilisÈ
+  // Chercher dans mmAccounts le compte correspondant ÔøΩ l'opÔøΩrateur utilisÔøΩ
   const acc = (user.mmAccounts || []).find(a => a.operator === r.operator && a.phone);
   if (acc && acc.name) return acc.name;
   // Fallback sur mmName racine
@@ -5794,10 +6037,10 @@ function _renderFilteredSubs() {
   const opColors   = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   container.innerHTML = list.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'ApprouvÈ'   ? 'status-paid'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'ApprouvÈ'   ? 'fas fa-check-circle'
+                      : r.statut === 'ApprouvÔøΩ'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
     const user    = _allUsersCache.find(u => u.id === r.userId);
@@ -5806,7 +6049,7 @@ function _renderFilteredSubs() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     return `
     <div class="sub-request-card ${r.statut === 'En attente' ? 'sub-pending' : ''}" id="sub-${r.id}">
-      <!-- EN-TÈTE -->
+      <!-- EN-TÔøΩTE -->
       <div class="sub-card-header">
         <div class="sub-card-user">
           ${av}
@@ -5824,7 +6067,7 @@ function _renderFilteredSubs() {
           </span>
         </div>
       </div>
-      <!-- DÈTAILS -->
+      <!-- DÔøΩTAILS -->
       <div class="sub-card-details">
         <div class="sub-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -5845,7 +6088,7 @@ function _renderFilteredSubs() {
         ${r.txRef ? `
         <div class="sub-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>RÈfÈrence</small></span>
+          <span><strong>${r.txRef}</strong><small>RÔøΩfÔøΩrence</small></span>
         </div>` : ''}
       </div>
       <!-- PREUVE -->
@@ -5866,7 +6109,7 @@ function _renderFilteredSubs() {
     </div>`;
   }).join('');
 }
-// Construit le HTML des actions selon l\'Ètat de la demande
+// Construit le HTML des actions selon l\'ÔøΩtat de la demande
 function _buildSubActions(r) {
   if (r.statut === 'En attente') {
     return `
@@ -5877,22 +6120,22 @@ function _buildSubActions(r) {
         <i class="fas fa-check"></i> Approuver et activer le plan
       </button>`;
   }
-  if (r.statut === 'RejetÈ') {
+  if (r.statut === 'RejetÔøΩ') {
     return `
       <span style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:0.4rem">
         <i class="fas fa-times-circle" style="color:var(--red)"></i>
-        RejetÈ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
+        RejetÔøΩ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
         ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">‚Äî ${r.rejectReason}</em>` : ''}
       </span>
       <button class="sub-action-approve" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubApprove(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand mÍme
+        <i class="fas fa-undo"></i> Approuver quand mÔøΩme
       </button>`;
   }
-  // ApprouvÈ
+  // ApprouvÔøΩ
   return `
     <span style="font-size:0.78rem;color:var(--green);display:flex;align-items:center;gap:0.4rem">
       <i class="fas fa-check-circle"></i>
-      ApprouvÈ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
+      ApprouvÔøΩ le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '‚Äî'}
     </span>
     <button class="sub-action-reject" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubReject(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -5913,12 +6156,12 @@ function openSubApprove(id) {
         <div>
           <strong>Confirmer l'approbation</strong>
           <p>Activer le plan <strong>${r.plan}</strong> pour <strong>${r.userName}</strong> ?<br>
-          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifiÈ immÈdiatement.</span></p>
+          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifiÔøΩ immÔøΩdiatement.</span></p>
         </div>
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'ApprouvÈ')">
+        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'ApprouvÔøΩ')">
           <i class="fas fa-check"></i> Oui, activer le plan ${r.plan}
         </button>
       </div>
@@ -5942,19 +6185,19 @@ function openSubReject(id) {
       </div>
       <div class="sub-reject-reason-wrap">
         <label style="font-size:0.78rem;color:var(--text2);font-weight:600;display:block;margin-bottom:0.4rem">
-          Raison du rejet <span style="opacity:0.6">(optionnel ‚Äî envoyÈe ‡ l\'utilisateur)</span>
+          Raison du rejet <span style="opacity:0.6">(optionnel ‚Äî envoyÔøΩe ÔøΩ l\'utilisateur)</span>
         </label>
         <div class="sub-reject-presets">
-          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non reÁu')">Paiement non reÁu</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non reÔøΩu')">Paiement non reÔøΩu</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Montant incorrect')">Montant incorrect</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Preuve invalide')">Preuve invalide</button>
-          <button class="pay-reason-pill" onclick="_setRejectReason('NumÈro non reconnu')">NumÈro non reconnu</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('NumÔøΩro non reconnu')">NumÔøΩro non reconnu</button>
         </div>
-        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalisÈe..." style="margin-top:0.5rem" />
+        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalisÔøΩe..." style="margin-top:0.5rem" />
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'RejetÈ')">
+        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'RejetÔøΩ')">
           <i class="fas fa-times"></i> Confirmer le rejet
         </button>
       </div>
@@ -5974,7 +6217,7 @@ function _cancelSubAction(id) {
 async function _confirmSubAction(id, statut) {
   const r = _subsCache.find(x => x.id === id);
   if (!r) return;
-  const rejectReason = statut === 'RejetÈ'
+  const rejectReason = statut === 'RejetÔøΩ'
     ? (document.getElementById(`rejectReasonInput-${id}`)?.value.trim() || '')
     : '';
   const zone = document.getElementById(`sub-actions-${id}`);
@@ -5984,10 +6227,10 @@ async function _confirmSubAction(id, statut) {
     r.statut       = statut;
     r.treatedAt    = new Date().toISOString();
     r.rejectReason = rejectReason;
-    if (statut === 'ApprouvÈ') {
+    if (statut === 'ApprouvÔøΩ') {
       const u = _allUsersCache.find(u => u.id === r.userId);
       if (u) u.plan = r.plan;
-      // RafraÈchir le token si c'est l\'utilisateur courant (cas rare mais possible)
+      // RafraÔøΩchir le token si c'est l\'utilisateur courant (cas rare mais possible)
       if (result._newToken && window._currentUser && window._currentUser.id === r.userId) {
         localStorage.setItem('pd_jwt', result._newToken);
         window._currentUser.plan = r.plan;
@@ -6001,15 +6244,15 @@ async function _confirmSubAction(id, statut) {
   }
   _subActionTarget = null;
 }
-// Met ‡ jour uniquement la carte concernÈe sans re-render toute la liste
+// Met ÔøΩ jour uniquement la carte concernÔøΩe sans re-render toute la liste
 function _updateSubCard(r) {
   const card = document.getElementById(`sub-${r.id}`);
   if (!card) return;
   // Badge statut
   const statusEl = document.getElementById(`sub-status-${r.id}`);
   if (statusEl) {
-    const statusClass = r.statut === 'ApprouvÈ' ? 'status-paid' : 'status-rejected';
-    const statusIcon  = r.statut === 'ApprouvÈ' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    const statusClass = r.statut === 'ApprouvÔøΩ' ? 'status-paid' : 'status-rejected';
+    const statusIcon  = r.statut === 'ApprouvÔøΩ' ? 'fas fa-check-circle' : 'fas fa-times-circle';
     statusEl.className = `status-badge ${statusClass}`;
     statusEl.innerHTML = `<i class="${statusIcon}"></i> ${r.statut}`;
   }
@@ -6021,7 +6264,7 @@ function _updateSubCard(r) {
     zone.innerHTML = _buildSubActions(r);
     // Animation flash
     zone.style.transition = 'background 0.4s';
-    zone.style.background = r.statut === 'ApprouvÈ' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
+    zone.style.background = r.statut === 'ApprouvÔøΩ' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
     setTimeout(() => { zone.style.background = ''; }, 1200);
   }
 }
@@ -6069,7 +6312,7 @@ function _renderFilteredUsers() {
     list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }
   if (!list.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouvÈ.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouvÔøΩ.</p></div>';
     return;
   }
   const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
@@ -6090,7 +6333,7 @@ function _renderFilteredUsers() {
         <span class="admin-user-actions">
           <button class="admin-action-btn view" onclick="openUserCommissions(${u.id})" title="Voir commissions"><i class="fas fa-coins"></i></button>
           <button class="admin-action-btn plan" onclick="openChangePlan(${u.id})" title="Changer le plan"><i class="fas fa-crown"></i></button>
-          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'DÈsactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
+          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'DÔøΩsactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
           <button class="admin-action-btn del" onclick="openDeleteUser(${u.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
         </span>
       </div>`;
@@ -6125,12 +6368,12 @@ async function openUserCommissions(userId) {
   } catch(e) {}
   const total   = comms.reduce((s, c) => s + (c.montant||0), 0);
   const pending = comms.filter(c => c.statut === 'En attente').reduce((s, c) => s + (c.montant||0), 0);
-  const paid    = comms.filter(c => c.statut === 'VersÈ').reduce((s, c) => s + (c.montant||0), 0);
+  const paid    = comms.filter(c => c.statut === 'VersÔøΩ').reduce((s, c) => s + (c.montant||0), 0);
   body.innerHTML = `
     <div class="user-comm-summary">
-      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagnÈ</span></div>
+      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagnÔøΩ</span></div>
       <div class="user-comm-stat"><strong style="color:var(--gold)">${formatAR(pending)}</strong><span>En attente</span></div>
-      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>VersÈ</span></div>
+      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>VersÔøΩ</span></div>
     </div>
     ${comms.length === 0
       ? '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucune commission.</p></div>'
@@ -6144,7 +6387,7 @@ async function openUserCommissions(userId) {
               <span>${c.filleulName||'‚Äî'}</span>
               <span><span class="history-type">${c.type}</span></span>
               <span class="green">${formatAR(c.montant)}</span>
-              <span><span class="status-badge ${c.statut==='VersÈ'?'status-paid':'status-pending'}">${c.statut}</span></span>
+              <span><span class="status-badge ${c.statut==='VersÔøΩ'?'status-paid':'status-pending'}">${c.statut}</span></span>
             </div>`).join('')}
         </div>`
     }`;
@@ -6206,7 +6449,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     PaganiNotif.startPolling();
     if (user) PaganiNotif.refreshBadge();
   }
-  // Toujours afficher le feed et les cours (mÍme sans Ítre connectÈ)
+  // Toujours afficher le feed et les cours (mÔøΩme sans ÔøΩtre connectÔøΩ)
   if (window.PaganiAPI) {
     try { const vids = await PaganiAPI.getVideos(); if (vids && vids.length) _adminVideosCache = vids; } catch(e) {}
   }
@@ -6215,16 +6458,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateFormationsStats();
   updateNavbar(user);
   loadNavbarCustomBtn();
-  // Dashboard : afficher si connectÈ, sinon laisser loginSection visible
+  // Dashboard : afficher si connectÔøΩ, sinon laisser loginSection visible
   const loginSection = document.getElementById("loginSection");
   if (loginSection) {
     if (user) {
       showDashboard(user);
       await updateAffiliateStats(user);
     }
-    // Si pas connectÈ, loginSection reste visible (comportement normal)
+    // Si pas connectÔøΩ, loginSection reste visible (comportement normal)
   }
-  // Gestion des paramÍtres URL
+  // Gestion des paramÔøΩtres URL
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam     = urlParams.get('tab');
   const sectionParam = urlParams.get('section');
@@ -6261,7 +6504,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 });
-// ===== VUE UTILISATEUR - MES ACHATS VID…O =====
+// ===== VUE UTILISATEUR - MES ACHATS VIDÔøΩO =====
 async function renderUserVideoPurchases() {
   const container = document.getElementById('myVideosPurchaseList');
   if (!container) return;
@@ -6331,7 +6574,7 @@ async function renderUserVideoPurchases() {
       + '</div>';
   }).join('');
 }
-// ===== POLLING ADMIN - BADGE TEMPS R…EL =====
+// ===== POLLING ADMIN - BADGE TEMPS RÔøΩEL =====
 let _adminPollInterval = null;
 function _startAdminPolling() {
   if (_adminPollInterval) return;
@@ -6362,7 +6605,7 @@ function _startAdminPolling() {
     } catch(e) {}
   }, 30000);
 }
-// ===== GESTION MODULES VID…O ADMIN =====
+// ===== GESTION MODULES VIDÔøΩO ADMIN =====
 let _modulesCache = [];
 let _editingModuleId = null;
 let _moduleModalFromVideo = false;
@@ -6529,7 +6772,7 @@ async function rejectModulePurchase(id) {
   const confirmBtn = document.querySelector('#mpc-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'RejetÈ', rejectReason: reason });
+    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'RejetÔøΩ', rejectReason: reason });
     r.statut = 'Rejet\u00e9';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
@@ -6750,7 +6993,7 @@ async function loadMyPosts() {
   try {
     const posts = await PaganiAPI.getPostsByUser(user.id);
     if (!posts || !posts.length) {
-      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publiÈ.</p></div>';
+      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publiÔøΩ.</p></div>';
       return;
     }
     container.innerHTML = '';
@@ -6870,7 +7113,7 @@ async function submitMyPostsDashboard() {
       };
       const container = document.getElementById('myPostsList');
       if (container) {
-        // Retirer le message "aucune publication" si prÈsent
+        // Retirer le message "aucune publication" si prÔøΩsent
         const empty = container.querySelector('.history-empty');
         if (empty) empty.remove();
         const el = buildPostCard(normalized, user, false);
@@ -6888,9 +7131,9 @@ async function submitMyPostsDashboard() {
   }
 }
 
-// ===== DESIGN AM…LIORATIONS =====
+// ===== DESIGN AMÔøΩLIORATIONS =====
 
-// …tape 1 : Navbar scroll effect
+// ÔøΩtape 1 : Navbar scroll effect
 (function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
@@ -6901,7 +7144,7 @@ async function submitMyPostsDashboard() {
   onScroll();
 })();
 
-// …tape 8 : Bouton scroll-to-top
+// ÔøΩtape 8 : Bouton scroll-to-top
 (function initScrollTop() {
   const btn = document.createElement('button');
   btn.id = 'scrollTopBtn';
@@ -6913,3 +7156,199 @@ async function submitMyPostsDashboard() {
     btn.classList.toggle('visible', window.scrollY > 300);
   }, { passive: true });
 })();
+
+
+// ===== R√âACTIONS SUR LES MESSAGES =====
+var _RX_EMOJIS = ['‚ù§Ô∏è','üòÇ','üòÆ','üò¢','üò°','üëç'];
+var _rxPickerMsgId = null;
+var _rxPickerEl    = null;
+
+// ‚îÄ‚îÄ Ouvrir / fermer le picker ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+function _showRxPicker(e, msgId) {
+  e.stopPropagation();
+  // Si d√©j√† ouvert sur ce message ‚Üí fermer
+  if (_rxPickerMsgId === msgId) { _closeRxPicker(); return; }
+  _closeRxPicker();
+
+  var row = document.querySelector('[data-msgid="' + msgId + '"]');
+  if (!row) return;
+
+  var picker = document.createElement('div');
+  picker.className = 'mpx-reaction-picker';
+  picker.dataset.for = msgId;
+
+  var me = getUser();
+  var myRx = _getRxForMsg(msgId);
+
+  _RX_EMOJIS.forEach(function(emoji) {
+    var btn = document.createElement('button');
+    btn.className = 'mpx-rx-emoji-btn' + (myRx === emoji ? ' selected' : '');
+    btn.textContent = emoji;
+    btn.title = emoji;
+    btn.onclick = function(ev) { ev.stopPropagation(); _toggleReaction(msgId, emoji); _closeRxPicker(); };
+    picker.appendChild(btn);
+  });
+
+  var bubble = row.querySelector('.mpx-bubble');
+  if (!bubble) return;
+  var isMobile = window.innerWidth <= 580;
+  if (isMobile) {
+    // Positionner au-dessus de la bulle maintenue (comme WhatsApp/Messenger)
+    document.body.appendChild(picker);
+    var rect = bubble.getBoundingClientRect();
+    var pickerW = 280;
+    var left = rect.left + rect.width / 2 - pickerW / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
+    var top = rect.top - 64;
+    if (top < 60) top = rect.bottom + 8;
+    picker.style.position  = 'fixed';
+    picker.style.left      = left + 'px';
+    picker.style.top       = top + 'px';
+    picker.style.right     = 'auto';
+    picker.style.bottom    = 'auto';
+    picker.style.transform = 'none';
+    picker.style.zIndex    = '600';
+  } else {
+    bubble.appendChild(picker);
+  }
+  _rxPickerMsgId = msgId;
+  _rxPickerEl    = picker;
+
+  // Fermer au clic ext√©rieur
+  setTimeout(function() {
+    document.addEventListener('click', _rxOutsideClick, true);
+  }, 10);
+}
+
+function _closeRxPicker() {
+  if (_rxPickerEl) {
+    _rxPickerEl.classList.add('closing');
+    var el = _rxPickerEl;
+    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 140);
+  }
+  _rxPickerEl    = null;
+  _rxPickerMsgId = null;
+  document.removeEventListener('click', _rxOutsideClick, true);
+}
+
+function _rxOutsideClick(ev) {
+  if (_rxPickerEl && !_rxPickerEl.contains(ev.target)) _closeRxPicker();
+}
+
+// ‚îÄ‚îÄ Cache local des r√©actions { msgId: { emoji: [userId, ...] } } ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+var _rxCache = {};
+
+function _getRxForMsg(msgId) {
+  var me = getUser();
+  var key = String(msgId);
+  if (!me || !_rxCache[key]) return null;
+  var map = _rxCache[key];
+  var myId = String(me.id);
+  for (var emoji in map) {
+    if (map[emoji].map(String).indexOf(myId) !== -1) return emoji;
+  }
+  return null;
+}
+
+// ‚îÄ‚îÄ Toggle r√©action ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+async function _toggleReaction(msgId, emoji) {
+  var me = getUser();
+  if (!me || !_currentChatUserId) return;
+
+  var key = String(msgId);
+  var myId = String(me.id);
+  if (!_rxCache[key]) _rxCache[key] = {};
+  var map = _rxCache[key];
+
+  // Retirer l'ancienne r√©action de l'utilisateur si elle existe
+  var prev = _getRxForMsg(key);
+  if (prev) {
+    map[prev] = (map[prev] || []).map(String).filter(function(id) { return id !== myId; });
+    if (!map[prev].length) delete map[prev];
+  }
+
+  // Ajouter la nouvelle (sauf si c'√©tait la m√™me ‚Üí toggle off)
+  if (prev !== emoji) {
+    if (!map[emoji]) map[emoji] = [];
+    map[emoji].push(myId);
+  }
+
+  _renderRxZone(key);
+
+  // Appel API (√©tape 3 ‚Äî route backend)
+  try {
+    var token = localStorage.getItem('pd_jwt');
+    var action = (prev === emoji) ? 'remove' : 'add';
+    await fetch(API_URL + '/messages/' + _currentChatUserId + '/' + msgId + '/reaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ emoji: emoji, action: action })
+    });
+  } catch(err) {}
+}
+
+// ‚îÄ‚îÄ Rendu de la zone r√©actions sous une bulle ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+function _renderRxZone(msgId) {
+  var zone = document.getElementById('rx-zone-' + msgId);
+  if (!zone) return;
+
+  var map = _rxCache[String(msgId)] || {};
+  var me  = getUser();
+  var myId = me ? String(me.id) : null;
+  var html = '';
+
+  Object.keys(map).forEach(function(emoji) {
+    var users = map[emoji];
+    if (!users || !users.length) return;
+    var isMine = myId && users.map(String).indexOf(myId) !== -1;
+    html += '<span class="mpx-rx-badge' + (isMine ? ' mine-rx' : '') + '"'
+          + ' onclick="_onRxBadgeClick(' + msgId + ',\'' + emoji + '\')"'
+          + ' title="' + users.length + ' r\u00e9action(s)">'
+          + '<span class="mpx-rx-badge-emoji">' + emoji + '</span>'
+          + '<span class="mpx-rx-badge-count">' + users.length + '</span>'
+          + '</span>';
+  });
+
+  zone.innerHTML = html;
+}
+
+function _onRxBadgeClick(msgId, emoji) {
+  _toggleReaction(msgId, emoji);
+}
+
+// ‚îÄ‚îÄ Charger les r√©actions depuis le serveur pour la conv ouverte ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
+async function _loadRxForConv(userId) {
+  try {
+    var token = localStorage.getItem('pd_jwt');
+    var r = await fetch(API_URL + '/messages/' + userId + '/reactions', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) return;
+    var data = await r.json(); // { msgId: { emoji: [userId,...] } }
+    _rxCache = data || {};
+    // Rendre toutes les zones visibles
+    Object.keys(_rxCache).forEach(function(msgId) {
+      _renderRxZone(msgId);
+    });
+  } catch(e) {}
+}
+
+// R√©action re√ßue en temps r√©el via SSE
+function _onRxSSE(notif) {
+  var msgId  = String(notif.msgId);
+  var emoji  = notif.emoji;
+  var userId = String(notif.userId);
+  var action = notif.action || 'add';
+  if (!_rxCache[msgId]) _rxCache[msgId] = {};
+  var map = _rxCache[msgId];
+  // Retirer l'ancienne r√©action de cet utilisateur
+  Object.keys(map).forEach(function(e) {
+    map[e] = (map[e] || []).map(String).filter(function(id) { return id !== userId; });
+    if (!map[e].length) delete map[e];
+  });
+  if (action !== 'remove') {
+    if (!map[emoji]) map[emoji] = [];
+    if (map[emoji].indexOf(userId) === -1) map[emoji].push(userId);
+  }
+  _renderRxZone(msgId);
+}

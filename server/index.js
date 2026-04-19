@@ -937,6 +937,26 @@ app.get('/api/messages/unread-count', requireAuth, async (req, res) => {
   try { res.json({ count: await db.countUnreadMessages(req.user.id) }); }
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+// GET /api/messages/:userId/reactions
+app.get('/api/messages/:userId/reactions', requireAuth, async (req, res) => {
+  try {
+    const otherId = parseId(req.params.userId);
+    if (!otherId) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const rows = await _migPool.query(
+      'SELECT r.message_id, r.emoji, r.user_id FROM message_reactions r JOIN private_messages m ON m.id=r.message_id WHERE (m.sender_id=$1 AND m.receiver_id=$2) OR (m.sender_id=$2 AND m.receiver_id=$1)',
+      [req.user.id, otherId]
+    );
+    const result = {};
+    rows.rows.forEach(r => {
+      const mid = String(r.message_id);
+      if (!result[mid]) result[mid] = {};
+      if (!result[mid][r.emoji]) result[mid][r.emoji] = [];
+      result[mid][r.emoji].push(r.user_id);
+    });
+    res.json(result);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 app.get('/api/messages/:userId', requireAuth, async (req, res) => {
   try {
     const otherId = parseId(req.params.userId);
@@ -948,14 +968,14 @@ app.get('/api/messages/:userId', requireAuth, async (req, res) => {
 app.post('/api/messages/:userId', requireAuth, async (req, res) => {
   try {
     const receiverId = parseId(req.params.userId);
-    const { content, image } = req.body;
+    const { content, image, replyToId } = req.body;
     if ((!content || !content.trim()) && !image) return res.status(400).json({ error: 'CONTENU_VIDE' });
     if (!receiverId) return res.status(400).json({ error: 'ID_INVALIDE' });
     // Limite taille image : ~2 Mo en base64
     if (image && image.length > 2 * 1024 * 1024 * 1.37) return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
     const receiver = await db.getUserById(receiverId);
     if (!receiver) return res.status(404).json({ error: 'UTILISATEUR_INTROUVABLE' });
-    const msg = await db.sendPrivateMessage(req.user.id, receiverId, (content || '').trim(), image || '');
+    const msg = await db.sendPrivateMessage(req.user.id, receiverId, (content || '').trim(), image || '', replyToId || null);
     const sender = await db.getUserById(req.user.id);
     await db.createNotification({
       userId: receiverId, type: 'PRIVATE_MESSAGE',
@@ -972,11 +992,82 @@ app.patch('/api/messages/:userId/read', requireAuth, async (req, res) => {
     if (!senderId) return res.status(400).json({ error: 'ID_INVALIDE' });
     await db.markMessagesRead(req.user.id, senderId);
     res.json({ ok: true });
+
+// Supprimer un message (seulement le sien)
+app.delete('/api/messages/:userId/:msgId', requireAuth, async (req, res) => {
+  try {
+    const msgId = parseId(req.params.msgId);
+    if (!msgId) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const deleted = await db.deletePrivateMessage(msgId, req.user.id);
+    if (!deleted) return res.status(403).json({ error: 'INTERDIT' });
+    res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+
+// ══════════════════════════════════════════════════════════
+//  RÉACTIONS SUR LES MESSAGES
+// ══════════════════════════════════════════════════════════
+
+// POST /api/messages/:userId/:msgId/reaction
+app.post('/api/messages/:userId/:msgId/reaction', requireAuth, async (req, res) => {
+  try {
+    const otherId = parseId(req.params.userId);
+    const msgId   = parseId(req.params.msgId);
+    const { emoji, action } = req.body;
+    if (!otherId || !msgId) return res.status(400).json({ error: 'ID_INVALIDE' });
+    if (!emoji)             return res.status(400).json({ error: 'EMOJI_REQUIS' });
+    const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
+    if (!ALLOWED.includes(emoji)) return res.status(400).json({ error: 'EMOJI_INVALIDE' });
+    if (action === 'remove') {
+      await _migPool.query(
+        'DELETE FROM message_reactions WHERE message_id=$1 AND user_id=$2',
+        [msgId, req.user.id]
+      );
+    } else {
+      await _migPool.query(
+        'INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1,$2,$3) ON CONFLICT (message_id, user_id) DO UPDATE SET emoji=$3, created_at=NOW()',
+        [msgId, req.user.id, emoji]
+      );
+    }
+    // Push SSE instantané à l'autre utilisateur
+    try {
+      const clients = _sseClients.get(otherId);
+      if (clients && clients.size) {
+        const payload = JSON.stringify({ type: 'REACTION', msgId, emoji, userId: req.user.id, action: action || 'add' });
+        for (const c of clients) { try { c.write('data: ' + payload + '\n\n'); } catch(e) {} }
+      }
+    } catch(e) {}
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 });
 // ══════════════════════════════════════════════════════════
 //  FALLBACK SPA
 // ══════════════════════════════════════════════════════════
+
+// ======================================================
+//  TYPING INDICATOR
+// ======================================================
+// Map : senderId -> { receiverId, expiresAt }
+const _typingMap = new Map();
+const TYPING_TTL = 6000;
+
+app.post('/api/typing/:userId', requireAuth, (req, res) => {
+  const receiverId = parseInt(req.params.userId);
+  if (!receiverId) return res.status(400).json({ error: 'ID_INVALIDE' });
+  _typingMap.set(req.user.id, { receiverId, expiresAt: Date.now() + TYPING_TTL });
+  res.json({ ok: true });
+});
+
+app.get('/api/typing/:userId', requireAuth, (req, res) => {
+  const senderId = parseInt(req.params.userId);
+  if (!senderId) return res.status(400).json({ error: 'ID_INVALIDE' });
+  const entry = _typingMap.get(senderId);
+  const typing = !!(entry && entry.receiverId === req.user.id && entry.expiresAt > Date.now());
+  res.json({ typing });
+});
 
 // ======================================================
 //  PRESENCE EN LIGNE
@@ -985,16 +1076,22 @@ const _presenceMap = new Map();
 const PRESENCE_TTL = 45000;
 
 app.post('/api/presence/ping', requireAuth, (req, res) => {
-  _presenceMap.set(req.user.id, Date.now());
+  const now = Date.now();
+  _presenceMap.set(req.user.id, now);
+  // Persister en base pour survivre aux redémarrages
+  db.updateLastSeen(req.user.id, now).catch(() => {});
   res.json({ ok: true });
 });
 
-app.get('/api/presence/:userId', requireAuth, (req, res) => {
+app.get('/api/presence/:userId', requireAuth, async (req, res) => {
   const targetId = parseId(req.params.userId);
   if (!targetId) return res.status(400).json({ error: 'ID_INVALIDE' });
-  const last = _presenceMap.get(targetId);
-  const online = !!last && (Date.now() - last) < PRESENCE_TTL;
-  res.json({ online, lastSeen: last || null });
+  const ramLast = _presenceMap.get(targetId);
+  const online  = !!ramLast && (Date.now() - ramLast) < PRESENCE_TTL;
+  // Si pas en RAM, lire last_seen depuis la base
+  let lastSeen = ramLast || null;
+  if (!lastSeen) lastSeen = await db.getLastSeen(targetId).catch(() => null);
+  res.json({ online, lastSeen });
 });
 
 app.post('/api/presence/batch', requireAuth, (req, res) => {
@@ -1019,7 +1116,14 @@ const _migPool = process.env.DATABASE_URL
   ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
   : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
 
-async function runMigrations() { await require('./migrations').runMigrations(_migPool); }
+async function runMigrations() {
+  await require('./migrations').runMigrations(_migPool);
+  // Migration réactions messages
+  try {
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
+    await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_msg_reactions_message ON message_reactions(message_id)`);
+  } catch(e) { console.error('migrate message_reactions:', e.message); }
+}
 
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();

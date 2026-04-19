@@ -4137,8 +4137,20 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
     <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}">
       ${imageHtml}${textHtml}
       <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
+      ${isMine ? '<button class="mpx-msg-del-btn" onclick="_deleteChatMessage('+m.id+')" title="Supprimer"><i class=\"fas fa-trash\"></i></button>' : ''}
     </div>
   </div>`;
+}
+
+// ===== SUPPRESSION MESSAGE =====
+async function _deleteChatMessage(id) {
+  if (!confirm('Supprimer ce message ?')) return;
+  if (!window._currentChatUserId || !window.PaganiAPI) return;
+  try {
+    await PaganiAPI.deleteMessage(window._currentChatUserId, id);
+    const row = document.querySelector('[data-msgid="' + id + '"]');
+    if (row) row.remove();
+  } catch(e) { console.error(e); }
 }
 
 // Met à jour les ticks ✓/✓✓ dans le DOM sans re-render

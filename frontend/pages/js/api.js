@@ -19,7 +19,7 @@ function _setToken(t) {
 async function _fetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (_token) headers['Authorization'] = 'Bearer ' + _token;
-  // Utiliser 'cors' mode pour les requêtes cross-origin (file:// ou autre domaine)
+  // Utiliser 'cors' mode pour les requï¿½tes cross-origin (file:// ou autre domaine)
   const fetchOptions = {
     ...options,
     headers,
@@ -45,7 +45,7 @@ async function apiLogin(email, password) {
   return d.user;
 }
 
-// Sync silencieux après login PaganiDB
+// Sync silencieux aprï¿½s login PaganiDB
 async function apiSyncLogin(email, password) {
   try { return await apiLogin(email, password); } catch { return null; }
 }
@@ -56,7 +56,7 @@ async function apiGetMe() {
   if (!_token) return null;
   try {
     const data = await _fetch('/auth/me');
-    // Le serveur retourne un token rafraîchi si le plan a changé
+    // Le serveur retourne un token rafraï¿½chi si le plan a changï¿½
     if (data._token) _setToken(data._token);
     return data;
   }
@@ -140,21 +140,24 @@ async function apiGetFollowStats(userId)    { return _fetch(`/users/${userId}/fo
 async function apiGetFollowers(userId)      { return _fetch(`/users/${userId}/followers`); }
 async function apiGetFollowing(userId)      { return _fetch(`/users/${userId}/following`); }
 
-//  PRÉSENCE
+//  PRï¿½SENCE
 async function apiPresencePing()           { return _fetch('/presence/ping', { method: 'POST' }); }
 async function apiGetPresence(userId)      { return _fetch(`/presence/${userId}`); }
 async function apiPresenceBatch(userIds)   { return _fetch('/presence/batch', { method: 'POST', body: JSON.stringify({ ids: userIds }) }); }
 
-//  MESSAGES PRIVÉS
+//  MESSAGES PRIVï¿½S
 async function apiGetConversations()           { return _fetch('/messages/conversations'); }
 async function apiGetMessages(userId, limit, before) {
   let url = `/messages/${userId}?limit=${limit || 30}`;
   if (before) url += `&before=${encodeURIComponent(before)}`;
   return _fetch(url);
 }
-async function apiSendMessage(userId, content, image) { return _fetch(`/messages/${userId}`, { method: 'POST', body: JSON.stringify({ content, image: image || '' }) }); }
+async function apiSendMessage(userId, content, image, replyToId) { return _fetch(`/messages/${userId}`, { method: 'POST', body: JSON.stringify({ content, image: image || '', replyToId: replyToId || null }) }); }
 async function apiGetUnreadMessages()          { return _fetch('/messages/unread-count'); }
 async function apiMarkMessagesRead(userId)      { return _fetch(`/messages/${userId}/read`, { method: 'PATCH' }); }
+async function apiDeleteMessage(userId, msgId)   { return _fetch(`/messages/${userId}/${msgId}`, { method: 'DELETE' }); }
+async function apiSendTyping(userId)             { return _fetch(`/typing/${userId}`, { method: 'POST' }); }
+async function apiGetTyping(userId)              { return _fetch(`/typing/${userId}`); }
 
 // ???? Export ??????????????????????????????????????????????????????????????????????????????????????????????????
 window.PaganiAPI = {
@@ -190,7 +193,7 @@ window.PaganiAPI = {
   // Commissions
   getCommissions:  apiGetCommissions,
   requestWithdraw: apiRequestWithdraw,
-  // Achats vidéo unitaires
+  // Achats vidï¿½o unitaires
   buyVideo:              apiBuyVideo,
   getMyVideoPurchases:   apiGetMyVideoPurchases,
   // Achats module
@@ -225,12 +228,15 @@ window.PaganiAPI = {
   getPostsByUser:  apiGetPostsByUser,
   // Tarifs
   getPricing: apiGetPricing,
-  // Messages privés
+  // Messages privï¿½s
   getConversations:  apiGetConversations,
   getMessages:       apiGetMessages,
   sendMessage:       apiSendMessage,
   getUnreadMessages: apiGetUnreadMessages,
   markMessagesRead:  apiMarkMessagesRead,
+  deleteMessage:      apiDeleteMessage,
+  sendTyping:         apiSendTyping,
+  getTyping:          apiGetTyping,
   // Presence
   presencePing:  apiPresencePing,
   getPresence:   apiGetPresence,

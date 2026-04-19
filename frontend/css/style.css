@@ -7967,3 +7967,55 @@ ul { list-style: none; }
   align-items: center;
   justify-content: center;
 }
+
+/* ── Bouton supprimer message (desktop hover) ── */
+.mpx-bubble.mine { position: relative; }
+.mpx-msg-del-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: -36px;
+  transform: translateY(-50%);
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--red);
+  font-size: 0.68rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 20;
+  transition: background 0.15s;
+}
+.mpx-msg-del-btn:hover { background: rgba(255,77,109,0.15); }
+@media (hover: hover) {
+  .mpx-bubble.mine:hover .mpx-msg-del-btn { display: flex; }
+}
+
+/* ── Bouton supprimer message (desktop hover) ── */
+.mpx-bubble.mine { position: relative; }
+.mpx-msg-del-btn {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: -34px;
+  transform: translateY(-50%);
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg2);
+  color: var(--red);
+  font-size: 0.68rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 20;
+  transition: background 0.15s;
+}
+.mpx-msg-del-btn:hover { background: rgba(255,77,109,0.15); }
+@media (hover: hover) {
+  .mpx-bubble.mine:hover .mpx-msg-del-btn { display: flex; }
+}
