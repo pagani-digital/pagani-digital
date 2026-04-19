@@ -112,6 +112,16 @@ async function apiGetMyModulePurchases()             { return _fetch('/my-module
 async function apiAdminGetModulePurchases()          { return _fetch('/admin/module-purchases'); }
 async function apiAdminUpdateModulePurchase(id, d)   { return _fetch('/admin/module-purchases/' + id, { method: 'PUT', body: JSON.stringify(d) }); }
 async function apiAdminGetShares()                   { return _fetch('/admin/shares'); }
+// EBOOKS
+async function apiGetEbooks()                        { return _fetch('/ebooks'); }
+async function apiBuyEbook(data)                     { return _fetch('/ebook-purchase', { method: 'POST', body: JSON.stringify(data) }); }
+async function apiGetMyEbookPurchases()              { return _fetch('/my-ebook-purchases'); }
+async function apiAdminGetEbooks()                   { return _fetch('/admin/ebooks'); }
+async function apiAdminCreateEbook(data)             { return _fetch('/admin/ebooks', { method: 'POST', body: JSON.stringify(data) }); }
+async function apiAdminUpdateEbook(id, d)            { return _fetch(`/admin/ebooks/${id}`, { method: 'PUT', body: JSON.stringify(d) }); }
+async function apiAdminDeleteEbook(id)               { return _fetch(`/admin/ebooks/${id}`, { method: 'DELETE' }); }
+async function apiAdminGetEbookPurchases()           { return _fetch('/admin/ebook-purchases'); }
+async function apiAdminUpdateEbookPurchase(id, d)    { return _fetch(`/admin/ebook-purchases/${id}`, { method: 'PUT', body: JSON.stringify(d) }); }
 // ???? ADMIN ????????????????????????????????????????????????????????????????????????????????????????????????????
 async function apiAdminGetVideos()        { return _fetch('/admin/videos'); }
 async function apiAdminCreateVideo(data)  { return _fetch('/admin/videos',       { method: 'POST',   body: JSON.stringify(data) }); }
@@ -199,6 +209,10 @@ window.PaganiAPI = {
   // Achats module
   buyModule:             apiBuyModule,
   getMyModulePurchases:  apiGetMyModulePurchases,
+  // Ebooks
+  getEbooks:             apiGetEbooks,
+  buyEbook:              apiBuyEbook,
+  getMyEbookPurchases:   apiGetMyEbookPurchases,
   // Admin
   admin: {
     getVideos:   apiAdminGetVideos,
@@ -222,6 +236,12 @@ window.PaganiAPI = {
     getModulePurchases:      apiAdminGetModulePurchases,
     updateModulePurchase:    apiAdminUpdateModulePurchase,
     getShares:               apiAdminGetShares,
+    getEbooks:               apiAdminGetEbooks,
+    createEbook:             apiAdminCreateEbook,
+    updateEbook:             apiAdminUpdateEbook,
+    deleteEbook:             apiAdminDeleteEbook,
+    getEbookPurchases:       apiAdminGetEbookPurchases,
+    updateEbookPurchase:     apiAdminUpdateEbookPurchase,
   },
   // Profil public
   getPublicUser:   apiGetPublicUser,

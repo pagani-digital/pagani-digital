@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ebooks - Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* ── Hero Ebooks ── */
+    .ebooks-hero {
+      background: linear-gradient(160deg, rgba(0,212,170,0.07) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 50%, rgba(108,99,255,0.07) 0%, transparent 60%);
+      border-bottom: 1px solid var(--border);
+      padding: 3.5rem 5% 2.5rem;
+    }
+    .ebooks-hero-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+    }
+    .ebooks-hero-text { flex: 1; min-width: 280px; }
+    .ebooks-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(0,212,170,0.12);
+      border: 1px solid rgba(0,212,170,0.25);
+      color: var(--accent2);
+      padding: 0.35rem 1rem;
+      border-radius: 50px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    .ebooks-hero-text h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 0.8rem;
+    }
+    .ebooks-hero-text h1 span { color: var(--accent2); }
+    .ebooks-hero-text p { color: var(--text2); font-size: 1rem; margin-bottom: 1.5rem; }
+    .ebooks-hero-stats { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .ebooks-hero-stats .fh-stat strong { color: var(--accent2); }
+
+    /* ── Icône décorative hero ── */
+    .ebooks-hero-icon {
+      flex-shrink: 0;
+      width: 140px;
+      height: 140px;
+      background: linear-gradient(135deg, rgba(0,212,170,0.15), rgba(108,99,255,0.1));
+      border: 1px solid rgba(0,212,170,0.2);
+      border-radius: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      color: var(--accent2);
+      box-shadow: 0 8px 32px rgba(0,212,170,0.15);
+    }
+
+    /* ── Section grille ── */
+    .ebooks-section { padding: 2rem 5% 5rem; max-width: 1200px; margin: 0 auto; }
+
+    /* ── Filtres catégories ── */
+    .ebooks-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .ebooks-filters { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+    /* ── Grille ebooks ── */
+    .ebooks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.4rem;
+    }
+
+    /* ── Carte ebook ── */
+    .ebook-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+    .ebook-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--accent2);
+      box-shadow: 0 12px 32px rgba(0,212,170,0.12);
+    }
+    .ebook-card.owned { border-color: rgba(0,212,170,0.4); }
+
+    /* Couverture */
+    .ebook-cover {
+      position: relative;
+      height: 200px;
+      background: linear-gradient(135deg, #1a2235, #0d1b2a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .ebook-cover img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      position: absolute;
+      inset: 0;
+      transition: transform 0.3s;
+    }
+    .ebook-card:hover .ebook-cover img { transform: scale(1.05); }
+    .ebook-cover-placeholder {
+      font-size: 4rem;
+      color: var(--accent2);
+      opacity: 0.6;
+      z-index: 1;
+    }
+    .ebook-cover-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,212,170,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 2;
+    }
+    .ebook-card:hover .ebook-cover-overlay { opacity: 1; }
+    .ebook-cover-overlay i { font-size: 2.5rem; color: #fff; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5)); }
+
+    /* Badge owned */
+    .ebook-owned-badge {
+      position: absolute;
+      top: 10px; right: 10px;
+      background: rgba(0,212,170,0.9);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      z-index: 3;
+    }
+
+    /* Badge catégorie */
+    .ebook-cat-badge {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      color: var(--accent2);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      z-index: 3;
+    }
+
+    /* Infos */
+    .ebook-info {
+      padding: 1.1rem 1.2rem 1.3rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+    .ebook-info h3 {
+      font-size: 0.97rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      line-height: 1.4;
+    }
+    .ebook-info p {
+      font-size: 0.82rem;
+      color: var(--text2);
+      line-height: 1.5;
+      margin-bottom: 0.8rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      flex: 1;
+    }
+    .ebook-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-size: 0.75rem;
+      color: var(--text2);
+      margin-bottom: 0.9rem;
+      flex-wrap: wrap;
+    }
+    .ebook-meta span { display: flex; align-items: center; gap: 0.3rem; }
+    .ebook-meta i { color: var(--accent2); font-size: 0.7rem; }
+
+    /* Bouton achat */
+    .ebook-buy-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      background: linear-gradient(135deg, rgba(0,212,170,0.15), rgba(0,212,170,0.08));
+      border: 1.5px solid rgba(0,212,170,0.4);
+      color: var(--accent2);
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      gap: 0.5rem;
+    }
+    .ebook-buy-btn:hover {
+      background: rgba(0,212,170,0.22);
+      border-color: var(--accent2);
+      transform: translateY(-1px);
+    }
+    .ebook-buy-btn strong { margin-left: auto; font-size: 0.9rem; }
+
+    /* Bouton télécharger (owned) */
+    .ebook-dl-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent2), #00a884);
+      border: none;
+      color: #fff;
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 700;
+      transition: opacity 0.2s, transform 0.15s;
+      box-shadow: 0 3px 12px rgba(0,212,170,0.3);
+    }
+    .ebook-dl-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+    /* Bouton en attente */
+    .ebook-pending-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      background: rgba(245,158,11,0.1);
+      border: 1.5px solid rgba(245,158,11,0.35);
+      color: var(--gold);
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: default;
+    }
+
+    /* ── État vide ── */
+    .ebooks-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      padding: 5rem 2rem;
+      text-align: center;
+      color: var(--text2);
+    }
+    .ebooks-empty i { font-size: 3.5rem; opacity: 0.25; }
+    .ebooks-empty h3 { font-size: 1.1rem; color: var(--text); }
+    .ebooks-empty p { font-size: 0.9rem; }
+
+    /* ── Loader ── */
+    .ebooks-loader {
+      display: flex;
+      justify-content: center;
+      padding: 4rem 0;
+    }
+
+    /* ── Animation entrée ── */
+    @keyframes ebookIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ebook-animate { animation: ebookIn 0.3s ease both; }
+
+    @media (max-width: 768px) {
+      .ebooks-hero-inner { flex-direction: column; gap: 1.5rem; }
+      .ebooks-hero-icon { display: none; }
+      .ebooks-hero-text h1 { font-size: 1.7rem; }
+      .ebooks-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    }
+    @media (max-width: 480px) {
+      .ebooks-grid { grid-template-columns: 1fr 1fr; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="ebooks.html" class="active">Ebooks</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="ebooks-hero">
+    <div class="ebooks-hero-inner">
+      <div class="ebooks-hero-text">
+        <span class="ebooks-badge"><i class="fas fa-book-open"></i> Bibliothèque digitale</span>
+        <h1>Nos <span>Ebooks</span> pour booster votre business</h1>
+        <p>Guides pratiques sur la Crypto, le Business Digital, Facebook & la Création de Contenu — téléchargeables instantanément après validation.</p>
+        <div class="ebooks-hero-stats">
+          <div class="fh-stat"><strong id="statEbooksTotal">—</strong><span>Ebooks</span></div>
+          <div class="fh-stat"><strong id="statEbooksCategories">—</strong><span>Catégories</span></div>
+          <div class="fh-stat"><strong id="statEbooksMine">—</strong><span>Mes achats</span></div>
+        </div>
+      </div>
+      <div class="ebooks-hero-icon">
+        <i class="fas fa-book-open"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION GRILLE -->
+  <section class="ebooks-section">
+
+    <!-- TOOLBAR -->
+    <div class="ebooks-toolbar">
+      <div class="ebooks-filters" id="ebooksFilters">
+        <button class="filter-btn active" onclick="filterEbooks('all', this)">
+          <i class="fas fa-th"></i> Tous
+        </button>
+      </div>
+    </div>
+
+    <!-- GRILLE -->
+    <div class="ebooks-grid" id="ebooksGrid"></div>
+
+    <!-- ÉTAT VIDE -->
+    <div class="ebooks-empty" id="ebooksEmpty" style="display:none">
+      <i class="fas fa-book"></i>
+      <h3>Aucun ebook disponible</h3>
+      <p>Revenez bientôt, de nouveaux ebooks arrivent prochainement.</p>
+    </div>
+
+    <!-- LOADER -->
+    <div class="ebooks-loader" id="ebooksLoader">
+      <div class="feed-loader"><span></span><span></span><span></span></div>
+    </div>
+
+  </section>
+
+  <!-- MODAL ACHAT EBOOK -->
+  <div id="ebookBuyOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:3000;align-items:center;justify-content:center;padding:1rem;overflow-y:auto" onclick="if(event.target===this)closeEbookBuyModal()">
+    <div class="buy-video-modal" id="ebookBuyBox" onclick="event.stopPropagation()" style="max-width:520px;width:100%">
+
+      <!-- EN-TÊTE -->
+      <div class="buy-video-header" id="ebookBuyHeader">
+        <div class="buy-video-icon" id="ebookBuyIcon">📖</div>
+        <h2 id="ebookBuyTitle">Acheter l'ebook</h2>
+        <p class="buy-video-desc" id="ebookBuyDesc"></p>
+        <div class="buy-video-meta" id="ebookBuyMeta"></div>
+        <button class="upgrade-modal-close" onclick="closeEbookBuyModal()"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- ÉTAPES PAIEMENT -->
+      <div id="ebookBuyPayment" style="display:none;padding:1.5rem">
+        <div class="upgrade-payment-header">
+          <button class="upgrade-back-btn" onclick="_ebookBuyBackToInfo()"><i class="fas fa-arrow-left"></i> Retour</button>
+          <h3 id="ebookBuyPayTitle">Paiement</h3>
+        </div>
+        <div class="upgrade-payment-steps" style="margin-top:1rem">
+
+          <!-- ÉTAPE 1 : compte envoi -->
+          <div class="upgrade-step">
+            <div class="upgrade-step-num">1</div>
+            <div style="width:100%">
+              <strong>Sélectionnez votre compte d'envoi</strong>
+              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilisé pour vérifier votre paiement.</p>
+              <div id="ebookBuyUserMmWrap"></div>
+            </div>
+          </div>
+
+          <!-- ÉTAPE 2 : compte destinataire -->
+          <div class="upgrade-step">
+            <div class="upgrade-step-num">2</div>
+            <div style="width:100%">
+              <strong>Envoyez exactement <strong id="ebookBuyAmountRepeat" style="color:var(--accent2)"></strong> au compte ci-dessous</strong>
+              <div id="ebookBuyAdminTargets" class="upgrade-mm-targets" style="margin-top:0.8rem"></div>
+            </div>
+          </div>
+
+          <!-- ÉTAPE 3 : confirmation -->
+          <div class="upgrade-step">
+            <div class="upgrade-step-num">3</div>
+            <div style="width:100%">
+              <strong>Confirmez votre paiement</strong>
+              <div class="upgrade-form" style="margin-top:0.6rem">
+                <input type="text" id="ebookBuyTxRef" class="upgrade-input" placeholder="Référence transaction (optionnel)" />
+                <div style="margin-top:0.6rem">
+                  <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
+                    <i class="fas fa-camera" style="color:var(--accent2)"></i>
+                    Preuve de paiement <span style="color:var(--red);font-size:0.72rem">* Obligatoire</span>
+                  </label>
+                  <label id="ebookBuyProofLabel" style="display:flex;align-items:center;gap:0.6rem;background:var(--bg2);border:2px dashed var(--border);border-radius:10px;padding:0.75rem 1rem;cursor:pointer;font-size:0.85rem;color:var(--text2)">
+                    <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent2)"></i>
+                    <span id="ebookBuyProofText">Cliquez pour ajouter une capture d'écran</span>
+                    <input type="file" id="ebookBuyProofInput" accept="image/*" style="display:none" onchange="_previewEbookProof(this)" />
+                  </label>
+                  <div id="ebookBuyProofPreview" style="display:none;margin-top:0.5rem;position:relative">
+                    <img id="ebookBuyProofImg" src="" style="width:100%;max-height:180px;object-fit:cover;border-radius:8px;border:2px solid var(--accent2)" />
+                    <button onclick="_removeEbookProof()" style="position:absolute;top:0.4rem;right:0.4rem;background:rgba(0,0,0,0.65);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:0.75rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
+                  </div>
+                </div>
+                <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" id="ebookBuySubmitBtn" onclick="submitEbookBuy()">
+                  <i class="fas fa-paper-plane"></i> J'ai envoyé le paiement
+                </button>
+                <p id="ebookBuyMsg" style="font-size:0.82rem;min-height:1rem;text-align:center;margin-top:0.4rem"></p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- SUCCÈS -->
+      <div id="ebookBuySuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
+        <div style="font-size:3rem">✅</div>
+        <h3>Demande envoyée !</h3>
+        <p style="color:var(--text2);font-size:0.9rem;line-height:1.6">Votre demande d'achat a été reçue.<br>Votre ebook sera disponible sous <strong>24h</strong> après vérification du paiement.</p>
+        <button class="btn-outline" onclick="closeEbookBuyModal()" style="margin-top:0.5rem">Fermer</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a id="footerFacebook" href="#" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a>
+        <a id="footerTiktok" href="#" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
+        <a id="footerTelegram" href="#" target="_blank" rel="noopener"><i class="fab fa-telegram"></i></a>
+        <a id="footerYoutube" href="#" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- PANNEAU NOTIFICATIONS -->
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js?v=1776608487261"></script>
+  <script src="/js/app.js?v=1776608487261"></script>
+  <script>
+  // ── STATE ──────────────────────────────────────────────
+  let _ebooksAll       = [];
+  let _myEbookPurchases = [];
+  let _ebookPayAccounts = [];
+  let _activeEbookCat  = 'all';
+  let _ebookBuyProof   = '';
+  let _ebookBuyId      = null;
+  let _ebookBuyAmt     = 0;
+  let _ebookBuyUserOp  = '';
+  let _ebookBuyUserPhone = '';
+
+  // ── INIT ───────────────────────────────────────────────
+  (async function init() {
+    const user = await refreshCurrentUser();
+    updateNavbar(user);
+    if (window.PaganiNotif) { PaganiNotif.refreshBadge(); PaganiNotif.startPolling(); }
+    loadFooterSocialLinks();
+
+    try {
+      _ebooksAll = await PaganiAPI.getEbooks();
+    } catch(e) { _ebooksAll = []; }
+
+    if (user) {
+      try { _myEbookPurchases = await PaganiAPI.getMyEbookPurchases(); } catch(e) {}
+    }
+
+    try { _ebookPayAccounts = await PaganiAPI.admin.getPaymentAccounts(); } catch(e) {}
+
+    _buildCategoryFilters();
+    _renderEbooks();
+    _updateHeroStats(user);
+  })();
+
+  // ── STATS HERO ─────────────────────────────────────────
+  function _updateHeroStats(user) {
+    const cats = [...new Set(_ebooksAll.map(e => e.category))].length;
+    document.getElementById('statEbooksTotal').textContent = _ebooksAll.length;
+    document.getElementById('statEbooksCategories').textContent = cats || '—';
+    const mine = user ? _myEbookPurchases.filter(p => p.statut === 'Approuvé').length : '—';
+    document.getElementById('statEbooksMine').textContent = mine;
+  }
+
+  // ── FILTRES CATÉGORIES ─────────────────────────────────
+  function _buildCategoryFilters() {
+    const cats = [...new Set(_ebooksAll.map(e => e.category).filter(Boolean))];
+    const wrap = document.getElementById('ebooksFilters');
+    cats.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.textContent = cat;
+      btn.onclick = function() { filterEbooks(cat, this); };
+      wrap.appendChild(btn);
+    });
+  }
+
+  function filterEbooks(cat, btn) {
+    document.querySelectorAll('.ebooks-filters .filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    _activeEbookCat = cat;
+    _renderEbooks();
+  }
+
+  // ── RENDU GRILLE ───────────────────────────────────────
+  function _renderEbooks() {
+    document.getElementById('ebooksLoader').style.display = 'none';
+    const grid  = document.getElementById('ebooksGrid');
+    const empty = document.getElementById('ebooksEmpty');
+
+    let list = _activeEbookCat === 'all'
+      ? _ebooksAll
+      : _ebooksAll.filter(e => e.category === _activeEbookCat);
+
+    if (!list.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'flex';
+      return;
+    }
+    empty.style.display = 'none';
+
+    grid.innerHTML = list.map((eb, i) => _ebookCardHTML(eb, i)).join('');
+    grid.querySelectorAll('.ebook-card').forEach((el, i) => {
+      el.style.animationDelay = `${i * 40}ms`;
+      el.classList.add('ebook-animate');
+    });
+  }
+
+  function _ebookCardHTML(eb, i) {
+    const purchase  = _myEbookPurchases.find(p => p.ebookId === eb.id);
+    const isOwned   = purchase && purchase.statut === 'Approuvé';
+    const isPending = purchase && purchase.statut === 'En attente';
+    const price     = Number(eb.price).toLocaleString('fr-FR');
+    const pages     = eb.pages ? `<span><i class="fas fa-file-alt"></i> ${eb.pages} pages</span>` : '';
+    const author    = eb.author ? `<span><i class="fas fa-user-edit"></i> ${eb.author}</span>` : '';
+    const coverImg  = eb.cover
+      ? `<img src="${eb.cover}" alt="${eb.title}" />`
+      : `<div class="ebook-cover-placeholder"><i class="fas fa-book-open"></i></div>`;
+
+    let actionBtn = '';
+    if (isOwned) {
+      const dlUrl = purchase.fileUrl || eb.fileUrl || '#';
+      actionBtn = `<a href="${dlUrl}" target="_blank" rel="noopener" class="ebook-dl-btn">
+        <i class="fas fa-download"></i> Télécharger
+      </a>`;
+    } else if (isPending) {
+      actionBtn = `<div class="ebook-pending-btn">
+        <i class="fas fa-clock"></i> En attente de validation
+      </div>`;
+    } else {
+      actionBtn = `<button class="ebook-buy-btn" onclick="openEbookBuyModal(${eb.id})">
+        <span><i class="fas fa-shopping-cart"></i> Acheter</span>
+        <strong>${price} AR</strong>
+      </button>`;
+    }
+
+    return `
+      <div class="ebook-card${isOwned ? ' owned' : ''}">
+        <div class="ebook-cover">
+          ${coverImg}
+          <span class="ebook-cat-badge">${eb.category || 'Ebook'}</span>
+          ${isOwned ? '<span class="ebook-owned-badge"><i class="fas fa-check"></i> Acquis</span>' : ''}
+          <div class="ebook-cover-overlay">
+            <i class="fas fa-${isOwned ? 'download' : 'shopping-cart'}"></i>
+          </div>
+        </div>
+        <div class="ebook-info">
+          <h3>${eb.title}</h3>
+          <p>${eb.description || ''}</p>
+          <div class="ebook-meta">${pages}${author}</div>
+          ${actionBtn}
+        </div>
+      </div>`;
+  }
+
+  // ── MODAL ACHAT ────────────────────────────────────────
+  async function openEbookBuyModal(ebookId) {
+    const user = getUser();
+    if (!user) { window.location.href = 'dashboard.html'; return; }
+
+    const eb = _ebooksAll.find(e => e.id === ebookId);
+    if (!eb) return;
+
+    _ebookBuyId    = eb.id;
+    _ebookBuyAmt   = eb.price;
+    _ebookBuyProof = '';
+
+    // En-tête
+    document.getElementById('ebookBuyTitle').textContent = eb.title;
+    document.getElementById('ebookBuyDesc').textContent  = eb.description || '';
+    document.getElementById('ebookBuyMeta').innerHTML = `
+      <span><i class="fas fa-tag" style="color:var(--accent2)"></i>
+        <strong style="color:var(--accent2)">${Number(eb.price).toLocaleString('fr-FR')} AR</strong>
+      </span>
+      ${eb.pages ? `<span><i class="fas fa-file-alt"></i> ${eb.pages} pages</span>` : ''}
+      ${eb.author ? `<span><i class="fas fa-user-edit"></i> ${eb.author}</span>` : ''}`;
+
+    // Réinitialiser
+    document.getElementById('ebookBuyPayment').style.display = 'none';
+    document.getElementById('ebookBuySuccess').style.display = 'none';
+    document.getElementById('ebookBuyHeader').style.display  = 'block';
+
+    // Bouton démarrer
+    let startBtn = document.getElementById('ebookBuyStartBtn');
+    if (!startBtn) {
+      startBtn = document.createElement('button');
+      startBtn.id = 'ebookBuyStartBtn';
+      startBtn.className = 'btn-primary';
+      startBtn.style.cssText = 'width:100%;padding:0.85rem;font-size:0.95rem;margin-top:1rem';
+      document.getElementById('ebookBuyHeader').appendChild(startBtn);
+    }
+    startBtn.innerHTML = `<i class="fas fa-shopping-cart"></i> Acheter — ${Number(eb.price).toLocaleString('fr-FR')} AR`;
+    startBtn.onclick = _ebookBuyGoToPayment;
+
+    document.getElementById('ebookBuyOverlay').style.display = 'flex';
+  }
+
+  async function _ebookBuyGoToPayment() {
+    const user     = getUser();
+    // Recharger les comptes au moment du paiement pour garantir les données fraîches
+    try { _ebookPayAccounts = await PaganiAPI.admin.getPaymentAccounts(); } catch(e) {}
+    const accounts = _ebookPayAccounts.filter(a => !a.disabled && a.phone);
+    const userAccs = _getUserMmAccounts(user);
+
+    document.getElementById('ebookBuyAmountRepeat').textContent = Number(_ebookBuyAmt).toLocaleString('fr-FR') + ' AR';
+    document.getElementById('ebookBuyPayTitle').textContent = 'Paiement — ' + Number(_ebookBuyAmt).toLocaleString('fr-FR') + ' AR';
+    document.getElementById('ebookBuyAdminTargets').innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+    document.getElementById('ebookBuyHeader').style.display  = 'none';
+    document.getElementById('ebookBuyPayment').style.display = 'block';
+
+    _renderEbookUserMm(user, userAccs, accounts);
+    _renderEbookAdminTargets(accounts, userAccs.length ? userAccs[0].operator : null);
+
+    if (userAccs.length) {
+      _ebookBuyUserOp    = userAccs[0].operator;
+      _ebookBuyUserPhone = userAccs[0].phone;
+    }
+    _removeEbookProof();
+    document.getElementById('ebookBuyMsg').textContent = '';
+    document.getElementById('ebookBuyTxRef').value = '';
+  }
+
+  function _ebookBuyBackToInfo() {
+    document.getElementById('ebookBuyPayment').style.display = 'none';
+    document.getElementById('ebookBuyHeader').style.display  = 'block';
+  }
+
+  function closeEbookBuyModal() {
+    document.getElementById('ebookBuyOverlay').style.display = 'none';
+    _ebookBuyProof = '';
+  }
+
+  // ── HELPERS MM ─────────────────────────────────────────
+  function _getUserMmAccounts(user) {
+    if (!user) return [];
+    const raw = user.mmAccounts || [];
+    if (raw.length) return raw.filter(a => a.phone);
+    if (user.mmPhone) return [{ operator: user.mmOperator || 'MVola', phone: user.mmPhone, name: user.mmName || user.name }];
+    return [];
+  }
+
+  function _renderEbookUserMm(user, userAccs, adminAccs) {
+    const wrap   = document.getElementById('ebookBuyUserMmWrap');
+    const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
+
+    if (!user || !userAccs.length) {
+      const opOpts = adminAccs.length
+        ? adminAccs.map(a => `<option value="${a.operator}">${a.operator}</option>`).join('')
+        : '<option value="MVola">MVola</option><option value="Orange Money">Orange Money</option><option value="Airtel Money">Airtel Money</option>';
+      wrap.innerHTML = `
+        <div class="upgrade-mm-notice${!user ? '' : ' upgrade-mm-notice-warn'}">
+          <i class="fas fa-${user ? 'exclamation-triangle' : 'info-circle'}"></i>
+          <span>${user ? 'Aucun compte Mobile Money. <a href="dashboard.html">Ajoutez-en un</a>.' : 'Connectez-vous pour utiliser votre compte enregistré.'}</span>
+        </div>
+        <div class="upgrade-form-manual">
+          <label class="upgrade-form-label">Votre opérateur</label>
+          <select class="upgrade-input" onchange="_ebookBuyUserOp=this.value;_renderEbookAdminTargets(_ebookPayAccounts.filter(a=>!a.disabled&&a.phone),this.value)">${opOpts}</select>
+          <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numéro Mobile Money</label>
+          <input type="tel" class="upgrade-input" placeholder="034 XX XXX XX" oninput="_ebookBuyUserPhone=this.value" />
+        </div>`;
+      _ebookBuyUserOp    = adminAccs[0]?.operator || 'MVola';
+      _ebookBuyUserPhone = '';
+      return;
+    }
+
+    if (userAccs.length === 1) {
+      const acc = userAccs[0];
+      _ebookBuyUserOp    = acc.operator;
+      _ebookBuyUserPhone = acc.phone;
+      const color = colors[acc.operator] || 'var(--accent)';
+      wrap.innerHTML = `
+        <div class="upgrade-user-mm-single">
+          <span class="upgrade-user-mm-icon" style="background:${color}22;color:${color}"><i class="fas fa-mobile-alt"></i></span>
+          <span class="upgrade-user-mm-details">
+            <strong>${acc.operator}</strong><span>${acc.phone}</span><span class="upgrade-user-mm-name">${acc.name}</span>
+          </span>
+          <span class="upgrade-user-mm-locked"><i class="fas fa-lock"></i> Votre compte</span>
+        </div>`;
+      return;
+    }
+
+    _ebookBuyUserOp    = userAccs[0].operator;
+    _ebookBuyUserPhone = userAccs[0].phone;
+    wrap.innerHTML = `<div class="upgrade-user-mm-selector">${userAccs.map((acc, i) => {
+      const color    = colors[acc.operator] || 'var(--accent)';
+      const hasAdmin = adminAccs.some(a => a.operator === acc.operator);
+      return `<label class="upgrade-user-mm-option">
+        <input type="radio" name="ebookUserMm" value="${i}" ${i===0?'checked':''}
+          onchange="_ebookBuyUserOp='${acc.operator}';_ebookBuyUserPhone='${acc.phone}';_renderEbookAdminTargets(_ebookPayAccounts.filter(a=>!a.disabled&&a.phone),'${acc.operator}')" />
+        <span class="upgrade-user-mm-card ${!hasAdmin?'upgrade-mm-card-warn':''}">
+          <span class="upgrade-user-mm-icon" style="background:${color}22;color:${color}"><i class="fas fa-mobile-alt"></i></span>
+          <span class="upgrade-user-mm-details"><strong>${acc.operator}</strong><span>${acc.phone}</span><span class="upgrade-user-mm-name">${acc.name}</span></span>
+          <span class="upgrade-user-mm-check"><i class="fas fa-check-circle"></i></span>
+        </span>
+      </label>`;
+    }).join('')}</div>`;
+  }
+
+  function _renderEbookAdminTargets(adminAccs, selectedOp) {
+    const wrap   = document.getElementById('ebookBuyAdminTargets');
+    const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
+    const configured = adminAccs.filter(a => a.phone && !a.disabled);
+    if (!configured.length) {
+      wrap.innerHTML = `<div class="upgrade-mm-no-admin"><i class="fas fa-exclamation-circle"></i> Aucun numéro configuré. Contactez l'administrateur.</div>`;
+      return;
+    }
+    const def = selectedOp ? (configured.find(a => a.operator === selectedOp) || configured[0]) : configured[0];
+    wrap.innerHTML = configured.map(acc => {
+      const color    = colors[acc.operator] || 'var(--accent)';
+      const selected = acc.operator === def.operator;
+      return `<div style="${selected?'':'display:none;'}margin-bottom:0.5rem">
+        <div style="display:flex;align-items:center;gap:0.8rem;background:${selected?'rgba(0,212,170,0.07)':'var(--bg2)'};border:2px solid ${selected?'var(--accent2)':'var(--border)'};border-radius:12px;padding:0.85rem 1rem">
+          <span style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;background:${color}22;color:${color}"><i class="fas fa-mobile-alt"></i></span>
+          <span style="flex:1;display:flex;flex-direction:column;gap:0.1rem">
+            <strong style="font-size:0.92rem">${acc.operator}</strong>
+            <span style="font-size:1.05rem;font-weight:700;letter-spacing:0.04em">${acc.phone}</span>
+            <span style="font-size:0.72rem;color:var(--text2)">${acc.name}</span>
+          </span>
+          <button onclick="_copyEbookPhone('${acc.phone}',this)" style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);color:var(--accent);padding:0.25rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.75rem;font-family:inherit">
+            <i class="fas fa-copy"></i> Copier
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function _copyEbookPhone(phone, btn) {
+    const orig = btn.innerHTML;
+    const done = () => {
+      btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+      btn.style.color = 'var(--accent2)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = 'var(--accent)'; }, 2000);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(phone).then(done).catch(() => { btn.textContent = phone; setTimeout(() => btn.innerHTML = orig, 2000); });
+    } else {
+      const inp = document.createElement('input');
+      inp.value = phone; inp.style.cssText = 'position:fixed;opacity:0';
+      document.body.appendChild(inp); inp.select(); document.execCommand('copy');
+      document.body.removeChild(inp); done();
+    }
+  }
+
+  // ── PREUVE PAIEMENT ────────────────────────────────────
+  function _previewEbookProof(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      _ebookBuyProof = e.target.result;
+      document.getElementById('ebookBuyProofImg').src = _ebookBuyProof;
+      document.getElementById('ebookBuyProofPreview').style.display = 'block';
+      document.getElementById('ebookBuyProofLabel').style.borderColor = 'var(--accent2)';
+      document.getElementById('ebookBuyProofText').textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function _removeEbookProof() {
+    _ebookBuyProof = '';
+    document.getElementById('ebookBuyProofImg').src = '';
+    document.getElementById('ebookBuyProofPreview').style.display = 'none';
+    document.getElementById('ebookBuyProofInput').value = '';
+    document.getElementById('ebookBuyProofLabel').style.borderColor = 'var(--border)';
+    document.getElementById('ebookBuyProofText').textContent = "Cliquez pour ajouter une capture d'\u00e9cran";
+  }
+
+  // ── SOUMETTRE L'ACHAT ──────────────────────────────────
+  async function submitEbookBuy() {
+    const msg  = document.getElementById('ebookBuyMsg');
+    const btn  = document.getElementById('ebookBuySubmitBtn');
+    const txRef = document.getElementById('ebookBuyTxRef').value.trim();
+
+    if (!_ebookBuyProof) {
+      msg.style.color = 'var(--red)';
+      msg.textContent = '⚠️ La preuve de paiement est obligatoire.';
+      const label = document.getElementById('ebookBuyProofLabel');
+      label.style.borderColor = 'var(--red)';
+      label.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => label.style.borderColor = 'var(--border)', 3000);
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+    msg.style.color = 'var(--text2)';
+    msg.textContent = 'Envoi en cours...';
+
+    try {
+      await PaganiAPI.buyEbook({
+        ebookId:  _ebookBuyId,
+        amount:   _ebookBuyAmt,
+        phone:    _ebookBuyUserPhone,
+        operator: _ebookBuyUserOp,
+        txRef, proof: _ebookBuyProof
+      });
+      _ebookBuyProof = '';
+      document.getElementById('ebookBuyPayment').style.display = 'none';
+      document.getElementById('ebookBuySuccess').style.display = 'flex';
+      // Rafraîchir les achats
+      try { _myEbookPurchases = await PaganiAPI.getMyEbookPurchases(); } catch(e) {}
+      _renderEbooks();
+    } catch(err) {
+      msg.style.color = 'var(--red)';
+      const errMap = {
+        DEJA_ACHETE:     'Vous avez déjà acheté cet ebook.',
+        NON_AUTHENTIFIE: 'Session expirée. Veuillez vous reconnecter.',
+        PREUVE_REQUISE:  'La preuve de paiement est obligatoire.',
+        EBOOK_INTROUVABLE: 'Ebook introuvable.',
+      };
+      msg.textContent = '❌ ' + (errMap[err.message] || 'Erreur : ' + err.message);
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> J\'ai envoyé le paiement';
+    }
+  }
+  </script>
+
+</body>
+</html>

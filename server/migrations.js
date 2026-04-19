@@ -58,6 +58,46 @@ async function runMigrations(pool) {
   await run('private_messages.reply_to_id', async () => {
     await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES private_messages(id) ON DELETE SET NULL`);
   });
+
+  // ebooks
+  await run('ebooks', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS ebooks (
+      id          SERIAL PRIMARY KEY,
+      title       TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      cover       TEXT DEFAULT '',
+      price       INTEGER NOT NULL DEFAULT 0,
+      category    TEXT DEFAULT 'General',
+      pages       INTEGER DEFAULT NULL,
+      author      TEXT DEFAULT '',
+      file_url    TEXT DEFAULT '',
+      is_active   BOOLEAN DEFAULT true,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  });
+
+  // ebook_purchases
+  await run('ebook_purchases', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS ebook_purchases (
+      id           SERIAL PRIMARY KEY,
+      user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      user_name    TEXT DEFAULT '',
+      ebook_id     INTEGER REFERENCES ebooks(id) ON DELETE CASCADE,
+      ebook_title  TEXT DEFAULT '',
+      amount       INTEGER NOT NULL DEFAULT 0,
+      phone        TEXT DEFAULT '',
+      operator     TEXT DEFAULT '',
+      mm_name      TEXT DEFAULT '',
+      tx_ref       TEXT DEFAULT '',
+      proof        TEXT DEFAULT '',
+      statut       TEXT DEFAULT 'En attente',
+      reject_reason TEXT DEFAULT '',
+      treated_at   TIMESTAMPTZ DEFAULT NULL,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_user ON ebook_purchases(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_ebook ON ebook_purchases(ebook_id)`);
+  });
 }
 
 module.exports = { runMigrations };

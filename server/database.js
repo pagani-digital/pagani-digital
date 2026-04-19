@@ -1093,6 +1093,109 @@ async function setNavbarButton({ enabled, label, icon_url, link }) {
 }
 
 // ═══════════════════════════════════════════════
+// EBOOKS
+// ═══════════════════════════════════════════════
+
+async function getEbooks() {
+  const res = await query('SELECT * FROM ebooks WHERE is_active = true ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbooksAdmin() {
+  const res = await query('SELECT * FROM ebooks ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getEbookById(id) {
+  const res = await query('SELECT * FROM ebooks WHERE id = $1', [id]);
+  return rowToCamel(res.rows[0]) || null;
+}
+
+async function createEbook({ title, description, cover, price, category, pages, author, fileUrl }) {
+  const res = await query(
+    `INSERT INTO ebooks (title, description, cover, price, category, pages, author, file_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [title, description || '', cover || '', price || 0, category || 'General', pages || null, author || '', fileUrl || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function updateEbook(id, fields) {
+  const allowed = { title: 'title', description: 'description', cover: 'cover', price: 'price',
+    category: 'category', pages: 'pages', author: 'author', fileUrl: 'file_url', isActive: 'is_active' };
+  const keys = Object.keys(fields).filter(k => allowed[k] !== undefined);
+  if (!keys.length) return getEbookById(id);
+  const setQuery = keys.map((k, i) => `${allowed[k]} = $${i + 1}`).join(', ');
+  const res = await query(
+    `UPDATE ebooks SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...keys.map(k => fields[k]), id]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function deleteEbook(id) {
+  await query('DELETE FROM ebooks WHERE id = $1', [id]);
+}
+
+async function createEbookPurchase({ userId, ebookId, amount, phone, operator, mmName, txRef, proof }) {
+  const user  = await getUserById(userId);
+  const ebook = await getEbookById(ebookId);
+  const res = await query(
+    `INSERT INTO ebook_purchases (user_id, user_name, ebook_id, ebook_title, amount, phone, operator, mm_name, tx_ref, proof)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [userId, user?.name || '', ebookId, ebook?.title || '', amount, phone || '', operator || '', mmName || '', txRef || '', proof || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function getEbookPurchasesByUser(userId) {
+  const res = await query(
+    `SELECT ep.*, e.file_url, e.cover FROM ebook_purchases ep
+     LEFT JOIN ebooks e ON e.id = ep.ebook_id
+     WHERE ep.user_id = $1 ORDER BY ep.created_at DESC`,
+    [userId]
+  );
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbookPurchases() {
+  const res = await query('SELECT * FROM ebook_purchases ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function hasEbookPurchase(userId, ebookId) {
+  const res = await query(
+    `SELECT id FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2 AND statut = 'Approuvé'`,
+    [userId, ebookId]
+  );
+  return res.rows.length > 0;
+}
+
+async function updateEbookPurchase(id, { statut, rejectReason }) {
+  const res = await query(
+    `UPDATE ebook_purchases SET statut = $1, reject_reason = $2, treated_at = NOW() WHERE id = $3 RETURNING *`,
+    [statut, rejectReason || '', id]
+  );
+  const purchase = rowToCamel(res.rows[0]);
+  if (!purchase) throw new Error('PURCHASE_NOT_FOUND');
+  if (statut === 'Approuvé') {
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_UNLOCKED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
+      link: 'ebooks.html'
+    });
+  } else if (statut === 'Rejeté') {
+    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_REJECTED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été rejeté.${reason}`,
+      link: 'ebooks.html'
+    });
+  }
+  return purchase;
+}
+
+// ═══════════════════════════════════════════════
 // UTIL
 // ═══════════════════════════════════════════════
 
@@ -1197,4 +1300,16 @@ module.exports = {
 
   recordShare,
   getShareStats,
+
+  getEbooks,
+  getAllEbooksAdmin,
+  getEbookById,
+  createEbook,
+  updateEbook,
+  deleteEbook,
+  createEbookPurchase,
+  getEbookPurchasesByUser,
+  getAllEbookPurchases,
+  hasEbookPurchase,
+  updateEbookPurchase,
 };

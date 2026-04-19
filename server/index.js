@@ -1103,6 +1103,74 @@ app.post('/api/presence/batch', requireAuth, (req, res) => {
   });
   res.json(result);
 });
+// ══════════════════════════════════════════════════════════
+//  EBOOKS
+// ══════════════════════════════════════════════════════════
+app.get('/api/ebooks', async (req, res) => {
+  try { res.json(await db.getEbooks()); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.get('/api/admin/ebooks', requireAuth, requireAdmin, async (req, res) => {
+  try { res.json(await db.getAllEbooksAdmin()); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.post('/api/admin/ebooks', requireAuth, requireAdmin, async (req, res) => {
+  try { res.json(await db.createEbook(req.body)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+app.put('/api/admin/ebooks/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    res.json(await db.updateEbook(id, req.body));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+app.delete('/api/admin/ebooks/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    await db.deleteEbook(id);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.post('/api/ebook-purchase', requireAuth, async (req, res) => {
+  const { ebookId, amount, phone, operator, mmName, txRef, proof } = req.body;
+  if (!proof) return res.status(400).json({ error: 'PREUVE_REQUISE' });
+  const ebook = await db.getEbookById(parseInt(ebookId));
+  if (!ebook) return res.status(404).json({ error: 'EBOOK_INTROUVABLE' });
+  if (await db.hasEbookPurchase(req.user.id, parseInt(ebookId)))
+    return res.status(400).json({ error: 'DEJA_ACHETE' });
+  try {
+    const user = await db.getUserById(req.user.id);
+    const purchase = await db.createEbookPurchase({
+      userId: req.user.id, ebookId: parseInt(ebookId),
+      amount: amount || ebook.price,
+      phone: phone || '', operator: operator || '',
+      mmName: mmName || '', txRef: txRef || '', proof
+    });
+    await db.createNotification({
+      userId: 0, type: 'NEW_FORMATION',
+      message: `${user.name} a acheté l'ebook "${ebook.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
+      link: 'dashboard.html?tab=admin&section=ebookpurchases'
+    });
+    res.json({ ok: true, id: purchase.id });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+app.get('/api/my-ebook-purchases', requireAuth, async (req, res) => {
+  try { res.json(await db.getEbookPurchasesByUser(req.user.id)); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.get('/api/admin/ebook-purchases', requireAuth, requireAdmin, async (req, res) => {
+  try { res.json(await db.getAllEbookPurchases()); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.put('/api/admin/ebook-purchases/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    res.json(await db.updateEbookPurchase(id, req.body));
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));
