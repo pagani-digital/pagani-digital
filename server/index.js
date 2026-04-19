@@ -279,6 +279,19 @@ app.get('/api/posts', async (req, res) => {
     res.json(posts.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+// Filtrer les posts par hashtag
+app.get('/api/posts/hashtag/:tag', async (req, res) => {
+  try {
+    const tag = req.params.tag.toLowerCase().replace(/[^\w\u00C0-\u024F]/g, '');
+    if (!tag) return res.status(400).json({ error: 'TAG_INVALIDE' });
+    const posts = await db.getPosts();
+    const filtered = posts.filter(p => {
+      const text = ((p.title || '') + ' ' + (p.content || '')).toLowerCase();
+      return text.includes('#' + tag);
+    });
+    res.json(filtered.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 app.get('/api/posts/:id/image', async (req, res) => {
   try {
     const id = parseId(req.params.id);

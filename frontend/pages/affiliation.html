@@ -7,6 +7,21 @@
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .qr-section { margin-top:1.5rem; padding:1.5rem; background:var(--bg2); border:1px solid var(--border); border-radius:16px; text-align:center; }
+    .qr-section h3 { font-size:1rem; margin-bottom:0.3rem; color:var(--text); }
+    .qr-section p  { font-size:0.8rem; color:var(--text2); margin-bottom:1rem; }
+    .qr-canvas-wrap { display:inline-block; padding:12px; background:#fff; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); margin-bottom:1rem; }
+    .qr-canvas-wrap canvas, .qr-canvas-wrap img { display:block; border-radius:6px; }
+    .qr-actions { display:flex; gap:0.6rem; justify-content:center; flex-wrap:wrap; }
+    .qr-btn { display:inline-flex; align-items:center; gap:0.45rem; padding:0.55rem 1.1rem; border-radius:10px; font-size:0.85rem; font-weight:600; cursor:pointer; border:none; font-family:inherit; transition:opacity 0.2s; text-decoration:none; }
+    .qr-btn:hover { opacity:0.85; }
+    .qr-btn.dl   { background:linear-gradient(135deg,var(--accent),#5a52d5); color:#fff; }
+    .qr-btn.wa   { background:#25d366; color:#fff; }
+    .qr-btn.fb   { background:#1877f2; color:#fff; }
+    .qr-hint { font-size:0.72rem; color:var(--text2); margin-top:0.8rem; display:flex; align-items:center; justify-content:center; gap:0.3rem; }
+  </style>
 </head>
 <body>
 
@@ -150,7 +165,7 @@
     <div class="affiliate-link-section">
       <h2>Mon Lien de Parrainage</h2>
       <div class="link-box">
-        <input type="text" id="affiliateLink" value="https://paganidigital.com/ref/USER123" readonly />
+        <input type="text" id="affiliateLink" value="https://pagani-digital.netlify.app/dashboard.html?ref=USER123" readonly />
         <button onclick="copyLink()"><i class="fas fa-copy"></i> Copier</button>
       </div>
       <p id="copyMsg" class="copy-msg"></p>
@@ -158,6 +173,40 @@
         <a href="#" target="_blank" rel="noopener" class="share-btn twitter"><i class="fab fa-twitter"></i> Twitter</a>
         <a href="#" target="_blank" rel="noopener" class="share-btn telegram"><i class="fab fa-telegram"></i> Telegram</a>
         <a id="whatsappShareBtn" href="#" target="_blank" rel="noopener" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      </div>
+      <!-- QR CODE PARRAINAGE -->
+      <div class="qr-section" id="qrSection" style="display:none">
+        <h3><i class="fas fa-qrcode" style="color:var(--accent)"></i> Mon QR Code de Parrainage</h3>
+        <p>Scannez ou partagez ce QR code — il redirige directement vers votre lien d'inscription.</p>
+        <div class="qr-canvas-wrap">
+          <div id="qrCanvas"></div>
+        </div>
+        <div class="qr-actions">
+          <button class="qr-btn dl" onclick="downloadQR()">
+            <i class="fas fa-download"></i> Télécharger PNG
+          </button>
+          <button class="qr-btn wa" onclick="shareQRWhatsApp()">
+            <i class="fab fa-whatsapp"></i> Story WhatsApp
+          </button>
+          <button class="qr-btn fb" onclick="shareQRFacebook()">
+            <i class="fab fa-facebook"></i> Story Facebook
+          </button>
+        </div>
+        <p class="qr-hint"><i class="fas fa-info-circle"></i> Idéal pour les stories, affiches et présentations</p>
+      </div>
+
+      <!-- PARTAGE PROFIL PUBLIC -->
+      <div id="profileShareRow" style="display:none;margin-top:0.8rem">
+        <p style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem"><i class="fas fa-user-circle" style="color:var(--accent)"></i> Partager aussi votre profil public :</p>
+        <div class="share-btns">
+          <button onclick="copyProfileLink()" class="share-btn" style="background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.3);cursor:pointer">
+            <i class="fas fa-copy"></i> Copier mon lien profil
+          </button>
+          <a id="whatsappProfileBtn" href="#" target="_blank" rel="noopener" class="share-btn whatsapp">
+            <i class="fab fa-whatsapp"></i> Partager mon profil
+          </a>
+        </div>
+        <p id="profileCopyMsg" class="copy-msg"></p>
       </div>
     </div>
 
@@ -290,7 +339,7 @@
         if (loginWall)       loginWall.style.display       = 'block';
       }
 
-      const refLink = user ? `https://paganidigital.com/ref/${user.refCode}` : 'https://paganidigital.com';
+      const refLink = user ? `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}` : 'https://pagani-digital.netlify.app';
       const msg = encodeURIComponent(`Rejoignez Pagani Digital et developpez votre business en ligne ! ${refLink}`);
       const wa = document.getElementById('whatsappShareBtn');
       if (wa) wa.href = `https://wa.me/?text=${msg}`;
@@ -298,6 +347,19 @@
       if (tw) tw.href = `https://twitter.com/intent/tweet?text=${msg}`;
       const tg = document.querySelector('.share-btn.telegram');
       if (tg) tg.href = `https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent('Rejoignez Pagani Digital !')}`;
+
+      // Lien profil public
+      if (user) {
+        const profileLink = `https://pagani-digital.netlify.app/profil.html?id=${user.id}`;
+        const profileMsg  = encodeURIComponent(`Suivez-moi sur Pagani Digital ! ${profileLink}`);
+        const profileRow  = document.getElementById('profileShareRow');
+        if (profileRow) profileRow.style.display = 'block';
+        const waProfile = document.getElementById('whatsappProfileBtn');
+        if (waProfile) waProfile.href = `https://wa.me/?text=${profileMsg}`;
+        window._profileLink = profileLink;
+        // Générer le QR code
+        generateQR(refLink);
+      }
 
       // Charger les tarifs dynamiques
       try {
@@ -332,6 +394,83 @@
         if (el('affCommNote'))         el('affCommNote').innerHTML = `<i class="fas fa-info-circle"></i> Tarifs de reference : Plan Pro = ${fmt(pro)} AR/mois &middot; Plan Elite = ${fmt(elite)} AR/mois &middot; Formation unitaire = ${fmt(video)} AR &middot; Paiement via Mobile Money (MVola, Orange Money, Airtel)`;
       } catch(e) {}
     });
+    // ── QR CODE ──────────────────────────────────────────────────────────────
+    let _qrInstance = null;
+
+    function generateQR(url) {
+      const wrap = document.getElementById('qrCanvas');
+      if (!wrap) return;
+      wrap.innerHTML = '';
+      _qrInstance = new QRCode(wrap, {
+        text: url,
+        width: 200, height: 200,
+        colorDark: '#1a1a2e',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+      document.getElementById('qrSection').style.display = 'block';
+    }
+
+    function _getQRCanvas() {
+      const wrap = document.getElementById('qrCanvas');
+      return wrap ? (wrap.querySelector('canvas') || wrap.querySelector('img')) : null;
+    }
+
+    function downloadQR() {
+      const el = _getQRCanvas();
+      if (!el) return;
+      // Créer un canvas final avec fond blanc + QR + texte
+      const size = 280;
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size + 48;
+      const ctx = c.getContext('2d');
+      // Fond dégradé
+      const grad = ctx.createLinearGradient(0, 0, size, size + 48);
+      grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#16213e');
+      ctx.fillStyle = grad;
+      ctx.roundRect(0, 0, size, size + 48, 16);
+      ctx.fill();
+      // QR blanc centré
+      const qrSize = 200;
+      const qrX = (size - qrSize) / 2;
+      ctx.fillStyle = '#fff';
+      ctx.roundRect(qrX - 10, 14, qrSize + 20, qrSize + 20, 10);
+      ctx.fill();
+      if (el.tagName === 'CANVAS') ctx.drawImage(el, qrX, 24, qrSize, qrSize);
+      else { const img = new Image(); img.src = el.src; ctx.drawImage(img, qrX, 24, qrSize, qrSize); }
+      // Texte bas
+      ctx.fillStyle = '#00d4aa';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Pagani Digital', size / 2, size + 30);
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.font = '10px sans-serif';
+      ctx.fillText('Scannez pour rejoindre', size / 2, size + 44);
+      // Télécharger
+      const a = document.createElement('a');
+      a.download = 'qr-parrainage-pagani.png';
+      a.href = c.toDataURL('image/png');
+      a.click();
+    }
+
+    function shareQRWhatsApp() {
+      const link = document.getElementById('affiliateLink')?.value || '';
+      const text = encodeURIComponent('🚀 Rejoignez Pagani Digital avec mon lien ! ' + link);
+      window.open('https://wa.me/?text=' + text, '_blank', 'noopener');
+    }
+
+    function shareQRFacebook() {
+      const link = document.getElementById('affiliateLink')?.value || '';
+      window.open('https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(link), '_blank', 'noopener');
+    }
+
+    function copyProfileLink() {
+      if (!window._profileLink) return;
+      navigator.clipboard.writeText(window._profileLink).then(() => {
+        const msg = document.getElementById('profileCopyMsg');
+        if (msg) { msg.textContent = '✅ Lien profil copié !'; setTimeout(() => msg.textContent = '', 3000); }
+      });
+    }
   </script>
 </body>
 </html>

@@ -137,7 +137,9 @@ function formatPostContent(text) {
         return txt.replace(urlRegex, url => {
           const display = url.length > 50 ? url.slice(0, 47) + '...' : url;
           return `<a href="${url}" target="_blank" rel="noopener" class="post-auto-link">${display}</a>`;
-        });
+        }).replace(/#([\w\u00C0-\u024F]+)/g, (_, tag) =>
+          `<a href="javascript:void(0)" class="post-hashtag" onclick="filterByHashtag('${tag}')">#${tag}</a>`
+        );
       });
       return `<p>${line}</p>`;
     })
@@ -1257,6 +1259,99 @@ function scrollToTargetPost(retries) {
   }, 100);
 }
 function renderNews() { renderFeed(); }
+
+// ── HASHTAGS ──────────────────────────────────────────────────────────────────
+function filterByHashtag(tag) {
+  // Mettre à jour l'URL sans recharger
+  history.pushState({}, '', '?tag=' + encodeURIComponent(tag));
+  _activeHashtag = tag;
+  _renderHashtagBanner(tag);
+  _filterFeedByHashtag(tag);
+  // Mettre en surbrillance le tag actif dans la sidebar
+  document.querySelectorAll('.hashtag-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.tag === tag);
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function clearHashtagFilter() {
+  history.pushState({}, '', window.location.pathname);
+  _activeHashtag = null;
+  const banner = document.getElementById('hashtagBanner');
+  if (banner) banner.style.display = 'none';
+  document.querySelectorAll('.hashtag-pill').forEach(p => p.classList.remove('active'));
+  // Réafficher tous les posts
+  document.querySelectorAll('.post-card').forEach(p => p.style.display = '');
+  const empty = document.getElementById('hashtagEmpty');
+  if (empty) empty.remove();
+}
+
+function _renderHashtagBanner(tag) {
+  let banner = document.getElementById('hashtagBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'hashtagBanner';
+    banner.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.6rem 1rem;background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);border-radius:10px;margin-bottom:1rem;font-size:0.88rem';
+    const feed = document.getElementById('feedPosts');
+    if (feed) feed.parentNode.insertBefore(banner, feed);
+  }
+  banner.style.display = 'flex';
+  banner.innerHTML = `<i class="fas fa-hashtag" style="color:var(--accent)"></i>
+    <strong style="color:var(--accent)">#${tag}</strong>
+    <span style="color:var(--text2);flex:1">Posts avec ce hashtag</span>
+    <button onclick="clearHashtagFilter()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem" title="Effacer le filtre"><i class="fas fa-times"></i></button>`;
+}
+
+function _filterFeedByHashtag(tag) {
+  const lower = tag.toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('.post-card').forEach(card => {
+    const text = (card.querySelector('.post-content')?.textContent || '') +
+                 (card.querySelector('.post-title')?.textContent || '');
+    const hasTag = text.toLowerCase().includes('#' + lower);
+    card.style.display = hasTag ? '' : 'none';
+    if (hasTag) visible++;
+  });
+  // Message si aucun résultat
+  const old = document.getElementById('hashtagEmpty');
+  if (old) old.remove();
+  if (visible === 0) {
+    const div = document.createElement('div');
+    div.id = 'hashtagEmpty';
+    div.className = 'feed-empty';
+    div.innerHTML = `<i class="fas fa-hashtag"></i><p>Aucun post avec <strong>#${tag}</strong> pour le moment.</p>`;
+    const feed = document.getElementById('feedPosts');
+    if (feed) feed.appendChild(div);
+  }
+}
+
+function extractTopHashtags(posts, limit) {
+  const counts = {};
+  posts.forEach(p => {
+    const text = (p.title || '') + ' ' + (p.content || '');
+    const tags = text.match(/#([wÀ-ɏ]+)/g) || [];
+    tags.forEach(t => {
+      const k = t.slice(1).toLowerCase();
+      counts[k] = (counts[k] || 0) + 1;
+    });
+  });
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit || 8)
+    .map(([tag, count]) => ({ tag, count }));
+}
+
+function renderTrendingHashtags(posts) {
+  const wrap = document.getElementById('trendingHashtags');
+  if (!wrap) return;
+  const top = extractTopHashtags(posts, 8);
+  if (!top.length) { wrap.closest('.sidebar-card')?.style && (wrap.closest('.sidebar-card').style.display = 'none'); return; }
+  wrap.innerHTML = top.map(({ tag, count }) =>
+    `<button class="hashtag-pill" data-tag="${tag}" onclick="filterByHashtag('${tag}')">#${tag} <span>${count}</span></button>`
+  ).join('');
+}
+
+let _activeHashtag = null;
 // --- Skeleton loader ---
 function renderSkeletons(n) {
   return Array.from({length: n}, () => `
@@ -3500,7 +3595,7 @@ function copyLink() {
   const input = document.getElementById("affiliateLink");
   if (!input) return;
   const user = getUser();
-  if (user) input.value = `https://paganidigital.com/ref/${user.refCode}`;
+  if (user) input.value = `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
     msg.textContent = "? Lien copie dans le presse-papiers !";
@@ -3522,7 +3617,7 @@ async function updateAffiliateStats(user) {
   if (pending) pending.textContent = formatAR(user.pendingAR  || 0);
   if (paid)    paid.textContent    = formatAR(user.paidAR     || 0);
   if (balance) balance.textContent = formatAR(user.pendingAR  || 0);
-  if (affLink) affLink.value       = `https://paganidigital.com/ref/${user.refCode}`;
+  if (affLink) affLink.value = `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}`;
   _renderWithdrawMmSelector(user);
   await renderCommissionHistory(user);
 }

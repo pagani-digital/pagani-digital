@@ -7,6 +7,14 @@
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    .post-hashtag { color:var(--accent); font-weight:600; text-decoration:none; cursor:pointer; transition:opacity 0.15s; }
+    .post-hashtag:hover { opacity:0.75; text-decoration:underline; }
+    .hashtag-pill { display:inline-flex; align-items:center; gap:0.35rem; padding:0.35rem 0.75rem; background:rgba(108,99,255,0.1); border:1px solid rgba(108,99,255,0.2); border-radius:50px; font-size:0.8rem; font-weight:600; color:var(--accent); cursor:pointer; transition:all 0.2s; font-family:inherit; }
+    .hashtag-pill:hover, .hashtag-pill.active { background:rgba(108,99,255,0.22); border-color:var(--accent); }
+    .hashtag-pill span { font-size:0.7rem; color:var(--text2); font-weight:400; }
+    .trending-wrap { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.6rem; }
+  </style>
 </head>
 <body>
 
@@ -131,6 +139,14 @@
           <a href="plans.html" class="sidebar-cta-btn">
             <i class="fas fa-tag"></i> Voir les offres
           </a>
+        </div>
+
+        <!-- HASHTAGS TENDANCE -->
+        <div class="sidebar-card" id="trendingCard" style="display:none">
+          <h3 style="font-size:0.88rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem">
+            <i class="fas fa-hashtag" style="color:var(--accent)"></i> Tendances
+          </h3>
+          <div class="trending-wrap" id="trendingHashtags"></div>
         </div>
 
         <div class="sidebar-card" id="sidebarUser" style="display:none">
@@ -348,11 +364,23 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
 
       const user = await refreshCurrentUser();
       await renderFeed();
+      // Hashtags tendance
+      if (_postsCache.length) {
+        renderTrendingHashtags(_postsCache);
+        const tc = document.getElementById('trendingCard');
+        if (tc) tc.style.display = 'block';
+      }
+      // Filtre hashtag depuis l'URL
+      const _urlTag = new URLSearchParams(window.location.search).get('tag');
+      if (_urlTag) setTimeout(() => filterByHashtag(_urlTag), 300);
       if (user && window.PaganiNotif) {
         PaganiNotif.refreshBadge();
         PaganiNotif.startPolling();
       }
-      setInterval(_silentRefreshFeed, 30000);
+      setInterval(async () => {
+        await _silentRefreshFeed();
+        if (_postsCache.length) renderTrendingHashtags(_postsCache);
+      }, 30000);
       loadFooterSocialLinks();
     })();
   </script>
