@@ -54,6 +54,10 @@ async function runMigrations(pool) {
     await pool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_msg_reactions_msg ON message_reactions(message_id)`);
   });
+  // private_messages : reply_to_id
+  await run('private_messages.reply_to_id', async () => {
+    await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES private_messages(id) ON DELETE SET NULL`);
+  });
 }
 
 module.exports = { runMigrations };
