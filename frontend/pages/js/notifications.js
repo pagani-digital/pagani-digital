@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  PAGANI DIGITAL � Système de Notifications v5 (API-first)
+ *  PAGANI DIGITAL — Système de Notifications v5 (API-first)
  * ============================================================
  */
 
@@ -28,7 +28,7 @@ const NOTIF_TYPES = {
 
 const ADMIN_USER_ID = 0;
 
-// ���� Récupérer l'utilisateur courant ����������������������������������������������������
+// ———— Récupérer l'utilisateur courant ————————————————————————————————————————————————————
 async function _getCurrentUser() {
   if (window._currentUser) return window._currentUser;
   if (window.PaganiAPI) {
@@ -41,7 +41,7 @@ async function _getCurrentUser() {
   return null;
 }
 
-// ���� API notifications ����������������������������������������������������������������������������������
+// ———— API notifications ——————————————————————————————————————————————————————————————————————————————————
 async function getNotifications(userId, limit = 40) {
   if (window.PaganiAPI) {
     try {
@@ -103,7 +103,7 @@ async function clearNotifications(userId) {
   renderNotifPanel(userId);
 }
 
-// ���� BADGE ����������������������������������������������������������������������������������������������������������
+// ———— BADGE ——————————————————————————————————————————————————————————————————————————————————————————————————————————
 async function refreshNotifBadge() {
   const user = await _getCurrentUser();
   if (!user) return;
@@ -119,7 +119,7 @@ async function refreshNotifBadge() {
   }
 }
 
-// ���� PANNEAU UI ������������������������������������������������������������������������������������������������
+// ———— PANNEAU UI ————————————————————————————————————————————————————————————————————————————————————————————————
 async function renderNotifPanel(userId) {
   const panel = document.getElementById("notifPanel");
   if (!panel) return;
@@ -257,7 +257,7 @@ async function toggleNotifPanel() {
   }
 }
 
-// ���� POLLING ������������������������������������������������������������������������������������������������������
+// ———— POLLING ——————————————————————————————————————————————————————————————————————————————————————————————————————
 let _pollTimer = null;
 let _lastUnreadCount = -1;
 let _pollTickCount   = 0;
@@ -452,9 +452,9 @@ function _onVisibilityChange() {
   }
 }
 
-//  HELPERS (fallback client-side) ������������������������������������������������������
+//  HELPERS (fallback client-side) ——————————————————————————————————————————————————————
 async function createNotification({ userId, type, message, link = "" }) {
-  // Notifications gérées côté serveur � ce helper est conservé pour compatibilité
+  // Notifications gérées côté serveur — ce helper est conservé pour compatibilité
 }
 
 const _H = {
@@ -470,7 +470,7 @@ const _H = {
   formationUnlocked:    (uid, titre, courseId) => createNotification({ userId: uid, type: "FORMATION_UNLOCKED", message: `La formation "${titre}" est maintenant accessible.`, link: courseId ? `formations.html?unlock=${courseId}` : "formations.html" }),
 };
 
-// ���� EXPORT ��������������������������������������������������������������������������������������������������������
+// ———— EXPORT ————————————————————————————————————————————————————————————————————————————————————————————————————————
 window.PaganiNotif = {
   create:        createNotification,
   getAll:        getNotifications,

@@ -992,7 +992,8 @@ app.patch('/api/messages/:userId/read', requireAuth, async (req, res) => {
     if (!senderId) return res.status(400).json({ error: 'ID_INVALIDE' });
     await db.markMessagesRead(req.user.id, senderId);
     res.json({ ok: true });
-
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 // Supprimer un message (seulement le sien)
 app.delete('/api/messages/:userId/:msgId', requireAuth, async (req, res) => {
   try {
@@ -1003,8 +1004,6 @@ app.delete('/api/messages/:userId/:msgId', requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-
 // ══════════════════════════════════════════════════════════
 //  RÉACTIONS SUR LES MESSAGES
 // ══════════════════════════════════════════════════════════
@@ -1040,8 +1039,6 @@ app.post('/api/messages/:userId/:msgId/reaction', requireAuth, async (req, res) 
     } catch(e) {}
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-});
-
 });
 // ══════════════════════════════════════════════════════════
 //  FALLBACK SPA

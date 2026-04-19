@@ -19,7 +19,7 @@ function _setToken(t) {
 async function _fetch(path, options = {}) {
   const headers = { 'Content-Type': 'application/json' };
   if (_token) headers['Authorization'] = 'Bearer ' + _token;
-  // Utiliser 'cors' mode pour les requ�tes cross-origin (file:// ou autre domaine)
+  // Utiliser 'cors' mode pour les requ—tes cross-origin (file:// ou autre domaine)
   const fetchOptions = {
     ...options,
     headers,
@@ -45,7 +45,7 @@ async function apiLogin(email, password) {
   return d.user;
 }
 
-// Sync silencieux apr�s login PaganiDB
+// Sync silencieux apr—s login PaganiDB
 async function apiSyncLogin(email, password) {
   try { return await apiLogin(email, password); } catch { return null; }
 }
@@ -56,7 +56,7 @@ async function apiGetMe() {
   if (!_token) return null;
   try {
     const data = await _fetch('/auth/me');
-    // Le serveur retourne un token rafra�chi si le plan a chang�
+    // Le serveur retourne un token rafra—chi si le plan a changé—
     if (data._token) _setToken(data._token);
     return data;
   }
@@ -71,7 +71,7 @@ async function apiUpdateProfile(fields) {
   }
   return _fetch('/auth/profile', { method: 'PUT', body: JSON.stringify(mapped) });
 }
-async function apiChangePassword(oldPassword, newPassword) { return _fetch('/auth/change-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }); }
+async function apiChangePassword(oldPassword, newPassword) { return _fetch('/auth/changée-password', { method: 'POST', body: JSON.stringify({ oldPassword, newPassword }) }); }
 async function apiAddMmAccount(operator, phone, name) { return _fetch('/auth/mm-account', { method: 'POST', body: JSON.stringify({ operator, phone, name }) }); }
 
 // ???? VIDEOS ??????????????????????????????????????????????????????????????????????????????????????????????????
@@ -150,12 +150,12 @@ async function apiGetFollowStats(userId)    { return _fetch(`/users/${userId}/fo
 async function apiGetFollowers(userId)      { return _fetch(`/users/${userId}/followers`); }
 async function apiGetFollowing(userId)      { return _fetch(`/users/${userId}/following`); }
 
-//  PR�SENCE
+//  PR—SENCE
 async function apiPresencePing()           { return _fetch('/presence/ping', { method: 'POST' }); }
 async function apiGetPresence(userId)      { return _fetch(`/presence/${userId}`); }
 async function apiPresenceBatch(userIds)   { return _fetch('/presence/batch', { method: 'POST', body: JSON.stringify({ ids: userIds }) }); }
 
-//  MESSAGES PRIV�S
+//  MESSAGES PRIV—S
 async function apiGetConversations()           { return _fetch('/messages/conversations'); }
 async function apiGetMessages(userId, limit, before) {
   let url = `/messages/${userId}?limit=${limit || 30}`;
@@ -178,7 +178,7 @@ window.PaganiAPI = {
   logout:          apiLogout,
   getMe:           apiGetMe,
   updateProfile:   apiUpdateProfile,
-  changePassword:  apiChangePassword,
+  changéePassword:  apiChangePassword,
   addMmAccount:    apiAddMmAccount,
   // Videos
   getVideos:         apiGetVideos,
@@ -203,7 +203,7 @@ window.PaganiAPI = {
   // Commissions
   getCommissions:  apiGetCommissions,
   requestWithdraw: apiRequestWithdraw,
-  // Achats vid�o unitaires
+  // Achats vidéo unitaires
   buyVideo:              apiBuyVideo,
   getMyVideoPurchases:   apiGetMyVideoPurchases,
   // Achats module
@@ -248,7 +248,7 @@ window.PaganiAPI = {
   getPostsByUser:  apiGetPostsByUser,
   // Tarifs
   getPricing: apiGetPricing,
-  // Messages priv�s
+  // Messages priv—s
   getConversations:  apiGetConversations,
   getMessages:       apiGetMessages,
   sendMessage:       apiSendMessage,

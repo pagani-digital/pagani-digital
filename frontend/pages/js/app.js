@@ -33,7 +33,7 @@ function _decode(str) {
 /**
  * Verifie l'acces et retourne { source, id } pour lire la video.
  * source : 'youtube' | 'drive'
- * id     : l'identifiant dechiffre en memoire � JAMAIS expose dans le DOM.
+ * id     : l'identifiant dechiffre en memoire — JAMAIS expose dans le DOM.
  * Retourne null si acces refus.
  */
 function _getSecureVideo(course, user) {
@@ -66,7 +66,7 @@ const PRICES_AR = {
   elite:     90000,
   formation: 10000,
 };
-// Donnes de dmo supprimes � credentials grs via config.js
+// Donnes de dmo supprimes — credentials grs via config.js
 
 // ===== UTILITAIRES =====
 function getUser() {
@@ -130,7 +130,7 @@ function formatPostContent(text) {
       // 2. Gras et italique
       line = line.replace(markdownBold, (_, t) => `<strong>${t}</strong>`);
       line = line.replace(markdownItal, (_, t) => `<em>${t}</em>`);
-      // 3. URLs brutes � uniquement celles PAS deja dans un attribut href
+      // 3. URLs brutes — uniquement celles PAS deja dans un attribut href
       // On dcoupe la ligne en segments texte/balise et on ne traite que le texte
       line = line.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
         if (tag) return tag; // laisser les balises intactes
@@ -156,7 +156,7 @@ function _presenceTimeAgo(ts) {
   if (!t || isNaN(t)) return '';
   var diff = Math.floor((Date.now() - t) / 1000);
   if (diff < 0) diff = 0;
-  if (diff < 60)    return 'Vu � l\'instant';
+  if (diff < 60)    return 'Vu à l\'instant';
   if (diff < 3600)  return 'Il y a ' + Math.floor(diff / 60) + ' min';
   if (diff < 86400) return 'Il y a ' + Math.floor(diff / 3600) + 'h';
   var days = Math.floor(diff / 86400);
@@ -175,7 +175,7 @@ function _updatePostStats(postId, post) {
     <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments!==1?'s':''}</span>`;
 }
 // ===== EMOJI PICKER COMMENTAIRES =====
-const COMMENT_EMOJIS = ['??','??','??','??','??','??','??','??','??','??','??','??','??','??','??','?','?','??','??','??'];
+const COMMENT_EMOJIS = ['😂','❤️','😍','👍','🔥','😊','🎉','😭','🙏','💪','😎','🤔','😅','👏','🥰','✅','⭐','🚀','💡','🎯'];
 function toggleCommentEmoji(inputId, btn) {
   // Fermer tout picker deja ouvert
   document.querySelectorAll('.comment-emoji-picker').forEach(p => {
@@ -282,7 +282,7 @@ async function _silentRefreshFeed() {
           const liked = post.likes.includes(user.email);
           likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
           const label = likeBtn.querySelector('.reaction-label');
-          if (label) label.textContent = liked ? "J'adore ??" : "J'adore";
+          if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
         }
       }
       const commSection = el.querySelector('.comments-section');
@@ -370,7 +370,7 @@ async function renderFeed() {
   scrollToTargetPost();
   _feedRendering = false;
 }
-// Charge la prochaine tranche de posts � lit toujours _postsCache en direct
+// Charge la prochaine tranche de posts — lit toujours _postsCache en direct
 function _loadMorePosts(container, user, isAdmin) {
   if (_feedLoading) return;
   const news  = _postsCache; // reference directe, jamais de snapshot
@@ -556,7 +556,7 @@ function buildPostCard(post, user, isAdmin) {
       ` : `
         <button class="reaction-btn ${liked ? "liked" : ""}" onclick="toggleLike(${post.id})">
           <i class="fas fa-heart"></i>
-          <span class="reaction-label">${liked ? "J'adore ??" : "J'adore"}</span>
+          <span class="reaction-label">${liked ? "J'adore ❤️" : "J'adore"}</span>
         </button>
         <button class="comment-toggle-btn" onclick="toggleComments(${post.id})">
           <i class="fas fa-comment"></i>
@@ -612,7 +612,7 @@ async function toggleLike(postId) {
       if (likeBtn) {
         likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
         const label = likeBtn.querySelector('.reaction-label');
-        if (label) label.textContent = liked ? "J'adore ??" : "J'adore";
+        if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
       }
     }
   }
@@ -1773,7 +1773,7 @@ async function changePassword(e) {
   if (newPass.length < 6) { msg.textContent = "Minimum 6 caractres."; msg.style.color="var(--red)"; return; }
   try {
     await PaganiAPI.changePassword(oldPass, newPass);
-    msg.textContent = "? Mot de passe modifie avec succs.";
+    msg.textContent = "✅ Mot de passe modifié avec succès.";
     msg.style.color = "var(--green)";
     document.getElementById("changePasswordForm").reset();
   } catch(ex) {
@@ -1877,7 +1877,7 @@ function _getLocalPaymentAccounts() {
   return _PA_OPERATORS.map(op => ({ operator: op.key, phone: '', name: '' }));
 }
 function _saveLocalPaymentAccounts(accounts) {
-  // Stockage serveur uniquement � plus de localStorage
+  // Stockage serveur uniquement — plus de localStorage
 }
 async function loadAdminPaymentAccounts() {
   const container = document.getElementById('adminPaymentAccounts');
@@ -1914,7 +1914,7 @@ async function loadAdminPaymentAccounts() {
             <span class="admin-payment-name">${acc.name}</span>
           </span>
           ${isOff
-            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> Desactive${acc.disabledReason ? ' � ' + acc.disabledReason : ''}</span>`
+            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> Desactive${acc.disabledReason ? ' — ' + acc.disabledReason : ''}</span>`
             : `<span class="admin-pay-saved"><i class="fas fa-check-circle"></i> Actif</span>`
           }
           <div class="admin-payment-actions">
@@ -2306,7 +2306,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
     <div class="upgrade-modal" id="upgradeModalBox">
       <!-- Header -->
       <div class="upgrade-modal-header">
-        <div class="upgrade-lock-icon">??</div>
+        <div class="upgrade-lock-icon">🔒</div>
         <h2>${isGuest ? 'Connectez-vous pour acceder' : 'Passez a un plan superieur'}</h2>
         <p>${isGuest
           ? (isFree
@@ -2459,7 +2459,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
     if (btnElite) btnElite.onclick  = () => _selectUpgradePlan('Elite', elite);
   } catch(e) {}
 }
-// ===== MODALE UPGRADE � PAIEMENT INTELLIGENT =====
+// ===== MODALE UPGRADE — PAIEMENT INTELLIGENT =====
 let _selectedPlan     = null;
 let _selectedAmount   = 0;
 let _adminPayAccounts = [];
@@ -2499,7 +2499,7 @@ async function _selectUpgradePlan(plan, amount) {
   // Afficher un loader dans la zone cible pendant le chargement
   const targetsWrap = document.getElementById('upgradeMmTargets');
   if (targetsWrap) targetsWrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
-  // Charger les comptes admin PUIS construire la vue � une seule fois
+  // Charger les comptes admin PUIS construire la vue — une seule fois
   const adminAccounts = await _loadAdminPayAccounts();
   _buildPaymentView(user, adminAccounts);
 }
@@ -2544,7 +2544,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
   const wrap = document.getElementById('upgradeMmTargets');
   if (!wrap) return;
   const colors     = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Filtrer les comptes desactives � non visibles aux membres
+  // Filtrer les comptes desactives — non visibles aux membres
   const configured = adminAccounts.filter(a => a.phone && !a.disabled);
   if (!configured.length) {
     wrap.innerHTML = `
@@ -2921,20 +2921,20 @@ async function _submitUpgradeRequest() {
       const err = await r.json();
       if (err.error === 'PREUVE_REQUISE') {
         msg.style.color = 'var(--red)';
-        msg.textContent = '?? La preuve de paiement est obligatoire.';
+        msg.textContent = '⚠️ La preuve de paiement est obligatoire.';
         const label = document.getElementById('upgradeProofLabel');
         if (label) { label.style.borderColor = 'var(--red)'; label.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => label.style.borderColor = 'var(--border)', 3000); }
         return;
       }
       throw new Error(err.error || 'ERREUR_SERVEUR');
     }
-    // Succs rel � l'API a confirma la rception
+    // Succs rel — l'API a confirma la rception
     _upgradeProofBase64 = '';
     document.getElementById('upgradePayment').style.display = 'none';
     document.getElementById('upgradeSuccess').style.display = 'flex';
     document.getElementById('upgradeSuccessPlan').textContent = _selectedPlan;
   } catch(e) {
-    // Erreur relle � on affiche le message, on ne cache PAS le formulaire
+    // Erreur relle — on affiche le message, on ne cache PAS le formulaire
     const errMsgs = {
       SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. Verifiez votre connexion.',
       NON_AUTHENTIFIE:      'Session expiree. Veuillez vous reconnecter.',
@@ -3041,7 +3041,7 @@ async function openCourse(idx) {
     } catch(e) {
       _showVideoError(
         e.message === 'ACCES_REFUSE'
-          ? '?? Cette formation est reservee aux membres Pro et Elite.'
+          ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
           : ' Video bientt disponible.'
       );
     }
@@ -3053,7 +3053,7 @@ async function openCourse(idx) {
   if (!video) {
     _showVideoError(
       !user || (user.plan === 'Starter')
-        ? '?? Cette formation est reservee aux membres Pro et Elite.'
+        ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
         : ' Video bientt disponible.'
     );
     return;
@@ -3095,7 +3095,7 @@ async function _showBuyVideoModal(user, course) {
   overlay.innerHTML = `
     <div class="buy-video-modal" id="buyVideoModalBox">
       <div class="buy-video-header">
-        <div class="buy-video-icon">??</div>
+        <div class="buy-video-icon">🎥</div>
         <h2>${course.title}</h2>
         <p class="buy-video-desc">${course.desc}</p>
         <div class="buy-video-meta">
@@ -3232,13 +3232,13 @@ async function _selectBuyOption(type, amount) {
     }, 150);
     return;
   }
-  // Achat unitaire � afficher le formulaire de paiement
+  // Achat unitaire — afficher le formulaire de paiement
   const optionsEl = document.querySelector('.buy-video-options');
   const paymentEl = document.getElementById('buyVideoPayment');
   if (optionsEl) optionsEl.style.display = 'none';
   if (paymentEl) paymentEl.style.display = 'block';
   const title = document.getElementById('buyPaymentTitle');
-  if (title) title.textContent = `Paiement � ${amount.toLocaleString('fr-FR')} AR`;
+  if (title) title.textContent = `Paiement — ${amount.toLocaleString('fr-FR')} AR`;
   const repeatEl = document.getElementById('buyAmountRepeat');
   if (repeatEl) repeatEl.textContent = amount.toLocaleString('fr-FR') + ' AR';
   // Loader pendant le chargement des comptes
@@ -3255,7 +3255,7 @@ function _backToBuyOptions() {
   if (optionsEl) optionsEl.style.display = 'grid';
   if (paymentEl) paymentEl.style.display = 'none';
 }
-// ===== ACHAT VIDEO � SYSTEME DE PAIEMENT DYNAMIQUE =====
+// ===== ACHAT VIDEO — SYSTEME DE PAIEMENT DYNAMIQUE =====
 function _buildBuyPaymentView(user, adminAccounts) {
   const adminConfigured = adminAccounts.filter(a => a.phone);
   let userAccounts = [];
@@ -3381,7 +3381,7 @@ function _renderBuyUserMmSelector(user, userAccounts, commonOps, adminConfigured
     wrap.innerHTML = `<div class="upgrade-user-mm-single"><span class="upgrade-user-mm-icon" style="background:` + color + `22;color:` + color + `"><i class="fas fa-mobile-alt"></i></span><span class="upgrade-user-mm-details"><strong>` + acc.operator + `</strong><span>` + acc.phone + `</span><span class="upgrade-user-mm-name">` + acc.name + `</span></span><span class="upgrade-user-mm-locked"><i class="fas fa-lock"></i> Votre compte</span></div>` + warn + `<input type="hidden" id="buyOperator" value="` + acc.operator + `" /><input type="hidden" id="buyPhone" value="` + acc.phone + `" /><input type="hidden" id="buyMmName" value="` + (acc.name || '') + `" />`;
     return;
   }
-  // Plusieurs comptes � selecteur de cartes
+  // Plusieurs comptes — selecteur de cartes
   const defAcc = commonOps[0] || userAccounts[0];
   let html = `<p class="upgrade-form-label" style="margin-bottom:0.5rem"><i class="fas fa-hand-pointer" style="color:var(--accent)"></i> Choisissez votre compte d'envoi :</p><div class="upgrade-user-mm-selector">`;
   userAccounts.forEach((acc, i) => {
@@ -3460,7 +3460,7 @@ async function _submitBuyRequest(courseId) {
   const mmName   = document.getElementById('buyMmName')?.value   || '';
   if (!proof) {
     msg.style.color = 'var(--red)';
-    msg.textContent = '?? La preuve de paiement est obligatoire.';
+    msg.textContent = '⚠️ La preuve de paiement est obligatoire.';
     const label = document.getElementById('buyProofLabel');
     if (label) { label.style.borderColor = 'var(--red)'; label.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => label.style.borderColor = 'var(--border)', 3000); }
     return;
@@ -3725,7 +3725,7 @@ async function loadAdminEbooks() {
   }
   list.innerHTML = `
     <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span>Titre</span><span>Cat�gorie</span><span>Auteur</span><span>Prix</span><span>Actions</span>
+      <span>Titre</span><span>Catégorie</span><span>Auteur</span><span>Prix</span><span>Actions</span>
     </div>
     ${ebooks.map(eb => `
     <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
@@ -3733,8 +3733,8 @@ async function loadAdminEbooks() {
         <i class="fas fa-book-open" style="color:var(--accent2);margin-right:0.5rem"></i>
         <span><strong>${esc(eb.title)}</strong><small>${eb.pages ? eb.pages + ' pages' : ''}</small></span>
       </span>
-      <span><span class="course-tag">${esc(eb.category || '�')}</span></span>
-      <span style="font-size:0.82rem;color:var(--text2)">${esc(eb.author || '�')}</span>
+      <span><span class="course-tag">${esc(eb.category || '—')}</span></span>
+      <span style="font-size:0.82rem;color:var(--text2)">${esc(eb.author || '—')}</span>
       <span style="font-size:0.88rem;font-weight:700;color:var(--accent2)">${Number(eb.price).toLocaleString('fr-FR')} AR</span>
       <span class="video-admin-actions">
         <button class="video-action-btn edit" onclick="editEbook(${eb.id})" title="Modifier"><i class="fas fa-edit"></i></button>
@@ -3847,7 +3847,7 @@ function _renderEbookPurchases(purchases) {
     return;
   }
   list.innerHTML = purchases.map(p => {
-    const isApproved = p.statut === 'Approuv�';
+    const isApproved = p.statut === 'Approuvé';
     const isPending  = p.statut === 'En attente';
     const statusColor = isApproved ? 'var(--green)' : isPending ? 'var(--gold)' : 'var(--red)';
     const statusIcon  = isApproved ? 'fa-check-circle' : isPending ? 'fa-clock' : 'fa-times-circle';
@@ -3870,9 +3870,9 @@ function _renderEbookPurchases(purchases) {
       </div>
       <div class="sub-user-details">
         <div class="sub-user-detail"><i class="fas fa-tag" style="color:var(--accent2)"></i><span><strong>${Number(p.amount).toLocaleString('fr-FR')} AR</strong><small>Montant</small></span></div>
-        <div class="sub-user-detail"><i class="fas fa-mobile-alt" style="color:var(--accent)"></i><span><strong>${esc(p.operator || '�')}</strong><small>${esc(p.phone || '')}</small></span></div>
-        ${p.txRef ? `<div class="sub-user-detail"><i class="fas fa-hashtag" style="color:var(--text2)"></i><span><strong>${esc(p.txRef)}</strong><small>R�f. transaction</small></span></div>` : ''}
-        ${p.proof ? `<div class="sub-user-detail" style="cursor:pointer" onclick="_showEbookProof('${p.id}','${esc(p.userName || '')}','${esc(p.ebookTitle || '')}')"><i class="fas fa-camera" style="color:var(--accent2)"></i><span><strong style="color:var(--accent2)">Voir la preuve</strong><small>Capture d'�cran</small></span></div>` : ''}
+        <div class="sub-user-detail"><i class="fas fa-mobile-alt" style="color:var(--accent)"></i><span><strong>${esc(p.operator || '—')}</strong><small>${esc(p.phone || '')}</small></span></div>
+        ${p.txRef ? `<div class="sub-user-detail"><i class="fas fa-hashtag" style="color:var(--text2)"></i><span><strong>${esc(p.txRef)}</strong><small>Réf. transaction</small></span></div>` : ''}
+        ${p.proof ? `<div class="sub-user-detail" style="cursor:pointer" onclick="_showEbookProof('${p.id}','${esc(p.userName || '')}','${esc(p.ebookTitle || '')}')"><i class="fas fa-camera" style="color:var(--accent2)"></i><span><strong style="color:var(--accent2)">Voir la preuve</strong><small>Capture d'—cran</small></span></div>` : ''}
       </div>
       ${isPending ? `
       <div class="sub-user-actions">
@@ -3890,17 +3890,17 @@ function _renderEbookPurchases(purchases) {
 function _showEbookProof(purchaseId, userName, ebookTitle) {
   const p = _ebookPurchasesCache.find(x => x.id == purchaseId);
   if (!p || !p.proof) return;
-  document.getElementById('ebookProofModalInfo').textContent = `${userName} � ${ebookTitle}`;
+  document.getElementById('ebookProofModalInfo').textContent = `${userName} — ${ebookTitle}`;
   document.getElementById('ebookProofModalImg').src = p.proof;
   document.getElementById('ebookProofModalDownload').href = p.proof;
   document.getElementById('ebookProofModal').style.display = 'flex';
 }
 
 async function _approveEbookPurchase(id, defaultFileUrl) {
-  const fileUrl = prompt('URL de t�l�chargement du fichier PDF (laisser vide pour utiliser celle de l\'ebook) :', defaultFileUrl || '');
-  if (fileUrl === null) return; // annul�
+  const fileUrl = prompt('URL de téléchargement du fichier PDF (laisser vide pour utiliser celle de l\'ebook) :', defaultFileUrl || '');
+  if (fileUrl === null) return; // annulé
   try {
-    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Approuv�', fileUrl: fileUrl.trim() || defaultFileUrl || '' });
+    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Approuvé', fileUrl: fileUrl.trim() || defaultFileUrl || '' });
     loadAdminEbookPurchases();
   } catch(e) { alert('Erreur : ' + e.message); }
 }
@@ -3909,7 +3909,7 @@ async function _rejectEbookPurchase(id) {
   const reason = prompt('Raison du rejet (optionnel) :') ;
   if (reason === null) return;
   try {
-    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Rejet�', rejectReason: reason.trim() });
+    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Rejeté', rejectReason: reason.trim() });
     loadAdminEbookPurchases();
   } catch(e) { alert('Erreur : ' + e.message); }
 }
@@ -4368,26 +4368,26 @@ function _msgAvatar(u, size) {
   }
   return `<div class="avatar-circle msg-bubble-avatar" style="width:${s}px;height:${s}px;min-width:${s}px;font-size:${Math.round(s*0.3)}px;background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
 }
-// Aper�u du dernier �v�nement dans la liste des conversations (message ou r�action)
+// Aperçu du dernier événement dans la liste des conversations (message ou réaction)
 function _convPreview(c) {
   const me = getUser();
   const myId = me ? me.id : null;
-  // Comparer les dates : r�action vs dernier message
+  // Comparer les dates : réaction vs dernier message
   const rxDate  = c.lastRxDate  ? new Date(c.lastRxDate).getTime()  : 0;
   const msgDate = c.lastDate    ? new Date(c.lastDate).getTime()    : 0;
   if (c.lastRxEmoji && rxDate >= msgDate) {
-    // La r�action est plus r�cente (ou �gale) au dernier message
+    // La réaction est plus récente (ou égale) au dernier message
     const iMReacted = String(c.lastRxUserId) === String(myId);
-    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'�' : c.lastRxMsgContent) : '??';
+    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'—' : c.lastRxMsgContent) : '??';
     if (iMReacted) {
-      return c.lastRxEmoji + ' Vous avez r�agi : ' + preview;
+      return c.lastRxEmoji + ' Vous avez réagi : ' + preview;
     } else {
-      return c.lastRxEmoji + ' ' + c.name.split(' ')[0] + ' a r�agi : ' + preview;
+      return c.lastRxEmoji + ' ' + c.name.split(' ')[0] + ' a réagi : ' + preview;
     }
   }
   // Sinon : dernier message normal
-  if (!c.lastContent && c.lastImage) return '?? Photo';
-  return esc(c.lastContent) || 'D�marrer la conversation';
+  if (!c.lastContent && c.lastImage) return '📷 Photo';
+  return esc(c.lastContent) || 'Démarrer la conversation';
 }
 
 async function loadConversations() {
@@ -4427,7 +4427,7 @@ async function loadConversations() {
           </div>
         </div>`;
     }).join('');
-    // Statut de pr�sence dans le slot d�di� (colonne droite)
+    // Statut de présence dans le slot dédié (colonne droite)
     if (window.PaganiAPI && convs.length) {
       convs.forEach(function(cv) {
         PaganiAPI.getPresence(cv.id).then(function(p) {
@@ -4439,7 +4439,7 @@ async function loadConversations() {
             if (p && p.online) av.classList.add('mpx-conv-av--online');
             else av.classList.remove('mpx-conv-av--online');
           }
-          // Texte de pr�sence dans le slot d�di� (colonne droite, sous le time)
+          // Texte de présence dans le slot dédié (colonne droite, sous le time)
           var slot = document.getElementById('pres-'+cv.id);
           if (slot) {
             if (p && p.online) {
@@ -4556,7 +4556,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
       _loadChatMessages(userId);
       loadConversations();
       _updateMsgBadge();
-      // Rafra�chir le statut de pr�sence toutes les 30s (1 fois sur 6)
+      // Rafraîchir le statut de présence toutes les 30s (1 fois sur 6)
       _presenceRefreshCount++;
       if (_presenceRefreshCount % 6 === 0 && window.PaganiAPI) {
         PaganiAPI.getPresence(userId).then(function(p) {
@@ -4657,7 +4657,7 @@ function _setReply(msgId, content, senderName, isMine) {
   const text = document.getElementById('chatReplyText');
   if (!bar) return;
   if (name) name.textContent = isMine ? 'Vous' : senderName;
-  if (text) text.textContent = content || '?? Photo';
+  if (text) text.textContent = content || '📷 Photo';
   bar.style.display = 'flex';
   document.getElementById('chatInput')?.focus();
 }
@@ -4714,7 +4714,7 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
     ? `<div class="mpx-bubble-quote" onclick="_scrollToMsg(${m.replyTo.id})">
         <div class="mpx-bubble-quote-inner">
           <span class="mpx-bubble-quote-name">${esc(m.replyTo.senderName || '')}</span>
-          <span class="mpx-bubble-quote-text">${esc(m.replyTo.content || '?? Photo')}</span>
+          <span class="mpx-bubble-quote-text">${esc(m.replyTo.content || '📷 Photo')}</span>
         </div>
        </div>`
     : '';
@@ -4890,7 +4890,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
 
     if (!msgs.length) {
       if (isFirstLoad) {
-        messages.innerHTML = '<div class="mpx-empty" style="flex:1;justify-content:center"><div class="mpx-empty-blob"><i class="fas fa-comment"></i></div><p>D�marrez la conversation !</p></div>';
+        messages.innerHTML = '<div class="mpx-empty" style="flex:1;justify-content:center"><div class="mpx-empty-blob"><i class="fas fa-comment"></i></div><p>Démarrez la conversation !</p></div>';
         _chatMsgsCache = [];
         _chatOldestTs  = null;
         _chatAllLoaded = true;
@@ -4941,7 +4941,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
       const newMsgs   = msgs.filter(m => !cachedIds.has(m.id));
 
       if (newMsgs.length > 0) {
-        // Son discret si au moins un message re�u (pas de moi)
+        // Son discret si au moins un message reçu (pas de moi)
         const hasIncoming = newMsgs.some(m => m.senderId !== (user && user.id));
         if (hasIncoming) _playMsgSound();
         newMsgs.forEach(m => {
@@ -4960,7 +4960,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
           const tmp  = document.createElement('div');
           tmp.innerHTML = html;
 
-          // Remplacer le message optimiste en place (pas de suppression + r�insertion)
+          // Remplacer le message optimiste en place (pas de suppression + réinsertion)
           const optimistic = isMine ? messages.querySelector('[data-optimistic]') : null;
           if (optimistic) {
             const realRow = tmp.querySelector('.mpx-bubble-row');
@@ -4983,9 +4983,9 @@ async function _loadChatMessages(userId, forceScrollBottom) {
         }
       }
 
-      // Mettre � jour les ticks m�me sans nouveaux messages
+      // Mettre à jour les ticks même sans nouveaux messages
       _updateReadTicks(msgs, messages);
-      // Refresh r�actions � chaque cycle polling
+      // Refresh réactions — chaque cycle polling
       _loadRxForConv(userId);
     }
 
@@ -5375,7 +5375,7 @@ function _scrollToSubCard(subId) {
   // Carte admin : sub-{id} | carte utilisateur : sub-user-{id}
   const card = document.getElementById('sub-' + subId) || document.getElementById('sub-user-' + subId);
   if (!card) {
-    // Liste pas encore rendue � ressayer dans 400ms (max 3 fois)
+    // Liste pas encore rendue — réessayer dans 400ms (max 3 fois)
     if (!_scrollToSubCard._retries) _scrollToSubCard._retries = {};
     const key = String(subId);
     _scrollToSubCard._retries[key] = (_scrollToSubCard._retries[key] || 0) + 1;
@@ -5420,7 +5420,7 @@ function switchAdminSection(section, btn) {
   if (section === 'ebooks')          loadAdminEbooks();
   if (section === 'ebookpurchases')  loadAdminEbookPurchases();
 }
-// ===== TARIFS ADMIN � ONGLETS =====
+// ===== TARIFS ADMIN — ONGLETS =====
 function switchPricingTab(tab, btn) {
   document.querySelectorAll('.pricing-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.pricing-tab-content').forEach(c => c.style.display = 'none');
@@ -5562,7 +5562,7 @@ async function saveAdminPricing() {
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== TARIFS ADMIN � PRIX PAR VIDEO =====
+// ===== TARIFS ADMIN — PRIX PAR VIDEO =====
 async function loadAdminVideoPricing() {
   const container = document.getElementById('adminVideoPricingContent');
   if (!container) return;
@@ -5675,7 +5675,7 @@ async function saveVideoPrice(videoId) {
     if (v) { v.unitPrice = price; v.accessType = price ? 'unit' : 'pro'; }
   } catch(e) { alert('Erreur : ' + e.message); }
 }
-// ===== TARIFS ADMIN � PRIX PAR MODULE =====
+// ===== TARIFS ADMIN — PRIX PAR MODULE =====
 async function loadAdminModulePricing() {
   const container = document.getElementById('adminModulePricingContent');
   if (!container) return;
@@ -5728,7 +5728,7 @@ async function saveModulePrice(moduleId) {
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
 }
-// ===== TARIFS ADMIN � COMMISSIONS =====
+// ===== TARIFS ADMIN — COMMISSIONS =====
 async function loadAdminCommissions() {
   const container = document.getElementById('adminCommissionContent');
   if (!container) return;
@@ -5909,7 +5909,7 @@ function _vpConfirm(type, r) {
       : '<div class="vp-confirm-user-avatar" style="background:' + color + '">' + getInitials(r.userName || '?') + '</div>';
     const videoLabel = (r.videoTitle || ('Video #' + r.courseId));
     const amtLabel   = (r.amount || 0).toLocaleString('fr-FR') + ' AR';
-    userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' � ' + amtLabel + '</small></div>';
+    userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' — ' + amtLabel + '</small></div>';
     okBtn.onclick = function() { _vpConfirmClose(); _vpConfirmResolve = null; resolve(true); };
     modal.classList.add('vp-confirm-open');
   });
@@ -6006,7 +6006,7 @@ function _renderFilteredVideoPurchases() {
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
           <span><strong class="vp-amount-highlight">${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant</small></span>
         </div>
-        ${(r.phone || r.operator) ? `<div class="vp-detail-item"><i class="fas fa-mobile-alt" style="color:${opColor}"></i><span><strong>${r.operator||''}${r.mmName?' � '+r.mmName:''}</strong><small>${r.phone||''}</small></span></div>` : ''}
+        ${(r.phone || r.operator) ? `<div class="vp-detail-item"><i class="fas fa-mobile-alt" style="color:${opColor}"></i><span><strong>${r.operator||''}${r.mmName?' — '+r.mmName:''}</strong><small>${r.phone||''}</small></span></div>` : ''}
         <div class="vp-detail-item">
           <i class="fas fa-calendar-alt" style="color:var(--text2)"></i>
           <span><strong>${new Date(r.createdAt).toLocaleDateString('fr-FR')}</strong><small>${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</small></span>
@@ -6047,8 +6047,8 @@ function _buildVideoPurchaseActions(r) {
     return `
       <span class="vp-status-done rejected">
         <i class="fas fa-times-circle"></i>
-        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '�'}
-        ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> � ${r.rejectReason}</em>` : ''}
+        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+        ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> — ${r.rejectReason}</em>` : ''}
       </span>
       <button class="vp-btn-sm-approve" onclick="approveVideoPurchase(${r.id})">
         <i class="fas fa-undo"></i> Approuver quand meme
@@ -6057,7 +6057,7 @@ function _buildVideoPurchaseActions(r) {
   return `
     <span class="vp-status-done approved">
       <i class="fas fa-check-circle"></i>
-      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '�'}
+      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
     </span>
     <button class="vp-btn-sm-reject" onclick="_vpShowRejectModal(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -6155,7 +6155,7 @@ async function rejectVideoPurchase(id) {
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
     if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejete'; statusEl.className = 'status-badge status-rejected'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('Demande rejetee' + (reason ? ' � ' + reason : ''), 'error');
+    _vpShowToast('Demande rejetée' + (reason ? ' — ' + reason : ''), 'error');
   } catch(e) {
     if (confirmBtn) { confirmBtn.classList.remove('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Confirmer le rejet'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
@@ -6169,7 +6169,7 @@ function openVideoPurchaseProof(id) {
   const info  = document.getElementById('proofModalInfo');
   const dl    = document.getElementById('proofModalDownload');
   if (!modal || !img) return;
-  if (info) info.textContent = `${r.userName} � ${r.videoTitle || 'Video'} � ${(r.amount||0).toLocaleString('fr-FR')} AR`;
+  if (info) info.textContent = `${r.userName} — ${r.videoTitle || 'Video'} — ${(r.amount||0).toLocaleString('fr-FR')} AR`;
   img.src = r.proof;
   if (dl) dl.href = r.proof;
   modal.style.display = 'flex';
@@ -6215,13 +6215,13 @@ function filterSubsByStatus(status, btn) {
 // Rcupre le nom MM depuis le cache utilisateurs si absent de la demande
 function _getMmNameFromCache(r) {
   const user = _allUsersCache.find(u => u.id === r.userId);
-  if (!user) return '�';
+  if (!user) return '—';
   // Chercher dans mmAccounts le compte correspondant a l'operateur utilise
   const acc = (user.mmAccounts || []).find(a => a.operator === r.operator && a.phone);
   if (acc && acc.name) return acc.name;
   // Fallback sur mmName racine
   if (user.mmName) return user.mmName;
-  return user.name || '�';
+  return user.name || '—';
 }
 function _renderFilteredSubs() {
   const container = document.getElementById('adminSubsList');
@@ -6323,8 +6323,8 @@ function _buildSubActions(r) {
     return `
       <span style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:0.4rem">
         <i class="fas fa-times-circle" style="color:var(--red)"></i>
-        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '�'}
-        ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">� ${r.rejectReason}</em>` : ''}
+        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+        ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">— ${r.rejectReason}</em>` : ''}
       </span>
       <button class="sub-action-approve" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubApprove(${r.id})">
         <i class="fas fa-undo"></i> Approuver quand meme
@@ -6334,7 +6334,7 @@ function _buildSubActions(r) {
   return `
     <span style="font-size:0.78rem;color:var(--green);display:flex;align-items:center;gap:0.4rem">
       <i class="fas fa-check-circle"></i>
-      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '�'}
+      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
     </span>
     <button class="sub-action-reject" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubReject(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -6379,12 +6379,12 @@ function openSubReject(id) {
         <i class="fas fa-times-circle" style="color:var(--red);font-size:1.2rem"></i>
         <div>
           <strong>Rejeter cette demande</strong>
-          <p>Demande de <strong>${r.userName}</strong> � Plan <strong>${r.plan}</strong></p>
+          <p>Demande de <strong>${r.userName}</strong> — Plan <strong>${r.plan}</strong></p>
         </div>
       </div>
       <div class="sub-reject-reason-wrap">
         <label style="font-size:0.78rem;color:var(--text2);font-weight:600;display:block;margin-bottom:0.4rem">
-          Raison du rejet <span style="opacity:0.6">(optionnel � envoyee a l\'utilisateur)</span>
+          Raison du rejet <span style="opacity:0.6">(optionnel — envoyee a l\'utilisateur)</span>
         </label>
         <div class="sub-reject-presets">
           <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non recu')">Paiement non recu</button>
@@ -6481,7 +6481,7 @@ function openProofModal(id) {
       <span><i class="fas fa-user" style="color:var(--accent)"></i> <strong>${req.userName}</strong></span>
       <span><i class="fas fa-crown" style="color:var(--gold)"></i> Plan <strong>${req.plan}</strong></span>
       <span><i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i> <strong>${(req.amount||0).toLocaleString('fr-FR')} AR</strong></span>
-      <span><i class="fas fa-mobile-alt"></i> ${req.operator} � ${req.phone}</span>
+      <span><i class="fas fa-mobile-alt"></i> ${req.operator} — ${req.phone}</span>
     </div>`;
   modal.style.display = 'flex';
 }
@@ -6554,7 +6554,7 @@ async function openUserCommissions(userId) {
   const modal = document.getElementById('userCommModal');
   const title = document.getElementById('userCommModalTitle');
   const body  = document.getElementById('userCommModalBody');
-  title.innerHTML = `<i class="fas fa-coins" style="color:var(--gold)"></i> Commissions � ${user.name}`;
+  title.innerHTML = `<i class="fas fa-coins" style="color:var(--gold)"></i> Commissions — ${user.name}`;
   body.innerHTML  = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
   modal.style.display = 'flex';
   let comms = [];
@@ -6583,7 +6583,7 @@ async function openUserCommissions(userId) {
           ${comms.map(c => `
             <div class="history-row" style="grid-template-columns:1fr 1.2fr 1.4fr 1fr 0.9fr">
               <span>${new Date(c.createdAt).toLocaleDateString('fr-FR')}</span>
-              <span>${c.filleulName||'�'}</span>
+              <span>${c.filleulName||'—'}</span>
               <span><span class="history-type">${c.type}</span></span>
               <span class="green">${formatAR(c.montant)}</span>
               <span><span class="status-badge ${c.statut==='Verse'?'status-paid':'status-pending'}">${c.statut}</span></span>
@@ -6595,7 +6595,7 @@ function openChangePlan(userId) {
   const user = _allUsersCache.find(u => u.id === userId);
   if (!user) return;
   _userPlanTarget = userId;
-  document.getElementById('userPlanModalName').textContent = `${user.name} � Plan actuel : ${user.plan}`;
+  document.getElementById('userPlanModalName').textContent = `${user.name} — Plan actuel : ${user.plan}`;
   document.getElementById('userPlanModal').style.display = 'flex';
 }
 async function confirmChangePlan(plan) {
@@ -6814,7 +6814,7 @@ _modulesCache = [];
 _editingModuleId = null;
 _moduleModalFromVideo = false;
 
-// ===== ADMIN � ACHATS MODULES =====
+// ===== ADMIN — ACHATS MODULES =====
 let _modulePurchasesCache = [];
 let _modulePurchasesFilter = 'all';
 async function renderAdminModulePurchases() {
@@ -7357,15 +7357,15 @@ async function submitMyPostsDashboard() {
 })();
 
 
-// ===== R�ACTIONS SUR LES MESSAGES =====
-var _RX_EMOJIS = ['??','??','??','??','??','??'];
+// ===== RÉACTIONS SUR LES MESSAGES =====
+var _RX_EMOJIS = ['❤️','😂','😮','😢','😡','👍'];
 var _rxPickerMsgId = null;
 var _rxPickerEl    = null;
 
 // -- Ouvrir / fermer le picker ----------------------------------------------
 function _showRxPicker(e, msgId) {
   e.stopPropagation();
-  // Si d�j� ouvert sur ce message ? fermer
+  // Si déjà ouvert sur ce message ? fermer
   if (_rxPickerMsgId === msgId) { _closeRxPicker(); return; }
   _closeRxPicker();
 
@@ -7413,7 +7413,7 @@ function _showRxPicker(e, msgId) {
   _rxPickerMsgId = msgId;
   _rxPickerEl    = picker;
 
-  // Fermer au clic ext�rieur
+  // Fermer au clic extérieur
   setTimeout(function() {
     document.addEventListener('click', _rxOutsideClick, true);
   }, 10);
@@ -7434,7 +7434,7 @@ function _rxOutsideClick(ev) {
   if (_rxPickerEl && !_rxPickerEl.contains(ev.target)) _closeRxPicker();
 }
 
-// -- Cache local des r�actions { msgId: { emoji: [userId, ...] } } ----------
+// -- Cache local des réactions { msgId: { emoji: [userId, ...] } } ----------
 var _rxCache = {};
 
 function _getRxForMsg(msgId) {
@@ -7449,7 +7449,7 @@ function _getRxForMsg(msgId) {
   return null;
 }
 
-// -- Toggle r�action --------------------------------------------------------
+// -- Toggle réaction --------------------------------------------------------
 async function _toggleReaction(msgId, emoji) {
   var me = getUser();
   if (!me || !_currentChatUserId) return;
@@ -7459,14 +7459,14 @@ async function _toggleReaction(msgId, emoji) {
   if (!_rxCache[key]) _rxCache[key] = {};
   var map = _rxCache[key];
 
-  // Retirer l'ancienne r�action de l'utilisateur si elle existe
+  // Retirer l'ancienne réaction de l'utilisateur si elle existe
   var prev = _getRxForMsg(key);
   if (prev) {
     map[prev] = (map[prev] || []).map(String).filter(function(id) { return id !== myId; });
     if (!map[prev].length) delete map[prev];
   }
 
-  // Ajouter la nouvelle (sauf si c'�tait la m�me ? toggle off)
+  // Ajouter la nouvelle (sauf si c'—tait la même ? toggle off)
   if (prev !== emoji) {
     if (!map[emoji]) map[emoji] = [];
     map[emoji].push(myId);
@@ -7474,7 +7474,7 @@ async function _toggleReaction(msgId, emoji) {
 
   _renderRxZone(key);
 
-  // Appel API (�tape 3 � route backend)
+  // Appel API (étape 3 — route backend)
   try {
     var token = localStorage.getItem('pd_jwt');
     var action = (prev === emoji) ? 'remove' : 'add';
@@ -7486,7 +7486,7 @@ async function _toggleReaction(msgId, emoji) {
   } catch(err) {}
 }
 
-// -- Rendu de la zone r�actions sous une bulle ------------------------------
+// -- Rendu de la zone réactions sous une bulle ------------------------------
 function _renderRxZone(msgId) {
   var zone = document.getElementById('rx-zone-' + msgId);
   if (!zone) return;
@@ -7515,7 +7515,7 @@ function _onRxBadgeClick(msgId, emoji) {
   _toggleReaction(msgId, emoji);
 }
 
-// -- Charger les r�actions depuis le serveur pour la conv ouverte -----------
+// -- Charger les réactions depuis le serveur pour la conv ouverte -----------
 async function _loadRxForConv(userId) {
   try {
     var token = localStorage.getItem('pd_jwt');
@@ -7532,7 +7532,7 @@ async function _loadRxForConv(userId) {
   } catch(e) {}
 }
 
-// R�action re�ue en temps r�el via SSE
+// Réaction reçue en temps r—el via SSE
 function _onRxSSE(notif) {
   var msgId  = String(notif.msgId);
   var emoji  = notif.emoji;
@@ -7540,7 +7540,7 @@ function _onRxSSE(notif) {
   var action = notif.action || 'add';
   if (!_rxCache[msgId]) _rxCache[msgId] = {};
   var map = _rxCache[msgId];
-  // Retirer l'ancienne r�action de cet utilisateur
+  // Retirer l'ancienne réaction de cet utilisateur
   Object.keys(map).forEach(function(e) {
     map[e] = (map[e] || []).map(String).filter(function(id) { return id !== userId; });
     if (!map[e].length) delete map[e];
