@@ -1070,6 +1070,20 @@ app.get('/api/auth/me/badges', requireAuth, async (req, res) => {
 //  LEADERBOARD PARRAINAGES
 // ══════════════════════════════════════════════════════════
 
+app.get('/api/my-referrals', requireAuth, async (req, res) => {
+  try {
+    const all = await db.getAllUsers();
+    const list = all
+      .filter(u => u.referredBy === req.user.id)
+      .map(u => ({
+        id: u.id, name: u.name, plan: u.plan,
+        avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',
+        isActive: u.isActive, createdAt: u.createdAt
+      }));
+    res.json(list);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 // ══════════════════════════════════════════════════════════
 //  LEADERBOARD MENSUEL
 // ══════════════════════════════════════════════════════════

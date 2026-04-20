@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mes Filleuls — Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css?v=1776608500000" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    .filleuls-page { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+    .filleuls-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+    .filleuls-header h1 { font-size: 1.6rem; margin: 0; }
+    .filleuls-header h1 span { color: var(--accent); }
+    .filleuls-back { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text2); font-size: 0.85rem; text-decoration: none; transition: color 0.2s; }
+    .filleuls-back:hover { color: var(--accent); }
+    .filleuls-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .filleuls-stat { flex: 1; min-width: 120px; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; text-align: center; }
+    .filleuls-stat strong { display: block; font-size: 1.5rem; color: var(--accent); }
+    .filleuls-stat span { font-size: 0.78rem; color: var(--text2); }
+    .filleuls-search { position: relative; margin-bottom: 1.2rem; }
+    .filleuls-search input { width: 100%; padding: 0.7rem 1rem 0.7rem 2.8rem; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 0.9rem; font-family: inherit; }
+    .filleuls-search input:focus { outline: none; border-color: var(--accent); }
+    .filleuls-search i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text2); }
+    .filleuls-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .filleuls-filter { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 0.4rem 0.9rem; border-radius: 50px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .filleuls-filter:hover { border-color: var(--accent); color: var(--accent); }
+    .filleuls-filter.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .filleuls-list { display: flex; flex-direction: column; gap: 0.7rem; }
+    .filleul-card { display: flex; align-items: center; gap: 1rem; background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.2rem; transition: all 0.2s; cursor: pointer; }
+    .filleul-card:hover { border-color: var(--accent); transform: translateX(4px); }
+    .filleul-info { flex: 1; min-width: 0; }
+    .filleul-name { font-weight: 700; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .filleul-date { font-size: 0.75rem; color: var(--text2); margin-top: 0.15rem; }
+    .filleul-plan { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 50px; }
+    .filleul-plan.starter { background: rgba(150,150,150,0.15); color: var(--text2); }
+    .filleul-plan.pro { background: rgba(108,99,255,0.15); color: var(--accent); }
+    .filleul-plan.elite { background: rgba(245,158,11,0.15); color: var(--gold); }
+    .filleul-status { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 50px; white-space: nowrap; }
+    .filleul-status.active { background: rgba(0,200,100,0.12); color: var(--green); }
+    .filleul-status.inactive { background: rgba(255,77,109,0.1); color: var(--red); }
+    .filleuls-empty { text-align: center; padding: 4rem 2rem; color: var(--text2); }
+    .filleuls-empty i { font-size: 3rem; opacity: 0.25; display: block; margin-bottom: 1rem; }
+    .filleuls-login-wall { text-align: center; padding: 4rem 2rem; }
+    @media (max-width: 600px) {
+      .filleuls-page { padding: 1.2rem 0.8rem; }
+      .filleul-card { padding: 0.8rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="ebooks.html">Ebooks</a></li>
+      <li><a href="affiliation.html" class="active">Affiliation</a></li>
+      <li><a href="explore.html">Explorer</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" id="msgNavBtn" title="Messages">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="filleuls-page">
+
+    <!-- HEADER -->
+    <div class="filleuls-header">
+      <div>
+        <a href="affiliation.html" class="filleuls-back"><i class="fas fa-arrow-left"></i> Retour à l'affiliation</a>
+        <h1 style="margin-top:0.5rem">Mes <span>Filleuls</span></h1>
+      </div>
+    </div>
+
+    <!-- MUR DE CONNEXION -->
+    <div id="loginWall" style="display:none">
+      <div class="filleuls-login-wall">
+        <i class="fas fa-lock" style="font-size:3rem;color:var(--accent);opacity:0.5;display:block;margin-bottom:1rem"></i>
+        <h2 style="margin-bottom:0.5rem">Connectez-vous pour voir vos filleuls</h2>
+        <a href="dashboard.html" class="btn-primary" style="display:inline-flex;align-items:center;gap:0.5rem;margin-top:1rem">
+          <i class="fas fa-sign-in-alt"></i> Se connecter
+        </a>
+      </div>
+    </div>
+
+    <!-- CONTENU CONNECTÉ -->
+    <div id="mainContent" style="display:none">
+
+      <!-- STATS -->
+      <div class="filleuls-stats">
+        <div class="filleuls-stat">
+          <strong id="statTotal">0</strong>
+          <span>Total filleuls</span>
+        </div>
+        <div class="filleuls-stat">
+          <strong id="statActifs" style="color:var(--green)">0</strong>
+          <span>Actifs</span>
+        </div>
+        <div class="filleuls-stat">
+          <strong id="statPro" style="color:var(--accent)">0</strong>
+          <span>Plan Pro/Elite</span>
+        </div>
+        <div class="filleuls-stat">
+          <strong id="statCeMois" style="color:var(--accent2)">0</strong>
+          <span>Ce mois</span>
+        </div>
+      </div>
+
+      <!-- RECHERCHE -->
+      <div class="filleuls-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="Rechercher un filleul..." oninput="renderList()" />
+      </div>
+
+      <!-- FILTRES -->
+      <div class="filleuls-filters">
+        <button class="filleuls-filter active" onclick="setFilter('all', this)">Tous</button>
+        <button class="filleuls-filter" onclick="setFilter('actif', this)"><i class="fas fa-check-circle"></i> Actifs</button>
+        <button class="filleuls-filter" onclick="setFilter('pro', this)"><i class="fas fa-crown"></i> Pro/Elite</button>
+        <button class="filleuls-filter" onclick="setFilter('mois', this)"><i class="fas fa-calendar"></i> Ce mois</button>
+      </div>
+
+      <!-- LISTE -->
+      <div class="filleuls-list" id="filleulsList"></div>
+
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div class="social-links">
+        <a id="footerFacebook" href="#" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a>
+        <a id="footerTiktok" href="#" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
+        <a id="footerTelegram" href="#" target="_blank" rel="noopener"><i class="fab fa-telegram"></i></a>
+        <a id="footerYoutube" href="#" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js?v=1776608500000"></script>
+  <script src="/js/app.js?v=1776608500000"></script>
+  <script>
+    let _allFilleuls = [];
+    let _activeFilter = 'all';
+
+    const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+    const currentMonth = new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0');
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+      loadFooterSocialLinks();
+
+      if (!user) {
+        document.getElementById('loginWall').style.display = 'block';
+        return;
+      }
+
+      document.getElementById('mainContent').style.display = 'block';
+      await loadFilleuls();
+    });
+
+    async function loadFilleuls() {
+      const list = document.getElementById('filleulsList');
+      list.innerHTML = '<div class="feed-loader" style="justify-content:center;padding:2rem"><span></span><span></span><span></span></div>';
+      try {
+        const token = localStorage.getItem('pd_jwt');
+        _allFilleuls = await fetch(API + '/my-referrals', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        }).then(r => r.json());
+        updateStats();
+        renderList();
+      } catch(e) {
+        list.innerHTML = '<div class="filleuls-empty"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
+      }
+    }
+
+    function updateStats() {
+      const total   = _allFilleuls.length;
+      const actifs  = _allFilleuls.filter(u => u.isActive).length;
+      const pro     = _allFilleuls.filter(u => u.plan === 'Pro' || u.plan === 'Elite').length;
+      const ceMois  = _allFilleuls.filter(u => u.createdAt && u.createdAt.slice(0,7) === currentMonth).length;
+      document.getElementById('statTotal').textContent  = total;
+      document.getElementById('statActifs').textContent = actifs;
+      document.getElementById('statPro').textContent    = pro;
+      document.getElementById('statCeMois').textContent = ceMois;
+    }
+
+    function setFilter(filter, btn) {
+      _activeFilter = filter;
+      document.querySelectorAll('.filleuls-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderList();
+    }
+
+    function renderList() {
+      const list  = document.getElementById('filleulsList');
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+
+      let filtered = [..._allFilleuls];
+
+      if (_activeFilter === 'actif') filtered = filtered.filter(u => u.isActive);
+      if (_activeFilter === 'pro')   filtered = filtered.filter(u => u.plan === 'Pro' || u.plan === 'Elite');
+      if (_activeFilter === 'mois')  filtered = filtered.filter(u => u.createdAt && u.createdAt.slice(0,7) === currentMonth);
+      if (query) filtered = filtered.filter(u => u.name.toLowerCase().includes(query));
+
+      if (!filtered.length) {
+        list.innerHTML = '<div class="filleuls-empty"><i class="fas fa-users"></i><p>Aucun filleul trouvé.</p></div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(u => {
+        const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+        const avatar = u.avatarPhoto
+          ? '<img src="' + u.avatarPhoto + '" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
+          : '<div class="avatar-circle" style="width:44px;height:44px;min-width:44px;font-size:1rem;background:' + (u.avatarColor||'#6c63ff') + '">' + initials + '</div>';
+
+        const planClass = u.plan.toLowerCase();
+        const planIcon  = u.plan === 'Elite' ? '<i class="fas fa-gem"></i>' : u.plan === 'Pro' ? '<i class="fas fa-crown"></i>' : '<i class="fas fa-user"></i>';
+        const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+        const isCeMois = u.createdAt && u.createdAt.slice(0,7) === currentMonth;
+
+        return '<div class="filleul-card" onclick="window.location.href=\'profil.html?id=' + u.id + '\'">' +
+          avatar +
+          '<div class="filleul-info">' +
+            '<div class="filleul-name">' + u.name + (isCeMois ? ' <span style="font-size:0.68rem;background:rgba(0,212,170,0.15);color:var(--accent2);padding:0.1rem 0.4rem;border-radius:50px;font-weight:700">Nouveau</span>' : '') + '</div>' +
+            '<div class="filleul-date"><i class="fas fa-calendar-alt" style="font-size:0.65rem"></i> Inscrit le ' + date + '</div>' +
+          '</div>' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem">' +
+            '<span class="filleul-plan ' + planClass + '">' + planIcon + ' ' + u.plan + '</span>' +
+            '<span class="filleul-status ' + (u.isActive ? 'active' : 'inactive') + '">' + (u.isActive ? '✓ Actif' : '✗ Inactif') + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+  </script>
+</body>
+</html>

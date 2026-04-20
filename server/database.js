@@ -51,22 +51,29 @@ async function createUser({ name, email, password, refCode, mmPhone, mmOperator,
   const hash = await bcrypt.hash(password, 10);
   const now = new Date();
 
+  let referredById = null;
+  if (refCode) {
+    const parrain = await query('SELECT id FROM users WHERE ref_code = $1', [refCode]);
+    if (parrain.rows.length) referredById = parrain.rows[0].id;
+  }
+
   const result = await query(
-    `INSERT INTO users 
-    (name, email, password_hash, role, plan, ref_code, mm_phone, mm_operator, mm_name, created_at, updated_at)
-    VALUES ($1,$2,$3,'user','Starter',$4,$5,$6,$7,$8,$8)
+    `INSERT INTO users
+    (name, email, password_hash, role, plan, ref_code, mm_phone, mm_operator, mm_name, referred_by, created_at, updated_at)
+    VALUES ($1,$2,$3,'user','Starter',$4,$5,$6,$7,$8,$9,$9)
     RETURNING *`,
-    [
-      name,
-      email,
-      hash,
-      generateRefCode(),
-      mmPhone || '',
-      mmOperator || 'MVola',
-      mmName || name,
-      now
-    ]
+    [name, email, hash, generateRefCode(), mmPhone || '', mmOperator || 'MVola', mmName || name, referredById, now]
   );
+
+  if (referredById) {
+    await query('UPDATE users SET refs = refs + 1 WHERE id = $1', [referredById]);
+    await query(
+      `INSERT INTO monthly_refs (user_id, month, refs_count)
+       VALUES ($1, TO_CHAR(NOW(),'YYYY-MM'), 1)
+       ON CONFLICT (user_id, month) DO UPDATE SET refs_count = monthly_refs.refs_count + 1`,
+      [referredById]
+    );
+  }
 
   return rowToCamel(result.rows[0]);
 }
