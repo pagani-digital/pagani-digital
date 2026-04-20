@@ -227,6 +227,7 @@
               <p id="profileBio" class="profile-bio-display"></p>
               <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;margin-top:0.5rem" onclick="toggleEditProfile()"><i class="fas fa-edit"></i> Modifier le profil</button>
               <a id="btnViewPublicProfile" href="#" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;margin-top:0.5rem;display:inline-flex;align-items:center;gap:0.4rem"><i class="fas fa-eye"></i> Voir mon profil public</a>
+              <button onclick="openShareMyProfileModal()" class="btn-outline" style="padding:0.4rem 1rem;font-size:0.85rem;margin-top:0.5rem;display:inline-flex;align-items:center;gap:0.4rem"><i class="fas fa-share-alt"></i> Partager mon profil</button>
             </div>
           </div>
           <!-- FORMULAIRE ÉDITION -->
@@ -1196,6 +1197,31 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       </div>
     </div>
   </div>
+  <!-- MODAL PARTAGE PROFIL -->
+  <div id="shareMyProfileModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeShareMyProfileModal()">
+    <div style="background:var(--bg2);border-radius:16px;padding:1.5rem;width:min(400px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <h3 style="margin:0;font-size:1rem"><i class="fas fa-share-alt" style="color:var(--accent)"></i> Partager mon profil</h3>
+        <button onclick="closeShareMyProfileModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+        <input id="shareMyProfileLinkInput" type="text" readonly style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem 0.8rem;font-size:0.85rem" />
+        <button onclick="copyShareMyProfileLink()" id="shareMyProfileCopyBtn" style="background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);color:var(--accent);border-radius:8px;padding:0.6rem 0.9rem;cursor:pointer;font-size:0.85rem;white-space:nowrap;font-family:inherit">
+          <i class="fas fa-copy"></i> Copier
+        </button>
+      </div>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+        <a id="shareMyProfileWaBtn" href="#" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;background:#25d366;color:#fff;border-radius:10px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;text-decoration:none;min-width:120px">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        <a id="shareMyProfileFbBtn" href="#" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;background:#1877f2;color:#fff;border-radius:10px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;text-decoration:none;min-width:120px">
+          <i class="fab fa-facebook"></i> Facebook
+        </a>
+      </div>
+      <p id="shareMyProfileCopyMsg" style="font-size:0.78rem;color:var(--accent2);min-height:1rem;margin-top:0.6rem;text-align:center"></p>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="footer-content">
       <a href="index.html" class="logo">Pagani<span>Digital</span></a>
@@ -1279,6 +1305,37 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   <script src="/js/app.js?v=1776608487261"></script>
   <script src="https://www.youtube.com/iframe_api" referrerpolicy="strict-origin-when-cross-origin" defer></script>
   <script>
+    // ── PARTAGE PROFIL ──
+    function openShareMyProfileModal() {
+      const user = window._currentUser;
+      if (!user) return;
+      const link = `https://pagani-digital.netlify.app/profil.html?id=${user.id}`;
+      document.getElementById('shareMyProfileLinkInput').value = link;
+      const text = encodeURIComponent(`Suivez-moi sur Pagani Digital ! ${link}`);
+      document.getElementById('shareMyProfileWaBtn').href = `https://wa.me/?text=${text}`;
+      document.getElementById('shareMyProfileFbBtn').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+      document.getElementById('shareMyProfileCopyMsg').textContent = '';
+      document.getElementById('shareMyProfileCopyBtn').innerHTML = '<i class="fas fa-copy"></i> Copier';
+      document.getElementById('shareMyProfileModal').style.display = 'flex';
+    }
+    function closeShareMyProfileModal() {
+      document.getElementById('shareMyProfileModal').style.display = 'none';
+    }
+    function copyShareMyProfileLink() {
+      const input = document.getElementById('shareMyProfileLinkInput');
+      const btn   = document.getElementById('shareMyProfileCopyBtn');
+      const msg   = document.getElementById('shareMyProfileCopyMsg');
+      navigator.clipboard.writeText(input.value).then(() => {
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        msg.textContent = '✅ Lien copié dans le presse-papiers !';
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copier'; msg.textContent = ''; }, 3000);
+      }).catch(() => {
+        input.select(); document.execCommand('copy');
+        msg.textContent = '✅ Lien copié !';
+        setTimeout(() => msg.textContent = '', 3000);
+      });
+    }
+
     // Auto-login si token JWT présent
     (async function initDashboard() {
       const token = localStorage.getItem('pd_jwt');

@@ -98,6 +98,9 @@
           <button id="btnSendMessage" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem;display:none" onclick="openMessageModal()">
             <i class="fas fa-envelope"></i> Message
           </button>
+          <button class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem" onclick="openShareProfileModal()">
+            <i class="fas fa-share-alt"></i> Partager
+          </button>
           <a href="index.html" class="btn-outline" style="padding:0.5rem 1.2rem;font-size:0.85rem">
             <i class="fas fa-arrow-left"></i> Retour
           </a>
@@ -129,6 +132,31 @@
 
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
+
+  <!-- Modal partage profil -->
+  <div id="shareProfileModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeShareProfileModal()">
+    <div style="background:var(--bg2,#1e1e2e);border-radius:16px;padding:1.5rem;width:min(400px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <h3 style="margin:0;font-size:1rem"><i class="fas fa-share-alt" style="color:var(--accent)"></i> Partager ce profil</h3>
+        <button onclick="closeShareProfileModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+        <input id="shareProfileLinkInput" type="text" readonly style="flex:1;background:var(--bg3,#2a2a3e);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem 0.8rem;font-size:0.85rem" />
+        <button onclick="copyShareProfileLink()" style="background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);color:var(--accent);border-radius:8px;padding:0.6rem 0.9rem;cursor:pointer;font-size:0.85rem;white-space:nowrap;font-family:inherit" id="shareProfileCopyBtn">
+          <i class="fas fa-copy"></i> Copier
+        </button>
+      </div>
+      <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+        <a id="shareProfileWaBtn" href="#" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;background:#25d366;color:#fff;border-radius:10px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;text-decoration:none;min-width:120px">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </a>
+        <a id="shareProfileFbBtn" href="#" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:0.5rem;background:#1877f2;color:#fff;border-radius:10px;padding:0.6rem 1rem;font-size:0.85rem;font-weight:600;text-decoration:none;min-width:120px">
+          <i class="fab fa-facebook"></i> Facebook
+        </a>
+      </div>
+      <p id="shareProfileCopyMsg" style="font-size:0.78rem;color:var(--accent2);min-height:1rem;margin-top:0.6rem;text-align:center"></p>
+    </div>
+  </div>
 
   <!-- Modal message privé -->
   <div id="msgModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center">
@@ -385,6 +413,37 @@
         status.textContent = e.message === 'NON_AUTHENTIFIE' ? 'Connectez-vous pour envoyer un message.' : 'Erreur lors de l\'envoi.';
         status.style.color = '#e74c3c';
       }
+    }
+
+    function openShareProfileModal() {
+      const params = new URLSearchParams(window.location.search);
+      const userId = params.get('id');
+      const link = `https://pagani-digital.netlify.app/profil.html?id=${userId}`;
+      document.getElementById('shareProfileLinkInput').value = link;
+      const text = encodeURIComponent(`Découvrez ce profil sur Pagani Digital ! ${link}`);
+      document.getElementById('shareProfileWaBtn').href = `https://wa.me/?text=${text}`;
+      document.getElementById('shareProfileFbBtn').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+      document.getElementById('shareProfileCopyMsg').textContent = '';
+      document.getElementById('shareProfileCopyBtn').innerHTML = '<i class="fas fa-copy"></i> Copier';
+      document.getElementById('shareProfileModal').style.display = 'flex';
+    }
+    function closeShareProfileModal() {
+      document.getElementById('shareProfileModal').style.display = 'none';
+    }
+    function copyShareProfileLink() {
+      const input = document.getElementById('shareProfileLinkInput');
+      const btn   = document.getElementById('shareProfileCopyBtn');
+      const msg   = document.getElementById('shareProfileCopyMsg');
+      navigator.clipboard.writeText(input.value).then(() => {
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        msg.textContent = '✅ Lien copié dans le presse-papiers !';
+        setTimeout(() => { btn.innerHTML = '<i class="fas fa-copy"></i> Copier'; msg.textContent = ''; }, 3000);
+      }).catch(() => {
+        input.select();
+        document.execCommand('copy');
+        msg.textContent = '✅ Lien copié !';
+        setTimeout(() => msg.textContent = '', 3000);
+      });
     }
 
     function showNotFound() {
