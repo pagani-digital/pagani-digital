@@ -1193,24 +1193,23 @@ async function loadUserPostsForProfile(userId) {
       list.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
       return;
     }
-    list.innerHTML = posts.map(post => {
-      const totalComments = (post.comments || []).reduce((a, c) => a + 1 + (c.replies || []).length, 0);
-      return `
-        <div class="post-card" style="cursor:default">
-          <div class="post-header">
-            <div class="post-time" style="font-size:0.8rem;color:var(--text2)">${timeAgo(post.date || post.createdAt)}</div>
-            <span class="news-tag tag-${(post.category||'').toLowerCase()}">${post.category || ''}</span>
-          </div>
-          <div class="post-body">
-            <h3 class="post-title">${post.title}</h3>
-            <div class="post-content">${formatPostContent(post.content)}</div>
-          </div>
-          <div class="post-stats">
-            <span><i class="fas fa-heart" style="color:var(--red)"></i> ${(post.likes||[]).length} j'adore</span>
-            <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? 's' : ''}</span>
-          </div>
-        </div>`;
-    }).join('');
+    // Charger les réactions en batch
+    try {
+      const ids = posts.map(p => p.id);
+      const batchRes = await Promise.allSettled(ids.slice(0, 20).map(id => PaganiAPI.getPostReactions(id)));
+      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
+    } catch(e) {}
+    const user = getUser();
+    list.innerHTML = '';
+    posts.forEach((post, i) => {
+      post.likes    = post.likes    || [];
+      post.comments = post.comments || [];
+      const el = buildPostCard(post, user, false);
+      el.style.animationDelay = (i * 40) + 'ms';
+      el.classList.add('post-animate');
+      list.appendChild(el);
+    });
+    _observeLazyImages(list);
   } catch(e) {
     if (statEl) statEl.textContent = '0';
     list.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
@@ -7683,36 +7682,7 @@ async function loadMyPosts() {
 // ===== PUBLICATIONS SUR LE PROFIL PUBLIC =====
 let _profilePostsCache = [];
 
-async function loadUserPostsForProfile(userId) {
-  const container = document.getElementById('profilePostsList');
-  if (!container) return;
-  container.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
-  try {
-    const posts = await PaganiAPI.getPostsByUser(userId);
-    _profilePostsCache = posts || [];
-    const statEl = document.getElementById('pubStatPosts');
-    if (statEl) statEl.textContent = posts ? posts.length : 0;
-    if (!posts || !posts.length) {
-      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
-      return;
-    }
-    const user = getUser();
-    container.innerHTML = '';
-    posts.forEach(post => {
-      const normalized = {
-        ...post,
-        likes:    Array.isArray(post.likes)    ? post.likes    : [],
-        comments: Array.isArray(post.comments) ? post.comments : [],
-        date:     post.date || post.createdAt  || new Date().toISOString(),
-      };
-      const el = buildPostCard(normalized, user, false);
-      container.appendChild(el);
-      _observeLazyImages(el);
-    });
-  } catch(e) {
-    container.innerHTML = '<div class="history-empty" style="color:var(--red)"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
-  }
-}
+// loadUserPostsForProfile défini plus haut
 // ===== PANNEAU PUBLICATION DANS L'ONGLET MES PUBLICATIONS =====
 let _myPostsDashImageBase64 = '';
 function _initMyPostsPanel() {
