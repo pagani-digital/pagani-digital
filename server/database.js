@@ -1228,6 +1228,22 @@ async function getPostReactions(postId) {
   return grouped;
 }
 
+
+async function getPostReactionsDetail(postId) {
+  const res = await query(
+    `SELECT r.emoji, r.user_id, u.name, u.avatar_photo, u.avatar_color
+     FROM post_reactions r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.post_id = $1
+     ORDER BY r.created_at DESC`, [postId]
+  );
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push({ id: row.user_id, name: row.name, avatarPhoto: row.avatar_photo, avatarColor: row.avatar_color });
+  }
+  return grouped;
+}
 async function getPostsReactionsBatch(postIds) {
   if (!postIds.length) return {};
   const res = await query(
@@ -1363,5 +1379,6 @@ module.exports = {
 
   togglePostReaction,
   getPostReactions,
+  getPostReactionsDetail,
   getPostsReactionsBatch,
 };

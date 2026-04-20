@@ -315,6 +315,14 @@ app.get('/api/posts/:id/reactions', async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
+
+app.get('/api/posts/:id/reactions-detail', async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    res.json(await db.getPostReactionsDetail(id));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 // Filtrer les posts par hashtag
 app.get('/api/posts/hashtag/:tag', async (req, res) => {
   try {

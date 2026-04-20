@@ -170,11 +170,7 @@ function _presenceTimeAgo(ts) {
 function _updatePostStats(postId, post) {
   const el = document.getElementById('post-' + postId);
   if (!el) return;
-  const totalComments = (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0);
-  const statsEl = el.querySelector('.post-stats');
-  if (statsEl) statsEl.innerHTML = `
-    <span><i class="fas fa-heart" style="color:var(--red)"></i> ${post.likes.length} j'adore</span>
-    <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments!==1?'s':''}</span>`;
+  _updateReactionCount(postId, _reactionsCache[postId] || {});
 }
 // ===== EMOJI PICKER COMMENTAIRES =====
 const COMMENT_EMOJIS = ['😂','❤️','😍','👍','🔥','😊','🎉','😭','🙏','💪','😎','🤔','😅','👏','🥰','✅','⭐','🚀','💡','🎯'];
@@ -273,19 +269,12 @@ async function _silentRefreshFeed() {
       const totalComments = (post.comments||[]).reduce((a,c)=>a+1+(c.replies||[]).length,0);
       const statsEl = el.querySelector('.post-stats');
       if (statsEl) {
-        const lk = post.likes.length;
-        statsEl.innerHTML =
-          '<span><i class="fas fa-heart" style="color:var(--red)"></i> ' + lk + ' j\'adore</span>' +
-          '<span><i class="fas fa-comment" style="color:var(--accent)"></i> ' + totalComments + ' commentaire' + (totalComments!==1?'s':'') + '</span>';
+        _updateReactionCount(post.id, _reactionsCache[post.id] || {});
       }
       if (user) {
-        const likeBtn = el.querySelector('.reaction-btn');
-        if (likeBtn) {
-          const liked = post.likes.includes(user.email);
-          likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
-          const label = likeBtn.querySelector('.reaction-label');
-          if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
-        }
+        // Mettre à jour le bouton réaction depuis le cache
+        const myEmoji = Object.entries(_reactionsCache[post.id] || {}).find(([,ids]) => ids.includes(user.id))?.[0] || null;
+        _updateReactionUI(post.id, _reactionsCache[post.id] || {}, myEmoji);
       }
       const commSection = el.querySelector('.comments-section');
       const commList    = el.querySelector('#comments-list-' + post.id);
@@ -546,7 +535,7 @@ function buildPostCard(post, user, isAdmin) {
       ${post.link ? `<a href="${post.link}" target="_blank" rel="noopener" class="post-link-btn"><i class="fas fa-external-link-alt"></i> ${post.linkLabel || 'En savoir plus'}</a>` : ""}
     </div>
     <div class="post-stats">
-      <span><i class="fas fa-heart" style="color:var(--red)"></i> ${post.likes.length} j'adore</span>
+      ${(() => { const r=_reactionsCache[post.id]||{}; const tot=Object.values(r).reduce((s,ids)=>s+ids.length,0); const top=Object.entries(r).sort((a,b)=>b[1].length-a[1].length)[0]; return tot>0 ? `<span style="cursor:pointer" onclick="showReactionDetails(${post.id})">${top[0]} ${tot} réaction${tot!==1?'s':''}</span>` : `<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 réaction</span>`; })()}
       <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? "s" : ""}</span>
     </div>
     <div class="post-actions">
@@ -564,10 +553,7 @@ function buildPostCard(post, user, isAdmin) {
           <span class="reaction-label">Partager</span>
         </button>
       ` : `
-        <button class="reaction-btn ${liked ? "liked" : ""}" onclick="toggleLike(${post.id})">
-          <i class="fas fa-heart"></i>
-          <span class="reaction-label">${liked ? "J'adore ❤️" : "J'adore"}</span>
-        </button>
+        ${_buildReactionBar(post.id, _reactionsCache[post.id] || {}, (() => { const r = _reactionsCache[post.id] || {}; return Object.entries(r).find(([,ids]) => ids.includes(user.id))?.[0] || null; })())}
         <button class="comment-toggle-btn" onclick="toggleComments(${post.id})">
           <i class="fas fa-comment"></i>
           <span class="reaction-label">Commenter</span>
@@ -603,6 +589,13 @@ function buildPostCard(post, user, isAdmin) {
            </div>`
       }
     </div>`;
+  // Attacher les listeners touch pour le hold-press (picker réactions)
+  if (!isGuest) {
+    setTimeout(() => {
+      const reactionBtn = article.querySelector('.reaction-btn[data-postid]');
+      if (reactionBtn) _attachReactionTouchListeners(post.id, reactionBtn);
+    }, 0);
+  }
   return article;
 }
 async function toggleLike(postId) {
@@ -614,17 +607,6 @@ async function toggleLike(postId) {
     const idx = post.likes.indexOf(user.email);
     if (idx === -1) post.likes.push(user.email); else post.likes.splice(idx, 1);
     _updatePostStats(postId, post);
-    // Mettre a jour le bouton like
-    const el = document.getElementById('post-' + postId);
-    if (el) {
-      const liked = post.likes.includes(user.email);
-      const likeBtn = el.querySelector('.reaction-btn');
-      if (likeBtn) {
-        likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
-        const label = likeBtn.querySelector('.reaction-label');
-        if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
-      }
-    }
   }
   if (window.PaganiAPI) {
     try { await PaganiAPI.toggleLike(postId); } catch(e) {}
@@ -1391,7 +1373,7 @@ function _buildReactionBar(postId, reactions, myReaction) {
 
   return `<div class="reaction-btn-wrap" style="position:relative;flex:1">
     <button class="${btnClass}" style="${btnStyle}"
-      onclick="toggleReactionPicker(${postId}, this)"
+      onclick="_onReactionBtnClick(${postId}, this)"
       onmouseenter="_showReactionPicker(${postId}, this)"
       data-postid="${postId}" data-myreaction="${myEmoji || ''}">
       <span class="reaction-main-emoji">${myEmoji || '👍'}</span>
@@ -1402,11 +1384,79 @@ function _buildReactionBar(postId, reactions, myReaction) {
         onclick="selectReaction(${postId}, '${e}', this)"
         title="${REACTION_LABELS[e]}">${e}</button>`).join('')}
     </div>
-  </div>
-  ${total > 0 ? `<span class="reaction-summary" onclick="showReactionDetails(${postId})" title="Voir les réactions">
-    ${top.map(e => `<span>${e}</span>`).join('')}
-    <span class="reaction-count">${total}</span>
-  </span>` : ''}`;
+  </div>`;
+}
+
+// Clic simple = réagir avec ❤️ (ou retirer si déjà réagi)
+// Maintien (desktop: hover déjà géré) = ouvrir le picker
+function _onReactionBtnClick(postId, btn) {
+  // Sur mobile, tout est géré par _attachReactionTouchListeners
+  // Ce handler ne s'exécute que sur desktop (pas de touch)
+  if (window.matchMedia('(hover: none)').matches) return;
+
+  const picker = document.getElementById('rpicker-' + postId);
+  const prevEmoji = btn.dataset.myreaction || '';
+  if (prevEmoji) {
+    if (picker) picker.style.display = 'none';
+    selectReaction(postId, prevEmoji, btn);
+  } else {
+    toggleReactionPicker(postId, btn);
+  }
+}
+
+// Touch : détecter maintien (500ms) pour ouvrir le picker
+// Géré via addEventListener (passive:false) pour pouvoir preventDefault
+let _reactionLastHoldTime = 0;
+
+function _attachReactionTouchListeners(postId, btn) {
+  let timer = null;
+  let moved = false;
+  let startX = 0;
+  let startY = 0;
+  let holdFired = false;
+
+  // Bloquer le click natif — tout est géré via touch
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    if (holdFired) { holdFired = false; return; } // ignorer le click post-hold
+    // Clic simple
+    const prevEmoji = btn.dataset.myreaction || '';
+    if (prevEmoji) {
+      selectReaction(postId, prevEmoji, btn);
+    } else {
+      toggleReactionPicker(postId, btn);
+    }
+  });
+
+  btn.addEventListener('touchstart', function(e) {
+    moved = false;
+    holdFired = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    if (timer) { clearTimeout(timer); timer = null; }
+    timer = setTimeout(() => {
+      if (!moved) {
+        holdFired = true;
+        toggleReactionPicker(postId, btn);
+      }
+      timer = null;
+    }, 500);
+  }, { passive: true });
+
+  btn.addEventListener('touchmove', function(e) {
+    if (!moved) {
+      const dx = Math.abs(e.touches[0].clientX - startX);
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (dx > 8 || dy > 8) {
+        moved = true;
+        if (timer) { clearTimeout(timer); timer = null; }
+      }
+    }
+  }, { passive: true });
+
+  btn.addEventListener('touchend', function() {
+    if (timer) { clearTimeout(timer); timer = null; }
+  }, { passive: true });
 }
 
 function _reactionColor(emoji) {
@@ -1417,16 +1467,35 @@ function _reactionColor(emoji) {
 function _showReactionPicker(postId, btn) {
   const picker = document.getElementById('rpicker-' + postId);
   if (!picker) return;
+
+  // Annuler le timer de fermeture
   clearTimeout(btn._hideTimer);
-  picker.style.display = 'flex';
-  // Fermer si on quitte la zone
+  clearTimeout(btn._showTimer);
+
+  // Ouvrir après 600ms (comme Facebook)
+  btn._showTimer = setTimeout(() => {
+    // Fermer tous les autres pickers
+    document.querySelectorAll('.reaction-picker').forEach(p => {
+      if (p !== picker) p.style.display = 'none';
+    });
+    picker.style.display = 'flex';
+  }, 600);
+
+  // Initialiser les listeners mouseleave une seule fois par wrap
   const wrap = btn.closest('.reaction-btn-wrap');
   if (wrap && !wrap._pickerInit) {
     wrap._pickerInit = true;
     wrap.addEventListener('mouseleave', () => {
+      clearTimeout(btn._showTimer);
       btn._hideTimer = setTimeout(() => { picker.style.display = 'none'; }, 300);
     });
-    picker.addEventListener('mouseenter', () => clearTimeout(btn._hideTimer));
+    picker.addEventListener('mouseenter', () => {
+      clearTimeout(btn._hideTimer);
+      clearTimeout(btn._showTimer);
+    });
+    picker.addEventListener('mouseleave', () => {
+      btn._hideTimer = setTimeout(() => { picker.style.display = 'none'; }, 300);
+    });
   }
 }
 
@@ -1434,10 +1503,11 @@ function toggleReactionPicker(postId, btn) {
   const picker = document.getElementById('rpicker-' + postId);
   if (!picker) return;
   const isOpen = picker.style.display !== 'none';
-  // Fermer tous les autres pickers
   document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
   if (!isOpen) {
     picker.style.display = 'flex';
+    // Délai plus long après un hold pour laisser passer le click synthétique du touch
+    const delay = (Date.now() - _reactionLastHoldTime < 800) ? 400 : 10;
     setTimeout(() => {
       document.addEventListener('click', function close(e) {
         if (!picker.contains(e.target) && e.target !== btn) {
@@ -1445,79 +1515,213 @@ function toggleReactionPicker(postId, btn) {
           document.removeEventListener('click', close);
         }
       });
-    }, 10);
+    }, delay);
   }
 }
 
 async function selectReaction(postId, emoji, btn) {
   const user = getUser();
   if (!user) { window.location.href = 'dashboard.html'; return; }
+
   // Fermer le picker
   const picker = document.getElementById('rpicker-' + postId);
   if (picker) picker.style.display = 'none';
 
-  // Trouver le bouton principal
-  const mainBtn = document.querySelector(`[data-postid="${postId}"].reaction-btn`);
+  // Lire la réaction actuelle
+  const mainBtn = document.querySelector('[data-postid="' + postId + '"].reaction-btn');
   const prevEmoji = mainBtn ? mainBtn.dataset.myreaction : '';
+  const isSame = prevEmoji === emoji;
+  const newEmoji = isSame ? null : emoji;
 
-  // Mise à jour optimiste
+  // Mise à jour optimiste du cache local
   if (!_reactionsCache[postId]) _reactionsCache[postId] = {};
   const cache = _reactionsCache[postId];
-  // Retirer l'ancienne réaction
+  // Retirer l'ancienne réaction de l'utilisateur du cache
   if (prevEmoji && cache[prevEmoji]) {
     cache[prevEmoji] = cache[prevEmoji].filter(id => id !== user.id);
     if (!cache[prevEmoji].length) delete cache[prevEmoji];
   }
-  const isSame = prevEmoji === emoji;
-  if (!isSame) {
-    if (!cache[emoji]) cache[emoji] = [];
-    if (!cache[emoji].includes(user.id)) cache[emoji].push(user.id);
+  // Ajouter la nouvelle réaction
+  if (newEmoji) {
+    if (!cache[newEmoji]) cache[newEmoji] = [];
+    if (!cache[newEmoji].includes(user.id)) cache[newEmoji].push(user.id);
   }
-  _updateReactionUI(postId, cache, isSame ? null : emoji);
+
+  // Mise à jour optimiste du bouton et du compteur
+  _updateReactionUI(postId, cache, newEmoji);
+  _updateReactionCount(postId, cache);
 
   // Appel API
   try {
-    if (window.PaganiAPI) await PaganiAPI.togglePostReaction(postId, emoji);
-  } catch(e) {}
+    if (window.PaganiAPI) {
+      await PaganiAPI.togglePostReaction(postId, emoji);
+      // Recharger les réactions réelles depuis le serveur pour rester en sync
+      const fresh = await PaganiAPI.getPostReactions(postId);
+      _reactionsCache[postId] = fresh;
+      // Recalculer ma réaction depuis les données serveur
+      const myFreshEmoji = Object.entries(fresh).find(([,ids]) => ids.includes(user.id))?.[0] || null;
+      _updateReactionUI(postId, fresh, myFreshEmoji);
+      _updateReactionCount(postId, fresh);
+    }
+  } catch(e) {
+    // Rollback
+    if (prevEmoji) {
+      if (!cache[prevEmoji]) cache[prevEmoji] = [];
+      if (!cache[prevEmoji].includes(user.id)) cache[prevEmoji].push(user.id);
+    }
+    if (newEmoji && cache[newEmoji]) {
+      cache[newEmoji] = cache[newEmoji].filter(id => id !== user.id);
+      if (!cache[newEmoji].length) delete cache[newEmoji];
+    }
+    _updateReactionUI(postId, cache, prevEmoji || null);
+    _updateReactionCount(postId, cache);
+  }
+}
+
+
+function _updateReactionCount(postId, reactions) {
+  const el = document.getElementById('post-' + postId);
+  if (!el) return;
+  const statsEl = el.querySelector('.post-stats');
+  if (!statsEl) return;
+  const total = Object.values(reactions || {}).reduce((s, ids) => s + ids.length, 0);
+  const post = _postsCache.find(p => p.id === postId);
+  const totalComments = post ? (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0) : 0;
+  // Top emoji pour affichage
+  const top = Object.entries(reactions || {}).sort((a,b) => b[1].length - a[1].length)[0];
+  const topEmoji = top ? top[0] : '❤️';
+  statsEl.innerHTML =
+    (total > 0
+      ? '<span style="cursor:pointer" onclick="showReactionDetails(' + postId + ')">' + topEmoji + ' ' + total + ' r\u00e9action' + (total !== 1 ? 's' : '') + '</span>'
+      : '<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 r\u00e9action</span>') +
+    '<span><i class="fas fa-comment" style="color:var(--accent)"></i> ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '') + '</span>';
 }
 
 function _updateReactionUI(postId, reactions, myEmoji) {
-  const wrap = document.querySelector(`[data-postid="${postId}"].reaction-btn`)?.closest('.reaction-btn-wrap');
-  if (!wrap) return;
-  const parent = wrap.parentElement;
-  if (!parent) return;
-  // Reconstruire la zone réaction
-  const newHtml = _buildReactionBar(postId, reactions, myEmoji);
-  // Remplacer wrap + summary
-  const summary = parent.querySelector('.reaction-summary');
-  if (summary) summary.remove();
-  wrap.outerHTML = newHtml;
-  // Mettre à jour le bouton principal
-  const newBtn = parent.querySelector(`[data-postid="${postId}"].reaction-btn`);
-  if (newBtn) newBtn.dataset.myreaction = myEmoji || '';
+  const mainBtn = document.querySelector('[data-postid="' + postId + '"].reaction-btn');
+  if (!mainBtn) return;
+  const emojiSpan = mainBtn.querySelector('.reaction-main-emoji');
+  const labelSpan = mainBtn.querySelector('.reaction-label');
+  if (emojiSpan) emojiSpan.textContent = myEmoji || '👍';
+  if (labelSpan) labelSpan.textContent = myEmoji ? (REACTION_LABELS[myEmoji] || myEmoji) : 'Réagir';
+  if (myEmoji) {
+    mainBtn.className = 'reaction-btn reacted';
+    mainBtn.style.color = 'var(--reaction-' + _reactionColor(myEmoji) + ')';
+  } else {
+    mainBtn.className = 'reaction-btn';
+    mainBtn.style.color = '';
+  }
+  mainBtn.dataset.myreaction = myEmoji || '';
+  const picker = document.getElementById('rpicker-' + postId);
+  if (picker) {
+    picker.querySelectorAll('.rp-btn').forEach(b => {
+      b.className = 'rp-btn' + (b.textContent.trim() === myEmoji ? ' rp-active' : '');
+    });
+  }
 }
 
-function showReactionDetails(postId) {
-  const reactions = _reactionsCache[postId] || {};
-  const lines = Object.entries(reactions)
-    .filter(([,users]) => users.length)
-    .sort((a,b) => b[1].length - a[1].length)
-    .map(([emoji, users]) => `<div style="display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:1.4rem">${emoji}</span>
-      <span style="font-weight:700;color:var(--text)">${users.length}</span>
-      <span style="font-size:0.78rem;color:var(--text2)">${REACTION_LABELS[emoji]}</span>
-    </div>`).join('');
+
+async function showReactionDetails(postId) {
+  document.getElementById('rxOverlay')?.remove();
+
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem';
-  overlay.innerHTML = `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:16px;padding:1.5rem;min-width:220px;max-width:320px;width:100%">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <strong>Réactions</strong>
-      <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.1rem">✕</button>
+  overlay.id = 'rxOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;animation:fadeIn 0.2s ease;overflow:hidden';
+  box.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-shrink:0">
+      <strong style="font-size:1rem">Réactions</strong>
+      <button id="rxClose" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem 0.5rem">✕</button>
     </div>
-    ${lines || '<p style="color:var(--text2);font-size:0.88rem">Aucune réaction.</p>'}
-  </div>`;
+    <div id="rxTabs" style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
+    <div id="rxList" style="overflow-y:auto;flex:1"><div style="text-align:center;padding:2rem;color:var(--text2);font-size:0.88rem">Chargement...</div></div>
+  `;
+
+  overlay.appendChild(box);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   document.body.appendChild(overlay);
+  box.querySelector('#rxClose').addEventListener('click', () => overlay.remove());
+
+  // Charger les données avec la nouvelle route
+  let data = {};
+  try {
+    data = await PaganiAPI.getPostReactionsDetail(postId);
+  } catch(e) {
+    // Fallback : utiliser le cache local (userId seulement, sans noms)
+    const cache = _reactionsCache[postId] || {};
+    for (const [emoji, ids] of Object.entries(cache)) {
+      data[emoji] = ids.map(id => ({ id, name: 'Utilisateur #' + id, avatarPhoto: null, avatarColor: '#6c63ff' }));
+    }
+  }
+
+  const tabs = box.querySelector('#rxTabs');
+  const list = box.querySelector('#rxList');
+
+  const allUsers = Object.entries(data).flatMap(([emoji, users]) => users.map(u => ({ ...u, emoji })));
+
+  if (!allUsers.length) {
+    list.innerHTML = '<p style="text-align:center;color:var(--text2);padding:2rem;font-size:0.88rem">Aucune réaction.</p>';
+    return;
+  }
+
+  const emojiGroups = Object.entries(data).sort((a, b) => b[1].length - a[1].length);
+  const tabsData = [
+    { key: 'all', label: 'Tous', count: allUsers.length },
+    ...emojiGroups.map(([e, u]) => ({ key: e, label: e, count: u.length }))
+  ];
+
+  let activeKey = 'all';
+
+  function renderTabs() {
+    tabs.innerHTML = '';
+    tabsData.forEach(t => {
+      const btn = document.createElement('button');
+      const isActive = t.key === activeKey;
+      btn.style.cssText = `background:none;border:none;border-bottom:2px solid ${isActive ? 'var(--accent)' : 'transparent'};color:${isActive ? 'var(--accent)' : 'var(--text2)'};padding:0.65rem 1rem;cursor:pointer;font-size:${t.key === 'all' ? '0.85rem' : '1.3rem'};white-space:nowrap;font-family:inherit;font-weight:${isActive ? '700' : '400'};flex-shrink:0;transition:color 0.15s`;
+      btn.innerHTML = t.key === 'all' ? `Tous <span style="font-size:0.75rem;opacity:0.6">${t.count}</span>` : t.label;
+      btn.addEventListener('click', () => { activeKey = t.key; renderTabs(); renderList(); });
+      tabs.appendChild(btn);
+    });
+  }
+
+  function renderList() {
+    const users = activeKey === 'all' ? allUsers : (data[activeKey] || []).map(u => ({ ...u, emoji: activeKey }));
+    list.innerHTML = '';
+    users.forEach(u => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:0.9rem;padding:0.75rem 1.2rem;cursor:pointer;transition:background 0.15s';
+      row.onmouseover = () => row.style.background = 'rgba(108,99,255,0.07)';
+      row.onmouseout  = () => row.style.background = '';
+
+      const initials = (u.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const av = document.createElement('div');
+      if (u.avatarPhoto) {
+        av.innerHTML = `<img src="${u.avatarPhoto}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`;
+      } else {
+        av.style.cssText = `width:44px;height:44px;border-radius:50%;background:${u.avatarColor||'#6c63ff'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:#fff;flex-shrink:0`;
+        av.textContent = initials;
+      }
+
+      const name = document.createElement('span');
+      name.style.cssText = 'flex:1;font-size:0.92rem;font-weight:600';
+      name.textContent = u.name;
+
+      const emoji = document.createElement('span');
+      emoji.style.fontSize = '1.3rem';
+      emoji.textContent = u.emoji;
+
+      row.appendChild(av);
+      row.appendChild(name);
+      row.appendChild(emoji);
+      row.addEventListener('click', () => { overlay.remove(); openPublicProfile(u.id); });
+      list.appendChild(row);
+    });
+  }
+
+  renderTabs();
+  renderList();
 }
 // --- Skeleton loader ---
 function renderSkeletons(n) {

@@ -89,6 +89,7 @@ async function apiEditUserPost(id, data)   { return _fetch(`/user-posts/${id}`, 
 async function apiDeleteUserPost(id)       { return _fetch(`/user-posts/${id}`, { method: 'DELETE' }); }
 async function apiTogglePostReaction(postId, emoji) { return _fetch(`/posts/${postId}/react`, { method: 'POST', body: JSON.stringify({ emoji }) }); }
 async function apiGetPostReactions(postId)              { return _fetch(`/posts/${postId}/reactions`); }
+async function apiGetPostReactionsDetail(postId) { return _fetch(`/posts/${postId}/reactions-detail`); }
 async function apiToggleLike(postId) { return _fetch(`/posts/${postId}/like`, { method: 'POST' }); }
 async function apiAddComment(postId, text) { return _fetch(`/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }); }
 async function apiAddReply(postId, commentId, text, replyTo) { return _fetch(`/posts/${postId}/comments/${commentId}/replies`, { method: 'POST', body: JSON.stringify({ text, replyTo }) }); }
@@ -197,6 +198,7 @@ window.PaganiAPI = {
   toggleLike:        apiToggleLike,
   togglePostReaction: apiTogglePostReaction,
   getPostReactions:   apiGetPostReactions,
+  getPostReactionsDetail: apiGetPostReactionsDetail,
   addComment:   apiAddComment,
   addReply:     apiAddReply,
   recordShare:  apiRecordShare,
