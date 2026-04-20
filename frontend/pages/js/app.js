@@ -199,7 +199,14 @@ function _pollStoryViewCount(storyId) {
 }
 
 let _storyViewers = [];
+function closeStoryViewers() {
+  const modal = document.getElementById('storyViewersModal');
+  if (modal) modal.remove();
+  _resumeStoryTimer();
+}
+
 function openStoryViewers() {
+  _pauseStoryTimer();
   document.getElementById('storyViewersModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'storyViewersModal';
@@ -214,7 +221,7 @@ function openStoryViewers() {
       ? `<img src="${v.avatar_photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
       : `<span style="font-size:0.75rem;font-weight:700;color:#fff">${initials}</span>`;
     const reactionBadge = v.emoji ? `<span class="story-viewer-reaction">${v.emoji}</span>` : '';
-    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="document.getElementById('storyViewersModal').remove()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span>${reactionBadge}</a>`;
+    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="closeStoryViewers()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span>${reactionBadge}</a>`;
   }).join('');
 
   const emptyMsg = total === 0
@@ -225,8 +232,8 @@ function openStoryViewers() {
     ? `<div class="story-viewers-anon"><i class="fas fa-eye-slash"></i> ${anonCount} autre${anonCount>1?'s':''} personne${anonCount>1?'s':''} ${anonCount>1?'ont':'a'} vu cette story</div>`
     : '';
 
-  modal.innerHTML = `<div class="story-viewers-box"><div class="story-viewers-header"><span><i class="fas fa-eye"></i> ${total} vue${total>1?'s':''}</span><button onclick="document.getElementById('storyViewersModal').remove()" style="background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer">&times;</button></div><div class="story-viewers-list">${followerItems}${emptyMsg}</div>${anonFooter}</div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  modal.innerHTML = `<div class="story-viewers-box"><div class="story-viewers-header"><span><i class="fas fa-eye"></i> ${total} vue${total>1?'s':''}</span><button onclick="closeStoryViewers()" style="background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer">&times;</button></div><div class="story-viewers-list">${followerItems}${emptyMsg}</div>${anonFooter}</div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) closeStoryViewers(); });
   document.body.appendChild(modal);
 }
 function openCreateStory() {
