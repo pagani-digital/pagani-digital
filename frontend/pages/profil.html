@@ -62,6 +62,7 @@
               <h1 id="pubName"></h1>
               <span id="pubPlanBadge" class="plan-badge" style="font-size:0.75rem;padding:0.2rem 0.7rem"></span>
             </div>
+            <div id="pubBadges" style="display:none;flex-wrap:wrap;gap:0.35rem;margin-bottom:0.5rem"></div>
             <p id="pubBio" class="public-bio"></p>
             <div class="public-meta" id="pubMeta"></div>
           </div>
@@ -473,17 +474,28 @@
       document.getElementById('pubPlanBadge').textContent = 'Plan ' + u.plan;
       document.getElementById('pubBio').textContent = u.bio || 'Aucune bio renseignée.';
 
+      // Badges (async séparé pour ne pas bloquer le rendu)
+      const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+      fetch(API + '/users/' + u.id + '/badges')
+        .then(r => r.json())
+        .then(badges => {
+          const wrap = document.getElementById('pubBadges');
+          if (wrap && badges.length) {
+            wrap.innerHTML = _buildBadgesHTML(badges);
+            wrap.style.display = 'flex';
+          }
+        }).catch(() => {});
+
       // Stats publiques
       const planLabels = { Starter: 'Starter', Pro: 'Pro ⭐', Elite: 'Elite 👑' };
       document.getElementById('pubStatPlan').textContent = planLabels[u.plan] || u.plan;
       document.getElementById('pubStatMember').textContent =
         new Date(u.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
-      // followers/following chargés séparément via loadFollowData
 
       // Méta
       const meta = [];
-      if (u.location) meta.push(`<span><i class="fas fa-map-marker-alt"></i> ${u.location}</span>`);
-      if (u.website)  meta.push(`<span><i class="fas fa-link"></i> <a href="${u.website}" target="_blank">${u.website}</a></span>`);
+      if (u.location) meta.push('<span><i class="fas fa-map-marker-alt"></i> ' + u.location + '</span>');
+      if (u.website)  meta.push('<span><i class="fas fa-link"></i> <a href="' + u.website + '" target="_blank">' + u.website + '</a></span>');
       document.getElementById('pubMeta').innerHTML = meta.join('');
     }
   </script>

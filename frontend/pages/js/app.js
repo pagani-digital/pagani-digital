@@ -1,3 +1,17 @@
+// ===== BADGES =====
+function _buildBadgesHTML(badges) {
+  if (!badges || !badges.length) return '';
+  return '<div class="user-badges">' + badges.map(b =>
+    `<span class="user-badge" style="background:${b.color}18;color:${b.color};border-color:${b.color}44" title="${b.label}">${b.icon} ${b.label}</span>`
+  ).join('') + '</div>';
+}
+function _buildBadgesInline(badges) {
+  if (!badges || !badges.length) return '';
+  return '<span class="post-author-badges">' + badges.slice(0,2).map(b =>
+    `<span class="user-badge" style="background:${b.color}18;color:${b.color};border-color:${b.color}44" title="${b.label}">${b.icon}</span>`
+  ).join('') + '</span>';
+}
+
 // ===== DONNES COURS =====
 // IMPORTANT : videoId est volontairement absent ici pour les videos payantes.
 // Les IDs sont stockes separment dans _getSecureVideoId() et ne sont jamais
@@ -2050,6 +2064,13 @@ function renderProfile(user) {
   if (pubLink) pubLink.href = "profil.html?id=" + user.id;
   document.getElementById("profilePlanBadge").textContent = "Plan " + user.plan;
   document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignee.";
+  // Charger les badges
+  const _apiUrl = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  fetch(_apiUrl + '/auth/me/badges', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') } })
+    .then(r => r.json()).then(badges => {
+      const wrap = document.getElementById('profileBadges');
+      if (wrap) { wrap.innerHTML = _buildBadgesHTML(badges); wrap.style.display = badges.length ? 'flex' : 'none'; }
+    }).catch(() => {});
   document.getElementById("pStatCourses").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("pStatRefs").textContent = user.refs || 0;
   document.getElementById("pStatEarnings").textContent = formatAR(user.earningsAR || 0);

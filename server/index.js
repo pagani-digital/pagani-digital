@@ -862,6 +862,44 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
+//  BADGES
+// ══════════════════════════════════════════════════════════
+function computeBadges(user, postCount) {
+  const badges = [];
+  const refs = user.refs || 0;
+  const days = Math.floor((Date.now() - new Date(user.createdAt)) / 86400000);
+
+  if (user.plan === 'Elite') badges.push({ id: 'elite',       label: 'Elite',         icon: '👑', color: '#f59e0b' });
+  if (user.plan === 'Pro')   badges.push({ id: 'pro',         label: 'Pro',           icon: '⭐', color: '#6c63ff' });
+  if (refs >= 10)            badges.push({ id: 'legende',     label: 'Légende',       icon: '💎', color: '#00d4aa' });
+  else if (refs >= 5)        badges.push({ id: 'superparrain',label: 'Super Parrain', icon: '🚀', color: '#6c63ff' });
+  else if (refs >= 1)        badges.push({ id: 'ambassadeur', label: 'Ambassadeur',   icon: '🌟', color: '#f59e0b' });
+  if (postCount >= 10)       badges.push({ id: 'influenceur', label: 'Influenceur',   icon: '📢', color: '#ff4d6d' });
+  else if (postCount >= 3)   badges.push({ id: 'contributeur',label: 'Contributeur',  icon: '✍️', color: '#8b5cf6' });
+  if (days >= 30)            badges.push({ id: 'veteran',     label: 'Vétéran',       icon: '🎖️', color: '#00d4aa' });
+  return badges;
+}
+
+app.get('/api/users/:id/badges', async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const user = await db.getUserById(id);
+    if (!user) return res.status(404).json({ error: 'INTROUVABLE' });
+    const posts = await db.getPostsByUser(id);
+    res.json(computeBadges(user, posts.length));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.get('/api/auth/me/badges', requireAuth, async (req, res) => {
+  try {
+    const user = await db.getUserById(req.user.id);
+    if (!user) return res.status(404).json({ error: 'INTROUVABLE' });
+    const posts = await db.getPostsByUser(req.user.id);
+    res.json(computeBadges(user, posts.length));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+// ══════════════════════════════════════════════════════════
 //  LEADERBOARD PARRAINAGES
 // ══════════════════════════════════════════════════════════
 app.get('/api/leaderboard', async (req, res) => {

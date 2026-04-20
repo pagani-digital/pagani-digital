@@ -153,6 +153,10 @@ async function apiGetFollowStats(userId)    { return _fetch(`/users/${userId}/fo
 async function apiGetFollowers(userId)      { return _fetch(`/users/${userId}/followers`); }
 async function apiGetFollowing(userId)      { return _fetch(`/users/${userId}/following`); }
 
+//  BADGES
+async function apiGetMyBadges()            { return _fetch('/auth/me/badges'); }
+async function apiGetUserBadges(userId)    { return _fetch(`/users/${userId}/badges`); }
+
 //  PR—SENCE
 async function apiPresencePing()           { return _fetch('/presence/ping', { method: 'POST' }); }
 async function apiGetPresence(userId)      { return _fetch(`/presence/${userId}`); }
@@ -273,4 +277,7 @@ window.PaganiAPI = {
   getFollowStats:  apiGetFollowStats,
   getFollowers:    apiGetFollowers,
   getFollowing:    apiGetFollowing,
+  // Badges
+  getMyBadges:     apiGetMyBadges,
+  getUserBadges:   apiGetUserBadges,
 };
