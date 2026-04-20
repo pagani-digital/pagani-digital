@@ -1445,7 +1445,11 @@ async function getCategoryScores(userId) {
 
 async function getPostsAlgo(userId) {
   const [postsRes, usersRes] = await Promise.all([
-    query('SELECT * FROM posts ORDER BY COALESCE(created_at, date) DESC LIMIT 200'),
+    query(`SELECT * FROM posts
+       WHERE COALESCE(created_at, date) > NOW() - INTERVAL '90 days'
+          OR boost_score > 0
+       ORDER BY COALESCE(created_at, date) DESC
+       LIMIT 500`),
     query('SELECT id, avatar_photo FROM users')
   ]);
   const photoMap = {};
@@ -1467,11 +1471,21 @@ async function getPostsAlgo(userId) {
   }
 
   const now = Date.now();
+  // Fix 6 : visiteurs non connectés → boost contenu populaire ×1.5
+  const popularityMultiplier = userId ? 1 : 1.5;
   const posts = rowsToCamel(postsRes.rows).map(p => {
     const likes    = Array.isArray(p.likes)    ? p.likes    : [];
     const comments = Array.isArray(p.comments) ? p.comments : [];
     const totalComments = comments.reduce((a, c) => a + 1 + (Array.isArray(c.replies) ? c.replies.length : 0), 0);
-    p._totalComments = totalComments; // utilisé pour le score viral
+    // Commentaires récents (7 derniers jours) pour le score
+    const sevenDaysAgo = now - 7 * 24 * 3600000;
+    const recentComments = comments.reduce((a, c) => {
+      const cDate = new Date(c.date || 0).getTime();
+      const cCount = cDate > sevenDaysAgo ? 1 : 0;
+      const rCount = Array.isArray(c.replies) ? c.replies.filter(r => new Date(r.date || 0).getTime() > sevenDaysAgo).length : 0;
+      return a + cCount + rCount;
+    }, 0);
+    p._totalComments = recentComments; // utilisé pour le score viral
 
     // ── Idée 2 : Récence exponentielle ──────────────────────────────────────
     // Décroît très vite après 24h, quasi nul après 72h
@@ -1487,8 +1501,11 @@ async function getPostsAlgo(userId) {
     const followBonus = Math.min(20, rawAffinity + ((p.authorId && followedIds.has(p.authorId)) ? 4 : 0));
 
     // ── Idée 4 : Boost admin ─────────────────────────────────────────────────
-    // Champ boost_score dans la table posts (0 par défaut)
-    const adminBoost = parseFloat(p.boostScore || 0);
+    // Fix 5 : boost admin avec décroissance temporelle
+    // 100% pendant 7j, 50% de 7à 30j, 0% après 30j
+    const boostRaw   = parseFloat(p.boostScore || 0);
+    const boostDecay = ageHours > 720 ? 0 : (ageHours > 168 ? 0.5 : 1);
+    const adminBoost = boostRaw * boostDecay;
 
     // ── Pénalité contenu vide ────────────────────────────────────────────────
     const contentLen = (p.content || '').length;
@@ -1500,7 +1517,10 @@ async function getPostsAlgo(userId) {
     const categoryBonus = categoryMap[postCat] || 0;
 
     // Score de base (réactions ajoutées après le batch)
-    p._score = likes.length * 1 + totalComments * 2 + followBonus + recencyScore + adminBoost + qualityPenalty + categoryBonus;
+    // Fix 2 : pondérer les likes selon l'âge du post
+    // Post < 7j → likes comptent plein (×1), post > 7j → likes comptent peu (×0.2)
+    const likesWeight = ageHours < 168 ? 1 : 0.2;
+    p._score = likes.length * likesWeight + recentComments * 2 + followBonus + recencyScore + adminBoost + qualityPenalty + categoryBonus;
     p._authorId = p.authorId; // garder pour la diversité
 
     p.authorPhoto = p.authorId ? (photoMap[p.authorId] ?? p.authorPhoto ?? '') : (p.authorPhoto || '');
@@ -1519,28 +1539,30 @@ async function getPostsAlgo(userId) {
     return p;
   });
 
-  // Enrichir avec les réactions en batch
+  // Enrichir avec les réactions des 7 derniers jours uniquement
+  // Un vieux post avec 0 réaction récente ne remonte pas dans le feed
   if (posts.length) {
     const ids = posts.map(p => p.id);
     const rxRes = await query(
-      'SELECT post_id, COUNT(*) as cnt FROM post_reactions WHERE post_id = ANY($1) GROUP BY post_id',
+      `SELECT post_id, COUNT(*) as cnt FROM post_reactions
+       WHERE post_id = ANY($1) AND created_at > NOW() - INTERVAL '7 days'
+       GROUP BY post_id`,
       [ids]
     );
     const rxMap = {};
     rxRes.rows.forEach(r => { rxMap[r.post_id] = parseInt(r.cnt); });
     posts.forEach(p => {
       const rxCount = rxMap[p.id] || 0;
-      p._score += rxCount * 3;
+      p._score += rxCount * 3 * popularityMultiplier;
 
-      // ── Détection viralité ────────────────────────────────────────────────
-      // vitesse = (réactions + commentaires) / max(ageHeures, 0.5)
-      // Bonus viral plafonné à 15pts — évite qu'un post spam domine
-      // Seuil minimum : au moins 3 interactions pour être considéré viral
+      // ── Fix 3 : Détection viralité sur fenêtre glissante ───────────────────
+      // vitesse = réactions7j / min(ageTotal, 168h)
+      // Un post de 3j avec 10 réactions aujourd'hui est bien détecté viral
+      // Seuil minimum : au moins 3 interactions récentes
       const totalInteractions = rxCount + p._totalComments;
       if (totalInteractions >= 3) {
-        const ageH = Math.max(0.5, (now - new Date(p.createdAt || p.date).getTime()) / 3600000);
+        const ageH = Math.min(168, Math.max(0.5, (now - new Date(p.createdAt || p.date).getTime()) / 3600000));
         const viralSpeed = totalInteractions / ageH;
-        // log pour lisser les valeurs extrêmes : ln(1 + vitesse) × 4
         const viralBonus = Math.min(15, Math.log(1 + viralSpeed) * 4);
         p._score += viralBonus;
       }
@@ -1550,29 +1572,31 @@ async function getPostsAlgo(userId) {
   // Trier par score décroissant
   posts.sort((a, b) => b._score - a._score);
 
-  // ── Idée 1 : Diversité des auteurs ──────────────────────────────────────────
-  // Intercaler les posts pour qu'un même auteur n'apparaisse pas
-  // plus de 2 fois consécutivement dans le feed final
+  // ── Fix 4 : Diversité équilibrée ────────────────────────────────────────────
+  // Max 2 posts consécutifs du même auteur
+  // Les posts différés sont réinsérés toutes les 5 positions (pas rejetés en fin)
   const result = [];
-  const deferred = []; // posts mis de côté temporairement
+  const deferred = [];
   let lastAuthor = null;
   let consecutiveCount = 0;
 
   for (const post of posts) {
     const author = post._authorId || post.author;
+
+    // Toutes les 5 positions, insérer un post différé s'il y en a
+    if (deferred.length && result.length > 0 && result.length % 5 === 0) {
+      const idx = deferred.findIndex(d => (d._authorId || d.author) !== lastAuthor);
+      if (idx !== -1) {
+        const inserted = deferred.splice(idx, 1)[0];
+        result.push(inserted);
+        lastAuthor = inserted._authorId || inserted.author;
+        consecutiveCount = 1;
+      }
+    }
+
     if (author === lastAuthor && consecutiveCount >= 2) {
       deferred.push(post);
     } else {
-      // Insérer un post différé si disponible et auteur différent
-      if (deferred.length && author !== lastAuthor) {
-        const idx = deferred.findIndex(d => (d._authorId || d.author) !== author);
-        if (idx !== -1) {
-          const inserted = deferred.splice(idx, 1)[0];
-          result.push(inserted);
-          lastAuthor = inserted._authorId || inserted.author;
-          consecutiveCount = 1;
-        }
-      }
       result.push(post);
       if (author === lastAuthor) {
         consecutiveCount++;
@@ -1582,8 +1606,16 @@ async function getPostsAlgo(userId) {
       }
     }
   }
-  // Ajouter les posts différés restants à la fin
-  result.push(...deferred);
+  // Intercaler les posts différés restants uniformément dans le résultat
+  let insertPos = 4;
+  for (const post of deferred) {
+    if (insertPos < result.length) {
+      result.splice(insertPos, 0, post);
+      insertPos += 5;
+    } else {
+      result.push(post);
+    }
+  }
 
   // Nettoyer les champs internes
   result.forEach(p => { delete p._score; delete p._authorId; delete p._totalComments; });
