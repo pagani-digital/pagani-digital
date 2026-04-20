@@ -1622,6 +1622,15 @@ async function getPostsAlgo(userId) {
   return result;
 }
 
+// Version légère pour /api/members — sans données sensibles/lourdes
+async function getPublicMembers() {
+  const res = await query(
+    `SELECT id, name, plan, avatar_color, avatar_photo, bio, created_at, is_active
+     FROM users WHERE is_active = true ORDER BY created_at DESC`
+  );
+  return rowsToCamel(res.rows);
+}
+
 module.exports = {
   createUser,
   login,
@@ -1743,6 +1752,7 @@ module.exports = {
   getPostReactionsDetail,
   getPostsReactionsBatch,
   getPostsAlgo,
+  getPublicMembers,
   incrementInteraction,
   getAffinityScores,
   incrementCategoryPref,

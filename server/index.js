@@ -273,11 +273,26 @@ app.get('/api/videos/:id/token', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  POSTS
 // ══════════════════════════════════════════════════════════
+// Cache feed visiteurs — recalculé toutes les 60s max
+let _guestFeedCache = null;
+let _guestFeedCacheAt = 0;
+const GUEST_FEED_TTL = 60000; // 60 secondes
+
 app.get('/api/posts', optionalAuth, async (req, res) => {
   try {
     const userId = req.user ? req.user.id : null;
-    const posts = await db.getPostsAlgo(userId);
-    res.json(posts.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
+    // Membres connectés : feed personnalisé, pas de cache
+    if (userId) {
+      const posts = await db.getPostsAlgo(userId);
+      return res.json(posts.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
+    }
+    // Visiteurs : cache partagé 60s
+    const now = Date.now();
+    if (!_guestFeedCache || (now - _guestFeedCacheAt) > GUEST_FEED_TTL) {
+      _guestFeedCache = (await db.getPostsAlgo(null)).map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' }));
+      _guestFeedCacheAt = now;
+    }
+    res.json(_guestFeedCache);
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // Réactions sur les posts
@@ -390,6 +405,8 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
       authorColor: user.avatarColor || '#6c63ff',
       authorPhoto: user.avatarPhoto || ''
     });
+    // Invalider le cache visiteurs
+    _guestFeedCache = null;
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -408,6 +425,8 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
         message: `Pagani Digital a publie : "${post.title}"`,
         link: `index.html#post-${post.id}` });
     }
+    // Invalider le cache visiteurs
+    _guestFeedCache = null;
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -435,6 +454,7 @@ app.patch('/api/admin/posts/:id/boost', requireAuth, requireAdmin, async (req, r
     const score = parseFloat(req.body.boostScore) || 0;
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     await _migPool.query('UPDATE posts SET boost_score = $1 WHERE id = $2', [score, id]);
+    _guestFeedCache = null; // invalider le cache visiteurs
     res.json({ ok: true, boostScore: score });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -1181,15 +1201,12 @@ app.get('/api/leaderboard', async (req, res) => {
 // ══════════════════════════════════════════════════════════
 app.get('/api/members', async (req, res) => {
   try {
-    const users = await db.getAllUsers();
-    res.json(users
-      .filter(u => u.isActive)
-      .map(u => ({
-        id: u.id, name: u.name, plan: u.plan,
-        avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',
-        bio: u.bio || '', createdAt: u.createdAt
-      }))
-    );
+    const users = await db.getPublicMembers();
+    res.json(users.map(u => ({
+      id: u.id, name: u.name, plan: u.plan,
+      avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',
+      bio: u.bio || '', createdAt: u.createdAt
+    })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
