@@ -9,14 +9,14 @@ let _storyTimer = null;
 async function loadStories() {
   const bar = document.getElementById('storiesBar');
   if (!bar) return;
+  const user = getUser();
+  if (!user) { bar.style.display = 'none'; return; }
   try {
     const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
     const token = localStorage.getItem('pd_jwt');
     const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
     _storiesData = await fetch(API + '/stories', { headers }).then(r => r.json());
   } catch(e) { _storiesData = []; }
-
-  const user = getUser();
   let html = '';
 
   // Bouton ajouter story (si connecté)
@@ -146,6 +146,32 @@ function _storyNav(dir) {
 }
 
 let _storyViewCountTimer = null;
+function _pauseStoryTimer() {
+  clearTimeout(_storyTimer);
+  _storyTimer = null;
+  // Figer la barre de progression en cours
+  var fill = document.getElementById('spf-' + _storyViewerIdx);
+  if (fill) {
+    var computed = window.getComputedStyle(fill).width;
+    fill.style.transition = 'none';
+    fill.style.width = computed;
+  }
+}
+
+function _resumeStoryTimer() {
+  // Ne reprendre que si le viewer est ouvert et aucun picker actif
+  if (!document.getElementById('storyViewerOverlay')) return;
+  if (document.getElementById('storyEmojiPicker')) return;
+  clearTimeout(_storyTimer);
+  // Relancer la progression depuis 0 pour la story courante
+  var fill = document.getElementById('spf-' + _storyViewerIdx);
+  if (fill) {
+    fill.style.transition = 'width ' + STORY_DURATION + 'ms linear';
+    fill.style.width = '100%';
+  }
+  _storyTimer = setTimeout(function() { _storyNav(1); }, STORY_DURATION);
+}
+
 function closeStoryViewer() {
   clearTimeout(_storyTimer);
   clearInterval(_storyViewCountTimer);
@@ -334,7 +360,7 @@ function _renderStoryReactBar(bar, storyId) {
 
 function toggleStoryEmojiPicker(storyId, btn) {
   var existing = document.getElementById('storyEmojiPicker');
-  if (existing) { existing.remove(); return; }
+  if (existing) { existing.remove(); _resumeStoryTimer(); return; }
   if (!getUser()) { window.location.href = 'dashboard.html'; return; }
   var picker = document.createElement('div');
   picker.id = 'storyEmojiPicker';
@@ -343,15 +369,21 @@ function toggleStoryEmojiPicker(storyId, btn) {
     return '<button class="story-emoji-opt' + (_myStoryReaction === e ? ' active' : '') + '" onclick="reactToStory(' + storyId + ', \'' + e + '\', this)">' + e + '</button>';
   }).join('');
   btn.parentElement.appendChild(picker);
+  _pauseStoryTimer();
   setTimeout(function() {
     document.addEventListener('click', function _close(ev) {
-      if (!picker.contains(ev.target) && ev.target !== btn) { picker.remove(); document.removeEventListener('click', _close); }
+      if (!picker.contains(ev.target) && ev.target !== btn) {
+        picker.remove();
+        _resumeStoryTimer();
+        document.removeEventListener('click', _close);
+      }
     });
   }, 50);
 }
 
 async function reactToStory(storyId, emoji, btn) {
   var ep = document.getElementById('storyEmojiPicker'); if (ep) ep.remove();
+  _resumeStoryTimer();
   var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
   var token = localStorage.getItem('pd_jwt');
   if (!token) { window.location.href = 'dashboard.html'; return; }

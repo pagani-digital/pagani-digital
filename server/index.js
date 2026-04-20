@@ -865,7 +865,7 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
 //  STORIES
 // ══════════════════════════════════════════════════════════
 // GET toutes les stories actives (non expirées) groupées par user
-app.get('/api/stories', optionalAuth, async (req, res) => {
+app.get('/api/stories', requireAuth, async (req, res) => {
   try {
     const result = await _migPool.query(`
       SELECT s.id, s.user_id, s.content, s.image, s.bg_color, s.expires_at, s.created_at,
@@ -876,7 +876,7 @@ app.get('/api/stories', optionalAuth, async (req, res) => {
       JOIN users u ON u.id = s.user_id
       WHERE s.expires_at > NOW()
       ORDER BY s.created_at DESC
-    `, [req.user ? req.user.id : 0]);
+    `, [req.user.id]);
     // Grouper par user
     const map = new Map();
     result.rows.forEach(s => {
