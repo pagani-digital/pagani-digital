@@ -2250,6 +2250,16 @@ function showDashboard(user) {
   document.getElementById("dashboardSection").style.display = "block";
   document.getElementById("userName").textContent = user.name.split(" ")[0];
   document.getElementById("userPlan").textContent = "Plan " + user.plan;
+  // Streak badge
+  const _sb = document.getElementById('dashStreakBadge');
+  if (_sb) {
+    if (user.streak > 1) {
+      _sb.innerHTML = '<i class="fas fa-fire"></i> ' + user.streak + ' jours consécutifs';
+      _sb.style.display = 'inline-flex';
+    } else {
+      _sb.style.display = 'none';
+    }
+  }
   document.getElementById("dashRefs").textContent = user.refs || 0;
   document.getElementById("dashEarnings").textContent = formatAR(user.earningsAR || 0);
   document.getElementById("coursesWatched").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);

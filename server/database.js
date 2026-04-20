@@ -1023,6 +1023,22 @@ async function deletePrivateMessage(msgId, senderId) {
   return res.rowCount > 0;
 }
 
+
+async function updateStreak(userId) {
+  const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
+  if (!res.rows.length) return;
+  const { last_login_date, streak } = res.rows[0];
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  if (last_login_date && last_login_date.toISOString().slice(0, 10) === today) return; // déjà compté aujourd'hui
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const lastDate = last_login_date ? last_login_date.toISOString().slice(0, 10) : null;
+  const newStreak = lastDate === yesterday ? (streak || 0) + 1 : 1;
+  await query(
+    'UPDATE users SET streak = $1, last_login_date = $2 WHERE id = $3',
+    [newStreak, today, userId]
+  );
+}
+
 async function updateLastSeen(userId, ts) {
   await query(
     `UPDATE users SET last_seen = $1 WHERE id = $2`,
@@ -1346,6 +1362,7 @@ module.exports = {
   deletePrivateMessage,
 
   updateLastSeen,
+  updateStreak,
   getLastSeen,
 
   followUser,

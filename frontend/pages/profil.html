@@ -68,6 +68,7 @@
           </div>
         </div>
 
+        <div id="pubStreakBadge" style="display:none;align-items:center;gap:0.4rem;font-size:0.85rem;font-weight:700;color:#f59e0b;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);border-radius:50px;padding:0.3rem 0.9rem;margin-bottom:0.8rem"></div>
         <div class="public-stats">
           <div class="public-stat">
             <strong id="pubStatPlan"></strong>
@@ -471,6 +472,10 @@
       }
 
       document.getElementById('pubName').textContent = u.name;
+      if (u.streak > 1) {
+        const sb = document.getElementById('pubStreakBadge');
+        if (sb) { sb.innerHTML = '<i class="fas fa-fire"></i> ' + u.streak + ' jours consécutifs'; sb.style.display = 'inline-flex'; }
+      }
       document.getElementById('pubPlanBadge').textContent = 'Plan ' + u.plan;
       document.getElementById('pubBio').textContent = u.bio || 'Aucune bio renseignée.';
 

@@ -1120,6 +1120,7 @@ app.get('/api/users/:id', async (req, res) => {
       bio: user.bio || '', location: user.location || '', website: user.website || '',
       createdAt: user.createdAt, role: user.role,
       postCount: posts.length,
+      streak: user.streak || 0,
       followingPrivacy: user.followingPrivacy || 'public'
     });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
@@ -1377,6 +1378,7 @@ app.post('/api/presence/ping', requireAuth, (req, res) => {
   _presenceMap.set(req.user.id, now);
   // Persister en base pour survivre aux redémarrages
   db.updateLastSeen(req.user.id, now).catch(() => {});
+  db.updateStreak(req.user.id).catch(() => {});
   res.json({ ok: true });
 });
 

@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 //  migrations.js — Migrations automatiques au démarrage
 //  Toutes les migrations sont idempotentes (IF NOT EXISTS)
 // ============================================================
@@ -54,6 +54,7 @@ async function runMigrations(pool) {
     await pool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_msg_reactions_msg ON message_reactions(message_id)`);
   });
+
   // private_messages : reply_to_id
   await run('private_messages.reply_to_id', async () => {
     await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES private_messages(id) ON DELETE SET NULL`);
@@ -98,6 +99,7 @@ async function runMigrations(pool) {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_user ON ebook_purchases(user_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_ebook ON ebook_purchases(ebook_id)`);
   });
+
   // stories
   await run('stories', async () => {
     await pool.query(`CREATE TABLE IF NOT EXISTS stories (
@@ -121,6 +123,12 @@ async function runMigrations(pool) {
       viewed_at  TIMESTAMPTZ DEFAULT NOW(),
       PRIMARY KEY (story_id, user_id)
     )`);
+  });
+
+  // streak d'activité
+  await run('users.streak', async () => {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0`);
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_date DATE DEFAULT NULL`);
   });
 }
 
