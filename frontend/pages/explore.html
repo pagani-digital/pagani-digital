@@ -220,11 +220,17 @@
         const state = _followStates[u.id] || { following: false, isAdmin: false };
         let followBtn = '';
         if (!_currentUser) {
-          followBtn = '<button class="explore-follow-btn follow" onclick="window.location.href=\'dashboard.html\'"><i class="fas fa-user-plus"></i> Suivre</button>';
+          followBtn = '<button class="explore-follow-btn follow" onclick="event.stopPropagation();window.location.href=\'dashboard.html\'"><i class="fas fa-user-plus"></i> Suivre</button>';
         } else if (state.following && state.isAdmin) {
-          followBtn = '<button class="explore-follow-btn admin-locked" disabled title="Vous ne pouvez pas vous désabonner de l\'admin"><i class="fas fa-lock"></i> Suivi</button>';
+          followBtn = `<div style="display:flex;gap:0.5rem">
+            <button class="explore-follow-btn admin-locked" style="flex:1" disabled><i class="fas fa-lock"></i> Suivi</button>
+            <a href="profil.html?id=${u.id}" class="explore-follow-btn following" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
+          </div>`;
         } else if (state.following) {
-          followBtn = `<button class="explore-follow-btn following" onclick="toggleFollowExplore(${u.id}, this)"><i class="fas fa-user-check"></i> Suivi</button>`;
+          followBtn = `<div style="display:flex;gap:0.5rem">
+            <button class="explore-follow-btn following" style="flex:1" onclick="toggleFollowExplore(${u.id}, this)"><i class="fas fa-user-check"></i> Suivi</button>
+            <a href="profil.html?id=${u.id}" class="explore-follow-btn follow" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
+          </div>`;
         } else {
           followBtn = `<button class="explore-follow-btn follow" onclick="toggleFollowExplore(${u.id}, this)"><i class="fas fa-user-plus"></i> Suivre</button>`;
         }
@@ -271,52 +277,43 @@
     }
 
     async function toggleFollowExplore(userId, btn) {
-      if (!_currentUser) {
-        window.location.href = 'dashboard.html';
-        return;
-      }
+      event.stopPropagation();
+      if (!_currentUser) { window.location.href = 'dashboard.html'; return; }
 
-      // Bloquer si admin déjà suivi
       const state = _followStates[userId] || {};
       if (state.following && state.isAdmin) return;
 
       btn.disabled = true;
-      const wasFollowing = state.following;
-
       try {
         const res = await PaganiAPI.toggleFollow(userId);
         _followStates[userId] = { ..._followStates[userId], following: res.following };
 
-        // Mettre à jour le bouton
-        if (res.following) {
-          btn.className = 'explore-follow-btn following';
-          btn.innerHTML = '<i class="fas fa-user-check"></i> Suivi';
-        } else {
-          btn.className = 'explore-follow-btn follow';
-          btn.innerHTML = '<i class="fas fa-user-plus"></i> Suivre';
-        }
-
-        // Mettre à jour le compteur followers
+        // Mettre à jour le compteur followers dans le cache
         const user = _allUsers.find(u => u.id === userId);
-        if (user) {
-          user.followers = (user.followers || 0) + (res.following ? 1 : -1);
-          if (user.followers < 0) user.followers = 0;
-        }
+        if (user) user.followers = (user.followers || 0) + (res.following ? 1 : -1);
 
-        btn.disabled = false;
+        // Remplacer le bouton par le bon état
+        const wrap = btn.closest('.explore-card');
+        const btnArea = btn.parentElement;
+        if (res.following) {
+          btnArea.innerHTML = `<div style="display:flex;gap:0.5rem">
+            <button class="explore-follow-btn following" style="flex:1" onclick="toggleFollowExplore(${userId}, this)"><i class="fas fa-user-check"></i> Suivi</button>
+            <a href="profil.html?id=${userId}" class="explore-follow-btn follow" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
+          </div>`;
+        } else {
+          btnArea.innerHTML = `<button class="explore-follow-btn follow" onclick="toggleFollowExplore(${userId}, this)"><i class="fas fa-user-plus"></i> Suivre</button>`;
+        }
       } catch(e) {
         if (e.message === 'CANNOT_UNFOLLOW_ADMIN') {
           _followStates[userId] = { following: true, isAdmin: true };
-          btn.className = 'explore-follow-btn admin-locked';
-          btn.innerHTML = '<i class="fas fa-lock"></i> Suivi';
-          btn.disabled = true;
+          btn.parentElement.innerHTML = `<div style="display:flex;gap:0.5rem">
+            <button class="explore-follow-btn admin-locked" style="flex:1" disabled><i class="fas fa-lock"></i> Suivi</button>
+            <a href="profil.html?id=${userId}" class="explore-follow-btn follow" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
+          </div>`;
         } else {
           btn.disabled = false;
         }
       }
-
-      // Empêcher la propagation du clic vers la carte
-      event.stopPropagation();
     }
   </script>
 </body>
