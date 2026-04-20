@@ -108,13 +108,16 @@ function _renderStoryViewer() {
       <div class="story-viewer-content">${content}</div>
       ${_storyViewerIdx > 0 ? '<button class="story-nav-btn story-nav-prev" onclick="_storyNav(-1)"><i class="fas fa-chevron-left"></i></button>' : ''}
       ${_storyViewerIdx < group.stories.length - 1 ? '<button class="story-nav-btn story-nav-next" onclick="_storyNav(1)"><i class="fas fa-chevron-right"></i></button>' : ''}
-      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : ''}
+      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><span id="storyReactCountLabel"></span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : `<div class="story-react-bar" id="storyReactBar"></div>`}
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeStoryViewer(); });
   document.body.appendChild(overlay);
 
   // Polling du compteur de vues pour le créateur
   if (isOwn) _pollStoryViewCount(story.id);
+
+  // Charger les reactions
+  _loadStoryReactions(story.id);
 
   // Barre de progression
   clearTimeout(_storyTimer);
@@ -293,6 +296,96 @@ function _storyTimeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
   if (diff < 3600) return Math.floor(diff/60) + ' min';
   return Math.floor(diff/3600) + 'h';
+}
+
+// ===== STORY REACTIONS =====
+var STORY_EMOJIS = ['\u2764\uFE0F','\uD83D\uDD25','\uD83D\uDE0D','\uD83D\uDC4F','\uD83D\uDE2E','\uD83D\uDE02'];
+var _myStoryReaction = null;
+
+async function _loadStoryReactions(storyId) {
+  var bar = document.getElementById('storyReactBar');
+  var ownerLabel = document.getElementById('storyReactCountLabel');
+  var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  var counts = [];
+  try { var r = await fetch(API + '/stories/' + storyId + '/reactions'); counts = await r.json(); } catch(e) {}
+  if (ownerLabel) {
+    var total = counts.reduce(function(s,r){return s+parseInt(r.count);},0);
+    var top = counts.slice(0,3).map(function(r){return r.emoji+' '+r.count;}).join('  ');
+    ownerLabel.innerHTML = total > 0 ? '<i class="fas fa-heart" style="color:#ff4d6d"></i> ' + top : '';
+    return;
+  }
+  if (!bar) return;
+  _myStoryReaction = null;
+  if (token) {
+    try {
+      var mr = await fetch(API + '/stories/' + storyId + '/my-reaction', { headers: { 'Authorization': 'Bearer ' + token } });
+      var md = await mr.json();
+      _myStoryReaction = md.emoji || null;
+    } catch(e) {}
+  }
+  _renderStoryReactBar(bar, storyId);
+}
+
+function _renderStoryReactBar(bar, storyId) {
+  bar.innerHTML = '<button class="story-react-btn' + (_myStoryReaction ? ' reacted' : '') + '" onclick="toggleStoryEmojiPicker(' + storyId + ', this)">' + (_myStoryReaction || '\u2764\uFE0F') + '</button>';
+}
+
+function toggleStoryEmojiPicker(storyId, btn) {
+  var existing = document.getElementById('storyEmojiPicker');
+  if (existing) { existing.remove(); return; }
+  if (!getUser()) { window.location.href = 'dashboard.html'; return; }
+  var picker = document.createElement('div');
+  picker.id = 'storyEmojiPicker';
+  picker.className = 'story-emoji-picker';
+  picker.innerHTML = STORY_EMOJIS.map(function(e) {
+    return '<button class="story-emoji-opt' + (_myStoryReaction === e ? ' active' : '') + '" onclick="reactToStory(' + storyId + ', \'' + e + '\', this)">' + e + '</button>';
+  }).join('');
+  btn.parentElement.appendChild(picker);
+  setTimeout(function() {
+    document.addEventListener('click', function _close(ev) {
+      if (!picker.contains(ev.target) && ev.target !== btn) { picker.remove(); document.removeEventListener('click', _close); }
+    });
+  }, 50);
+}
+
+async function reactToStory(storyId, emoji, btn) {
+  var ep = document.getElementById('storyEmojiPicker'); if (ep) ep.remove();
+  var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  if (!token) { window.location.href = 'dashboard.html'; return; }
+  try {
+    var r = await fetch(API + '/stories/' + storyId + '/react', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ emoji: emoji })
+    });
+    var d = await r.json();
+    _myStoryReaction = d.action === 'removed' ? null : emoji;
+    if (d.action !== 'removed') _launchStoryEmojiAnim(emoji);
+    await _loadStoryReactions(storyId);
+    var bar = document.getElementById('storyReactBar');
+    if (bar) _renderStoryReactBar(bar, storyId);
+  } catch(e) {}
+}
+
+function _launchStoryEmojiAnim(emoji) {
+  var viewer = document.querySelector('.story-viewer');
+  if (!viewer) return;
+  for (var i = 0; i < 8; i++) {
+    (function(idx) {
+      setTimeout(function() {
+        var el = document.createElement('div');
+        el.className = 'story-emoji-fly';
+        el.textContent = emoji;
+        el.style.left = (20 + Math.random() * 60) + '%';
+        el.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
+        el.style.fontSize = (1.2 + Math.random() * 1) + 'rem';
+        viewer.appendChild(el);
+        el.addEventListener('animationend', function() { el.remove(); });
+      }, idx * 80);
+    })(i);
+  }
 }
 
 // ===== BADGES =====

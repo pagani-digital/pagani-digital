@@ -949,6 +949,73 @@ app.get('/api/stories/:id/views-count', requireAuth, async (req, res) => {
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
+// GET ma réaction sur une story
+app.get('/api/stories/:id/my-reaction', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const r = await _migPool.query(
+      `SELECT emoji FROM story_reactions WHERE story_id=$1 AND user_id=$2`,
+      [id, req.user.id]
+    );
+    res.json({ emoji: r.rows[0]?.emoji || null });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// POST réagir à une story (toggle)
+app.post('/api/stories/:id/react', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const { emoji } = req.body;
+    if (!emoji) return res.status(400).json({ error: 'EMOJI_REQUIS' });
+    // Vérifier que la story existe
+    const storyCheck = await _migPool.query(`SELECT user_id FROM stories WHERE id=$1 AND expires_at > NOW()`, [id]);
+    if (!storyCheck.rows.length) return res.status(404).json({ error: 'STORY_INTROUVABLE' });
+    const storyOwnerId = storyCheck.rows[0].user_id;
+    // Toggle : si déjà réagi avec le même emoji, supprimer
+    const existing = await _migPool.query(
+      `SELECT id FROM story_reactions WHERE story_id=$1 AND user_id=$2`,
+      [id, req.user.id]
+    );
+    if (existing.rows.length) {
+      if (existing.rows[0].emoji === emoji) {
+        await _migPool.query(`DELETE FROM story_reactions WHERE story_id=$1 AND user_id=$2`, [id, req.user.id]);
+        return res.json({ action: 'removed', emoji });
+      }
+      await _migPool.query(`UPDATE story_reactions SET emoji=$3, created_at=NOW() WHERE story_id=$1 AND user_id=$2`, [id, req.user.id, emoji]);
+    } else {
+      await _migPool.query(
+        `INSERT INTO story_reactions (story_id, user_id, emoji) VALUES ($1,$2,$3)`,
+        [id, req.user.id, emoji]
+      );
+      // Notifier le créateur
+      if (storyOwnerId !== req.user.id) {
+        const reactor = await db.getUserById(req.user.id);
+        await db.createNotification({
+          userId: storyOwnerId, type: 'REACTION',
+          message: `${reactor?.name} a réagi ${emoji} à votre story.`,
+          link: 'index.html'
+        });
+      }
+    }
+    res.json({ action: 'added', emoji });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// GET réactions d'une story
+app.get('/api/stories/:id/reactions', async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const r = await _migPool.query(
+      `SELECT emoji, COUNT(*) as count FROM story_reactions WHERE story_id=$1 GROUP BY emoji ORDER BY count DESC`,
+      [id]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 // DELETE supprimer sa propre story
 app.delete('/api/stories/:id', requireAuth, async (req, res) => {
   try {
@@ -1431,6 +1498,18 @@ async function runMigrations() {
     await _migPool.query(`CREATE TABLE IF NOT EXISTS message_reactions (id SERIAL PRIMARY KEY, message_id INTEGER NOT NULL REFERENCES private_messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW(), UNIQUE(message_id, user_id))`);
     await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_msg_reactions_message ON message_reactions(message_id)`);
   } catch(e) { console.error('migrate message_reactions:', e.message); }
+  // Migration réactions stories
+  try {
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS story_reactions (
+      id SERIAL PRIMARY KEY,
+      story_id INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      emoji TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(story_id, user_id)
+    )`);
+    await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_story_reactions_story ON story_reactions(story_id)`);
+  } catch(e) { console.error('migrate story_reactions:', e.message); }
 }
 
 app.listen(PORT, '0.0.0.0', async () => {
