@@ -98,6 +98,30 @@ async function runMigrations(pool) {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_user ON ebook_purchases(user_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ebook_purchases_ebook ON ebook_purchases(ebook_id)`);
   });
+  // stories
+  await run('stories', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS stories (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content    TEXT DEFAULT '',
+      image      TEXT DEFAULT '',
+      bg_color   TEXT DEFAULT '#6c63ff',
+      expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '24 hours'),
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_stories_user ON stories(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_stories_expires ON stories(expires_at)`);
+  });
+
+  // story_views
+  await run('story_views', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS story_views (
+      story_id   INTEGER NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      viewed_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (story_id, user_id)
+    )`);
+  });
 }
 
 module.exports = { runMigrations };

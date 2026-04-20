@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pagani Digital</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
+  <link rel="stylesheet" href="/css/style.css?v=1776608500000" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     .post-hashtag { color:var(--accent); font-weight:600; text-decoration:none; cursor:pointer; transition:opacity 0.15s; }
@@ -165,7 +165,10 @@
       <!-- COLONNE CENTRALE : fil de posts -->
       <main class="feed-main">
 
-        <!-- PANNEAU PUBLICATION UTILISATEUR -->
+        <!-- STORIES -->
+      <div id="storiesBar" class="stories-bar" style="display:none"></div>
+
+      <!-- PANNEAU PUBLICATION UTILISATEUR -->
         <div id="userPostPanel" class="user-post-panel" style="display:none">
           <div class="user-post-header">
             <div class="avatar-circle avatar-sm" id="userPostAvatar"></div>
@@ -365,6 +368,7 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
 
       const user = await refreshCurrentUser();
       await renderFeed();
+      await loadStories();
       // Hashtags tendance
       if (_postsCache.length) {
         renderTrendingHashtags(_postsCache);

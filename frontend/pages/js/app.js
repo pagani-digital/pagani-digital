@@ -1,3 +1,300 @@
+// ===== STORIES =====
+const STORY_COLORS = ['#6c63ff','#00d4aa','#ff4d6d','#f59e0b','#8b5cf6','#1877f2','#25d366','#e91e8c'];
+const STORY_DURATION = 5000;
+let _storiesData = [];
+let _storyViewerGroup = null;
+let _storyViewerIdx = 0;
+let _storyTimer = null;
+
+async function loadStories() {
+  const bar = document.getElementById('storiesBar');
+  if (!bar) return;
+  try {
+    const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    const token = localStorage.getItem('pd_jwt');
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    _storiesData = await fetch(API + '/stories', { headers }).then(r => r.json());
+  } catch(e) { _storiesData = []; }
+
+  const user = getUser();
+  let html = '';
+
+  // Bouton ajouter story (si connecté)
+  if (user) {
+    html += `<div class="story-bubble" onclick="openCreateStory()">
+      <div class="story-add-wrap"><div class="story-add-icon">+</div></div>
+      <span class="story-name">Ma story</span>
+    </div>`;
+  }
+
+  // Stories (toutes, y compris les siennes)
+  _storiesData.forEach((group, gi) => {
+    const isOwn = user && group.userId === user.id;
+    const av = group.avatarPhoto
+      ? `<img src="${group.avatarPhoto}" />`
+      : `<div class="avatar-circle" style="background:${group.avatarColor||'#6c63ff'}">${group.userName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>`;
+    const viewCount = group.viewCount || 0;
+    html += `<div class="story-bubble" onclick="openStoryViewer(${gi})">
+      <div class="story-ring${group.allViewed?' viewed':''}">
+        <div class="story-ring-inner">${av}</div>
+      </div>
+      <span class="story-name">${isOwn ? 'Ma story' : group.userName.split(' ')[0]}</span>
+      ${isOwn && viewCount > 0 ? `<span class="story-view-count"><i class="fas fa-eye"></i> ${viewCount}</span>` : ''}
+    </div>`;
+  });
+
+  bar.innerHTML = html;
+  bar.style.display = (_storiesData.length > 0 || user) ? 'flex' : 'none';
+}
+
+function openStoryViewer(groupIdx) {
+  _storyViewerGroup = groupIdx;
+  _storyViewerIdx = 0;
+  _renderStoryViewer();
+}
+
+function _renderStoryViewer() {
+  document.getElementById('storyViewerOverlay')?.remove();
+  const group = _storiesData[_storyViewerGroup];
+  if (!group) return;
+  const story = group.stories[_storyViewerIdx];
+  const user = getUser();
+  const isOwn = user && group.userId === user.id;
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+
+  // Marquer comme vue (seulement si pas le créateur et pas déjà vue)
+  if (user && !isOwn && !story.viewed) {
+    fetch(API + '/stories/' + story.id + '/view', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt')
+      }
+    }).then(r => r.json()).then(d => {
+      if (d.ok) {
+        story.viewed = true;
+        group.allViewed = group.stories.every(s => s.viewed);
+      }
+    }).catch(() => {});
+  }
+
+  const avInner = group.avatarPhoto
+    ? `<img src="${group.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
+    : `<span style="font-size:0.85rem;font-weight:700;color:#fff">${group.userName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</span>`;
+
+  const timeAgoStr = _storyTimeAgo(story.createdAt);
+  const content = story.image
+    ? `<img src="${story.image}" />`
+    : `<div class="story-viewer-text">${story.content}</div>`;
+
+  const segs = group.stories.map((s, i) => {
+    const fill = i < _storyViewerIdx ? 'width:100%' : (i === _storyViewerIdx ? 'width:0%;transition:width '+STORY_DURATION+'ms linear' : 'width:0%');
+    return `<div class="story-progress-seg"><div class="story-progress-fill" id="spf-${i}" style="${fill}"></div></div>`;
+  }).join('');
+
+  const viewCount = story.viewCount || 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'storyViewerOverlay';
+  overlay.className = 'story-viewer-overlay';
+  overlay.innerHTML = `
+    <div class="story-viewer" style="background:${story.image ? '#000' : story.bgColor}">
+      <div class="story-progress-bar">${segs}</div>
+      <div class="story-viewer-header">
+        ${isOwn ? `<div class="story-viewer-avatar">${avInner}</div><span class="story-viewer-name">${group.userName}</span>` : `<a href="profil.html?id=${group.userId}" class="story-viewer-profile-link" onclick="closeStoryViewer()"><div class="story-viewer-avatar">${avInner}</div><span class="story-viewer-name">${group.userName}</span></a>`}
+        <span class="story-viewer-time">${timeAgoStr}</span>
+        <button class="story-viewer-close" onclick="closeStoryViewer()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="story-viewer-content">${content}</div>
+      ${_storyViewerIdx > 0 ? '<button class="story-nav-btn story-nav-prev" onclick="_storyNav(-1)"><i class="fas fa-chevron-left"></i></button>' : ''}
+      ${_storyViewerIdx < group.stories.length - 1 ? '<button class="story-nav-btn story-nav-next" onclick="_storyNav(1)"><i class="fas fa-chevron-right"></i></button>' : ''}
+      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : ''}
+    </div>`;
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeStoryViewer(); });
+  document.body.appendChild(overlay);
+
+  // Polling du compteur de vues pour le créateur
+  if (isOwn) _pollStoryViewCount(story.id);
+
+  // Barre de progression
+  clearTimeout(_storyTimer);
+  setTimeout(() => {
+    const fill = document.getElementById('spf-' + _storyViewerIdx);
+    if (fill) fill.style.width = '100%';
+  }, 50);
+  _storyTimer = setTimeout(() => _storyNav(1), STORY_DURATION);
+}
+
+function _storyNav(dir) {
+  clearTimeout(_storyTimer);
+  const group = _storiesData[_storyViewerGroup];
+  if (!group) return;
+  const next = _storyViewerIdx + dir;
+  if (next >= 0 && next < group.stories.length) {
+    _storyViewerIdx = next;
+    _renderStoryViewer();
+  } else if (dir > 0 && _storyViewerGroup < _storiesData.length - 1) {
+    _storyViewerGroup++;
+    _storyViewerIdx = 0;
+    _renderStoryViewer();
+  } else {
+    closeStoryViewer();
+  }
+}
+
+let _storyViewCountTimer = null;
+function closeStoryViewer() {
+  clearTimeout(_storyTimer);
+  clearInterval(_storyViewCountTimer);
+  _storyViewCountTimer = null;
+  document.getElementById('storyViewerOverlay')?.remove();
+}
+
+function _pollStoryViewCount(storyId) {
+  clearInterval(_storyViewCountTimer);
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  const token = localStorage.getItem('pd_jwt');
+  const update = () => {
+    const label = document.getElementById('storyViewCountLabel');
+    if (!label) { clearInterval(_storyViewCountTimer); return; }
+    fetch(API + '/stories/' + storyId + '/views-count', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json()).then(d => {
+      const n = d.count || 0;
+      _storyViewers = d.viewers || [];
+      label.innerHTML = '<i class="fas fa-eye"></i> ' + n + ' vue' + (n > 1 ? 's' : '');
+    }).catch(() => {});
+  };
+  update();
+  _storyViewCountTimer = setInterval(update, 5000);
+}
+
+let _storyViewers = [];
+function openStoryViewers() {
+  document.getElementById('storyViewersModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'storyViewersModal';
+  modal.className = 'story-viewers-modal';
+  const total = _storyViewers.length;
+  const followers = _storyViewers.filter(v => v.name);
+  const anonCount = total - followers.length;
+
+  const followerItems = followers.map(v => {
+    const initials = v.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const av = v.avatar_photo
+      ? `<img src="${v.avatar_photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
+      : `<span style="font-size:0.75rem;font-weight:700;color:#fff">${initials}</span>`;
+    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="document.getElementById('storyViewersModal').remove()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span></a>`;
+  }).join('');
+
+  const emptyMsg = total === 0
+    ? '<p style="color:var(--text2);text-align:center;padding:1.5rem;font-size:0.85rem">Aucune vue pour l\'instant.</p>'
+    : '';
+
+  const anonFooter = anonCount > 0
+    ? `<div class="story-viewers-anon"><i class="fas fa-eye-slash"></i> ${anonCount} autre${anonCount>1?'s':''} personne${anonCount>1?'s':''} ${anonCount>1?'ont':'a'} vu cette story</div>`
+    : '';
+
+  modal.innerHTML = `<div class="story-viewers-box"><div class="story-viewers-header"><span><i class="fas fa-eye"></i> ${total} vue${total>1?'s':''}</span><button onclick="document.getElementById('storyViewersModal').remove()" style="background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer">&times;</button></div><div class="story-viewers-list">${followerItems}${emptyMsg}</div>${anonFooter}</div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+function openCreateStory() {
+  document.getElementById('storyCreateModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'storyCreateModal';
+  modal.className = 'story-create-modal';
+  let selectedColor = STORY_COLORS[0];
+  let imageBase64 = '';
+
+  modal.innerHTML = `
+    <div class="story-create-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 style="margin:0;font-size:1rem"><i class="fas fa-plus-circle" style="color:var(--accent)"></i> Nouvelle story</h3>
+        <button onclick="document.getElementById('storyCreateModal').remove()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
+      </div>
+      <div class="story-create-preview" id="storyPreview" style="background:${selectedColor}">
+        <span id="storyPreviewText" style="color:#fff;font-size:1rem;opacity:0.5">Aperçu...</span>
+      </div>
+      <div class="story-colors" id="storyColors">
+        ${STORY_COLORS.map((c,i) => `<button class="story-color-btn${i===0?' active':''}" style="background:${c}" onclick="_selectStoryColor('${c}',this)"></button>`).join('')}
+      </div>
+      <textarea id="storyText" placeholder="Écrivez votre statut..." rows="3"
+        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:0.7rem;font-size:0.9rem;font-family:inherit;resize:none;margin-bottom:0.8rem"
+        oninput="_updateStoryPreview()"></textarea>
+      <div style="display:flex;gap:0.6rem;margin-bottom:0.8rem">
+        <label class="admin-media-btn" for="storyImageInput" style="flex:1;justify-content:center">
+          <i class="fas fa-image"></i> Photo
+        </label>
+        <input type="file" id="storyImageInput" accept="image/*" style="display:none" onchange="_previewStoryImage(this)" />
+      </div>
+      <div style="display:flex;gap:0.6rem">
+        <button onclick="document.getElementById('storyCreateModal').remove()" class="btn-outline" style="flex:1;padding:0.6rem">Annuler</button>
+        <button onclick="submitStory()" class="btn-primary" style="flex:1;padding:0.6rem"><i class="fas fa-paper-plane"></i> Publier</button>
+      </div>
+      <p id="storyCreateMsg" style="font-size:0.8rem;min-height:1rem;margin-top:0.5rem;text-align:center"></p>
+    </div>`;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+
+function _selectStoryColor(color, btn) {
+  document.querySelectorAll('.story-color-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const preview = document.getElementById('storyPreview');
+  if (preview && !preview.querySelector('img')) preview.style.background = color;
+  window._storySelectedColor = color;
+}
+
+function _updateStoryPreview() {
+  const text = document.getElementById('storyText')?.value || '';
+  const preview = document.getElementById('storyPreview');
+  if (!preview) return;
+  const img = preview.querySelector('img');
+  if (!img) {
+    const span = document.getElementById('storyPreviewText');
+    if (span) { span.textContent = text || 'Aperçu...'; span.style.opacity = text ? '1' : '0.5'; }
+  }
+}
+
+function _previewStoryImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    window._storyImageBase64 = e.target.result;
+    const preview = document.getElementById('storyPreview');
+    if (preview) preview.innerHTML = `<img src="${e.target.result}" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitStory() {
+  const content = document.getElementById('storyText')?.value.trim() || '';
+  const image = window._storyImageBase64 || '';
+  const bgColor = window._storySelectedColor || STORY_COLORS[0];
+  const msg = document.getElementById('storyCreateMsg');
+  if (!content && !image) { msg.style.color='var(--red)'; msg.textContent='Ajoutez du texte ou une image.'; return; }
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  try {
+    await fetch(API + '/stories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
+      body: JSON.stringify({ content, image, bgColor })
+    });
+    window._storyImageBase64 = '';
+    document.getElementById('storyCreateModal')?.remove();
+    await loadStories();
+  } catch(e) { msg.style.color='var(--red)'; msg.textContent='Erreur lors de la publication.'; }
+}
+
+function _storyTimeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 3600) return Math.floor(diff/60) + ' min';
+  return Math.floor(diff/3600) + 'h';
+}
+
 // ===== BADGES =====
 function _buildBadgesHTML(badges) {
   if (!badges || !badges.length) return '';
@@ -1897,6 +2194,7 @@ function showDashboard(user) {
   renderProgress();
   updateAffiliateStats(user);
   renderProfile(user);
+  loadStories();
 }
 // ===== COMPTES MOBILE MONEY =====
 function _renderWithdrawMmSelector(user) {

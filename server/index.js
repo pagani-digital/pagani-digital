@@ -862,6 +862,104 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
+//  STORIES
+// ══════════════════════════════════════════════════════════
+// GET toutes les stories actives (non expirées) groupées par user
+app.get('/api/stories', optionalAuth, async (req, res) => {
+  try {
+    const result = await _migPool.query(`
+      SELECT s.id, s.user_id, s.content, s.image, s.bg_color, s.expires_at, s.created_at,
+             u.name as user_name, u.avatar_color, u.avatar_photo,
+             EXISTS(SELECT 1 FROM story_views sv WHERE sv.story_id=s.id AND sv.user_id=$1) as viewed,
+             (SELECT COUNT(*) FROM story_views sv2 WHERE sv2.story_id=s.id) as view_count
+      FROM stories s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.expires_at > NOW()
+      ORDER BY s.created_at DESC
+    `, [req.user ? req.user.id : 0]);
+    // Grouper par user
+    const map = new Map();
+    result.rows.forEach(s => {
+      if (!map.has(s.user_id)) {
+        map.set(s.user_id, {
+          userId: s.user_id, userName: s.user_name,
+          avatarColor: s.avatar_color, avatarPhoto: s.avatar_photo || '',
+          stories: [], allViewed: true, viewCount: 0
+        });
+      }
+      const g = map.get(s.user_id);
+      g.stories.push({ id: s.id, content: s.content, image: s.image, bgColor: s.bg_color, expiresAt: s.expires_at, createdAt: s.created_at, viewed: s.viewed, viewCount: parseInt(s.view_count) || 0 });
+      if (!s.viewed) g.allViewed = false;
+      g.viewCount += parseInt(s.view_count) || 0;
+    });
+    res.json([...map.values()]);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// POST créer une story
+app.post('/api/stories', requireAuth, async (req, res) => {
+  const { content, image, bgColor } = req.body;
+  if (!content && !image) return res.status(400).json({ error: 'CONTENU_VIDE' });
+  try {
+    const r = await _migPool.query(
+      `INSERT INTO stories (user_id, content, image, bg_color) VALUES ($1,$2,$3,$4) RETURNING *`,
+      [req.user.id, content || '', image || '', bgColor || '#6c63ff']
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// POST marquer une story comme vue
+app.post('/api/stories/:id/view', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    await _migPool.query(
+      `INSERT INTO story_views (story_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+      [id, req.user.id]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// GET vues d'une story avec identité conditionnelle (follower = identifié, sinon anonyme)
+app.get('/api/stories/:id/views-count', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    // Vérifier que c'est bien la story du demandeur
+    const storyCheck = await _migPool.query(`SELECT user_id FROM stories WHERE id=$1`, [id]);
+    if (!storyCheck.rows.length || storyCheck.rows[0].user_id !== req.user.id)
+      return res.status(403).json({ error: 'INTERDIT' });
+    // Récupérer les viewers avec info conditionnelle
+    const r = await _migPool.query(`
+      SELECT
+        sv.user_id,
+        sv.viewed_at,
+        CASE WHEN f.follower_id IS NOT NULL THEN u.name ELSE NULL END AS name,
+        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_photo ELSE NULL END AS avatar_photo,
+        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_color ELSE NULL END AS avatar_color
+      FROM story_views sv
+      JOIN users u ON u.id = sv.user_id
+      LEFT JOIN follows f ON f.follower_id = sv.user_id AND f.following_id = $2
+      WHERE sv.story_id = $1
+      ORDER BY sv.viewed_at DESC
+    `, [id, req.user.id]);
+    res.json({ count: r.rows.length, viewers: r.rows });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// DELETE supprimer sa propre story
+app.delete('/api/stories/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const r = await _migPool.query(`DELETE FROM stories WHERE id=$1 AND user_id=$2 RETURNING id`, [id, req.user.id]);
+    if (!r.rowCount) return res.status(403).json({ error: 'INTERDIT' });
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+// ══════════════════════════════════════════════════════════
 //  BADGES
 // ══════════════════════════════════════════════════════════
 function computeBadges(user, postCount) {
