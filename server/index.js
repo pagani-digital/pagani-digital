@@ -938,10 +938,12 @@ app.get('/api/stories/:id/views-count', requireAuth, async (req, res) => {
         sv.viewed_at,
         CASE WHEN f.follower_id IS NOT NULL THEN u.name ELSE NULL END AS name,
         CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_photo ELSE NULL END AS avatar_photo,
-        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_color ELSE NULL END AS avatar_color
+        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_color ELSE NULL END AS avatar_color,
+        sr.emoji
       FROM story_views sv
       JOIN users u ON u.id = sv.user_id
       LEFT JOIN follows f ON f.follower_id = sv.user_id AND f.following_id = $2
+      LEFT JOIN story_reactions sr ON sr.story_id = sv.story_id AND sr.user_id = sv.user_id
       WHERE sv.story_id = $1
       ORDER BY sv.viewed_at DESC
     `, [id, req.user.id]);

@@ -187,7 +187,8 @@ function openStoryViewers() {
     const av = v.avatar_photo
       ? `<img src="${v.avatar_photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
       : `<span style="font-size:0.75rem;font-weight:700;color:#fff">${initials}</span>`;
-    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="document.getElementById('storyViewersModal').remove()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span></a>`;
+    const reactionBadge = v.emoji ? `<span class="story-viewer-reaction">${v.emoji}</span>` : '';
+    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="document.getElementById('storyViewersModal').remove()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span>${reactionBadge}</a>`;
   }).join('');
 
   const emptyMsg = total === 0

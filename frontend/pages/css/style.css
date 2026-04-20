@@ -9310,3 +9310,10 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   gap: 0.6rem;
   align-items: center;
 }
+
+.story-viewer-reaction {
+  margin-left: auto;
+  font-size: 1.2rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
