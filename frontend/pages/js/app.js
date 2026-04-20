@@ -949,10 +949,15 @@ function buildPostCard(post, user, isAdmin) {
             <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
             <div class="post-menu-dropdown" id="post-menu-${post.id}" style="display:none">
               <button onclick="openEditPostModal(${post.id})"><i class="fas fa-edit"></i> Modifier</button>
+              <button onclick="toggleBoostPost(${post.id}, ${post.boostScore || 0}, null)" style="color:var(--gold)"><i class="fas fa-rocket"></i> ${post.boostScore > 0 ? 'Retirer le boost' : 'Booster'}</button>
               <button onclick="deletePost(${post.id})" style="color:var(--red)"><i class="fas fa-trash"></i> Supprimer</button>
             </div>
           </div>` : ""}
-        ${isAdmin && post.authorId !== user.id ? `<button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>` : ""}
+        ${isAdmin && post.authorId !== user.id ? `
+          <div style="display:flex;gap:0.4rem;align-items:center">
+            <button class="news-delete" onclick="toggleBoostPost(${post.id}, ${post.boostScore || 0}, this)" title="${post.boostScore > 0 ? 'Boosté (' + post.boostScore + 'pts) — cliquer pour retirer' : 'Booster ce post'}" style="background:${post.boostScore > 0 ? 'rgba(245,158,11,0.15)' : 'transparent'};color:${post.boostScore > 0 ? 'var(--gold)' : 'var(--text2)'};border:1px solid ${post.boostScore > 0 ? 'rgba(245,158,11,0.4)' : 'var(--border)'};border-radius:8px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.8rem"><i class="fas fa-rocket"></i></button>
+            <button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
+          </div>` : ""}
         ${(!isAdmin && user && post.authorId === user.id) ? `
           <div class="post-owner-menu" style="position:relative">
             <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
@@ -964,7 +969,7 @@ function buildPostCard(post, user, isAdmin) {
       </div>
     </div>
     <div class="post-body">
-      <h3 class="post-title">${post.title}</h3>
+      <h3 class="post-title">${post.title}${post.boostScore > 0 && isAdmin ? ' <span style="font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle">🚀 Boosté</span>' : ''}</h3>
       <div class="post-content">${formatPostContent(post.content)}</div>
       ${post.image === '__HAS_IMAGE__'
         ? `<div class="post-image-wrap"><img data-postid="${post.id}" data-lazy="1" src="" class="post-image post-image-lazy" alt="" style="min-height:180px;background:var(--bg2)" /></div>`
@@ -1019,7 +1024,7 @@ function buildPostCard(post, user, isAdmin) {
              </div>
              <div class="comment-input-wrap">
                <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('comment-input-'+${post.id}, this)" title="Emoji"><i class="fas fa-smile"></i></button>
-               <input type="text" id="comment-input-${post.id}" placeholder="ecrire un commentaire..."
+               <input type="text" id="comment-input-${post.id}" placeholder="Écrire un commentaire..."
                  onkeydown="if(event.key==='Enter') submitComment(${post.id})" />
                <button onclick="submitComment(${post.id})"><i class="fas fa-paper-plane"></i></button>
              </div>
@@ -1402,6 +1407,60 @@ async function publishNews(e) {
     }
   } catch(e) { alert('Erreur serveur : ' + e.message); }
 }
+async function toggleBoostPost(postId, currentBoost, btn) {
+  const isBoosted = currentBoost > 0;
+  const newScore  = isBoosted ? 0 : 50;
+  try {
+    const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+    const token = localStorage.getItem('pd_jwt');
+    await fetch(`${API}/admin/posts/${postId}/boost`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ boostScore: newScore })
+    });
+    // Mettre à jour le cache
+    const post = _postsCache.find(p => p.id === postId);
+    if (post) post.boostScore = newScore;
+    // Fermer le menu dropdown si ouvert
+    document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
+    if (btn) {
+      // Bouton inline (posts des membres)
+      btn.title = newScore > 0 ? `Boosté (${newScore}pts) — cliquer pour retirer` : 'Booster ce post';
+      btn.style.background  = newScore > 0 ? 'rgba(245,158,11,0.15)' : 'transparent';
+      btn.style.color       = newScore > 0 ? 'var(--gold)' : 'var(--text2)';
+      btn.style.borderColor = newScore > 0 ? 'rgba(245,158,11,0.4)' : 'var(--border)';
+      btn.setAttribute('onclick', `toggleBoostPost(${postId}, ${newScore}, this)`);
+    } else {
+      // Appelé depuis le menu dropdown — reconstruire le menu
+      const menuBtn = document.querySelector(`#post-menu-${postId} button[onclick*="toggleBoostPost"]`);
+      if (menuBtn) {
+        menuBtn.innerHTML = `<i class="fas fa-rocket"></i> ${newScore > 0 ? 'Retirer le boost' : 'Booster'}`;
+        menuBtn.setAttribute('onclick', `toggleBoostPost(${postId}, ${newScore}, null)`);
+      }
+    }
+    // Indicateur visuel sur la carte du post
+    const card = document.getElementById('post-' + postId);
+    if (card) {
+      let badge = card.querySelector('.boost-badge');
+      if (newScore > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.className = 'boost-badge';
+          badge.style.cssText = 'font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle';
+          const titleEl = card.querySelector('.post-title');
+          if (titleEl) titleEl.appendChild(badge);
+        }
+        badge.innerHTML = '🚀 Boosté';
+      } else if (badge) {
+        badge.remove();
+      }
+    }
+    // Recharger le feed depuis le serveur pour appliquer le nouvel ordre
+    _postsCache = [];
+    await renderFeed();
+  } catch(e) { alert('Erreur boost : ' + e.message); }
+}
+
 async function deletePost(id) {
   if (!confirm('Supprimer ce post ?')) return;
   try {
@@ -2208,7 +2267,7 @@ async function register(e) {
   const err = document.getElementById("regError");
   if (err) err.textContent = "";
   if (pass.length < 6) {
-    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractres.";
+    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
     return;
   }
   if (!mmPhone) {
@@ -2369,7 +2428,7 @@ function _renderWithdrawMmSelector(user) {
         </span>
       </label>`;
   }).join('');
-  // Slectionner le premier par defaut
+  // Sélectionner le premier par défaut
   if (filled.length) _selectWithdrawMm(filled[0].operator, filled[0].phone);
 }
 function _selectWithdrawMm(operator, phone) {
@@ -2690,7 +2749,7 @@ async function changePassword(e) {
   const newPass = document.getElementById("newPassword").value;
   const msg     = document.getElementById("passwordMsg");
   if (!user) return;
-  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractres."; msg.style.color="var(--red)"; return; }
+  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractères."; msg.style.color="var(--red)"; return; }
   try {
     await PaganiAPI.changePassword(oldPass, newPass);
     msg.textContent = "✅ Mot de passe modifié avec succès.";
@@ -3173,7 +3232,7 @@ function _loadYT(videoId) {
         const blocked = [101, 150].includes(e.data);
         _showVideoError(
           blocked
-            ? 'Intgration dsactive. Activez Autoriser lintgration dans YouTube Studio.'
+            ? 'Intégration désactivée. Activez « Autoriser l\'intégration » dans YouTube Studio.'
             : 'Impossible de lire cette vido (code ' + e.data + ').'
         );
       }
@@ -3355,8 +3414,8 @@ async function _showUpgradeModal(user, courseName, isFree) {
         </div>
         <!-- Succs -->
         <div class="upgrade-success" id="upgradeSuccess" style="display:none">
-          <div style="font-size:3rem">?</div>
-          <h3>Demande envoyee !</h3>
+          <div style="font-size:3rem">✅</div>
+          <h3>Demande envoyée !</h3>
           <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a ete recue.<br>Votre compte sera active sous <strong>24h</strong> apres verification du paiement.</p>
           <button class="btn-outline" onclick="document.getElementById('upgradeModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
         </div>
@@ -3863,7 +3922,7 @@ async function _submitUpgradeRequest() {
       ERREUR_SERVEUR:       'Erreur serveur. Reessayez dans quelques instants.',
     };
     msg.style.color = 'var(--red)';
-    msg.textContent = '? ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
+    msg.textContent = '⚠️ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
   }
 }
 async function openCourse(idx) {
@@ -3962,7 +4021,7 @@ async function openCourse(idx) {
       _showVideoError(
         e.message === 'ACCES_REFUSE'
           ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
-          : ' Video bientt disponible.'
+          : ' Vidéo bientôt disponible.'
       );
     }
     return;
@@ -3974,7 +4033,7 @@ async function openCourse(idx) {
     _showVideoError(
       !user || (user.plan === 'Starter')
         ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
-        : ' Video bientt disponible.'
+        : ' Vidéo bientôt disponible.'
     );
     return;
   }
@@ -4044,7 +4103,7 @@ async function _showBuyVideoModal(user, course) {
         </div>
         <!-- Option 2 : Abonnement Pro -->
         <div class="buy-video-option featured" id="buyOptionPro">
-          <span class="buy-option-popular">? Meilleure valeur</span>
+          <span class="buy-option-popular">⭐ Meilleure valeur</span>
           <div class="buy-option-header">
             <span class="buy-option-badge pro"><i class="fas fa-crown"></i> Plan Pro</span>
             <div class="buy-option-price" id="buyModalPricePro">30 000 <span>AR</span><small>/mois</small></div>
@@ -4115,8 +4174,8 @@ async function _showBuyVideoModal(user, course) {
       </div>
       <!-- Succs -->
       <div id="buyVideoSuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
-        <div style="font-size:3rem">?</div>
-        <h3>Demande envoyee !</h3>
+        <div style="font-size:3rem">✅</div>
+        <h3>Demande envoyée !</h3>
         <p id="buySuccessMsg" style="color:var(--text2);font-size:0.9rem;line-height:1.6"></p>
         <button class="btn-outline" onclick="document.getElementById('buyVideoModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
       </div>
@@ -4411,7 +4470,7 @@ async function _submitBuyRequest(courseId) {
       VIDEO_INTROUVABLE: 'Formation introuvable.',
     };
     msg.style.color = 'var(--red)';
-    msg.textContent = '? ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
+    msg.textContent = '⚠️ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
   }
 }
 
@@ -4423,7 +4482,7 @@ function copyLink() {
   if (user) input.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
-    msg.textContent = "? Lien copie dans le presse-papiers !";
+    msg.textContent = "✅ Lien copié dans le presse-papiers !";
     setTimeout(() => msg.textContent = "", 3000);
   });
 }
@@ -4473,7 +4532,7 @@ async function requestWithdrawAR(e) {
   const msg      = document.getElementById("withdrawMsg");
   const user     = getUser();
   if (!user) { msg.textContent = "Connectez-vous pour faire une demande."; return; }
-  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "Slectionnez un compte Mobile Money."; return; }
+  if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "Sélectionnez un compte Mobile Money."; return; }
   try {
     await PaganiAPI.requestWithdraw({ montant: amount, phone, operator });
     const updated = await PaganiAPI.getMe();
@@ -4565,7 +4624,7 @@ async function saveNavbarButton() {
     });
     const data = await r.json();
     if (data.ok) {
-      if (msg) { msg.style.color = 'var(--success)'; msg.textContent = 'Sauvegarde !'; }
+      if (msg) { msg.style.color = 'var(--success)'; msg.textContent = '✅ Sauvegardé !'; }
     } else {
       if (msg) { msg.style.color = 'var(--danger)'; msg.textContent = data.error || 'Erreur'; }
     }
@@ -4619,7 +4678,7 @@ async function saveSocialLinks() {
       body: JSON.stringify(payload)
     });
     const data = await r.json();
-    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '? Sauvegarde !' : (data.error || 'Erreur'); }
+    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '✅ Sauvegardé !' : (data.error || 'Erreur'); }
     setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur reseau'; }

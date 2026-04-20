@@ -273,9 +273,10 @@ app.get('/api/videos/:id/token', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  POSTS
 // ══════════════════════════════════════════════════════════
-app.get('/api/posts', async (req, res) => {
+app.get('/api/posts', optionalAuth, async (req, res) => {
   try {
-    const posts = await db.getPosts();
+    const userId = req.user ? req.user.id : null;
+    const posts = await db.getPostsAlgo(userId);
     res.json(posts.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -421,6 +422,17 @@ app.delete('/api/posts/:id', requireAuth, requireAdmin, async (req, res) => {
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     await db.deletePost(id);
     res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Boost admin d'un post (feed algorithmique)
+app.patch('/api/admin/posts/:id/boost', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id    = parseId(req.params.id);
+    const score = parseFloat(req.body.boostScore) || 0;
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    await _migPool.query('UPDATE posts SET boost_score = $1 WHERE id = $2', [score, id]);
+    res.json({ ok: true, boostScore: score });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 app.post('/api/posts/:id/like', requireAuth, async (req, res) => {

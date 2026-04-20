@@ -80,7 +80,7 @@ async function apiGetVideoToken(videoId)   { return _fetch(`/videos/${videoId}/t
 async function apiResolveVideoToken(token) { return _fetch(`/videos/resolve/${token}`); }
 
 // ���� POSTS ����������������������������������������������������������������������������������������������������
-async function apiGetPosts()         { return _fetch('/posts'); }
+async function apiGetPosts()         { return _fetch('/posts', _token ? { headers: { 'Authorization': 'Bearer ' + _token } } : {}); }
 async function apiCreatePost(data)   { return _fetch('/posts', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiCreateUserPost(data) { return _fetch('/user-posts', { method: 'POST', body: JSON.stringify(data) }); }
 async function apiDeletePost(id)     { return _fetch(`/posts/${id}`, { method: 'DELETE' }); }

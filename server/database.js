@@ -1368,412 +1368,126 @@ function generateRefCode() {
 
 // ═══════════════════════════════════════════════
 
-module.exports = {
-  createUser,
-  login,
-  getUserById,
-  getAllUsers,
-  updateUser,
-  adminUpdateUser,
-  deleteUser,
-
-  createVideo,
-  getVideos,
-  getVideoById,
-  deleteVideo,
-
-  createPost,
-  getPosts,
-  getPostsByUser,
-  getPostById,
-  deletePost,
-  updatePost,
-  toggleLike,
-  addComment,
-  addReply,
-
-  createNotification,
-  getNotifications,
-  countUnreadNotifications,
-  markNotificationsRead,
-  setSseNotifyHook,
-
-  getCommissions,
-  requestWithdraw,
-
-  createUpgradeRequest,
-  getUpgradeRequests,
-  updateUpgradeRequest,
-
-  createVideoPurchase,
-  getVideoPurchasesByUser,
-  getPendingVideoPurchases,
-  hasVideoPurchase,
-  updateVideoPurchase,
-
-  updateVideo,
-
-  getVideoModules,
-  createVideoModule,
-  updateVideoModule,
-  deleteVideoModule,
-
-  createModulePurchase,
-  getModulePurchasesByUser,
-  getAllModulePurchases,
-  hasModulePurchase,
-  updateModulePurchase,
-
-  getPaymentAccounts,
-  updatePaymentAccount,
-  togglePaymentAccount,
-  clearPaymentAccount,
-
-  getPricing,
-  updatePricing,
-
-  addMmAccount,
-  changePassword,
-
-  getAdminStats,
-
-  sendPrivateMessage,
-  getConversations,
-  getPrivateMessages,
-  markMessagesRead,
-  countUnreadMessages,
-  deletePrivateMessage,
-
-  updateLastSeen,
-  updateStreak,
-  incrementMonthlyRef,
-  getMonthlyLeaderboard,
-  getLeaderboardConfig,
-  updateLeaderboardConfig,
-  getLeaderboardRewards,
-  saveLeaderboardReward,
-  markRewardPaid,
-  getLastSeen,
-
-  followUser,
-  unfollowUser,
-  isFollowing,
-  getFollowers,
-  getFollowing,
-  countFollowers,
-  countFollowing,
-
-  getNavbarButton,
-  setNavbarButton,
-
-  getSocialLinks,
-  setSocialLinks,
-
-  recordShare,
-  getShareStats,
-
-  getEbooks,
-  getAllEbooksAdmin,
-  getEbookById,
-  createEbook,
-  updateEbook,
-  deleteEbook,
-  createEbookPurchase,
-  getEbookPurchasesByUser,
-  getAllEbookPurchases,
-  hasEbookPurchase,
-  updateEbookPurchase,
-
-  togglePostReaction,
-  getPostReactions,
-  getPostReactionsDetail,
-  getPostsReactionsBatch,
-};
-
-async function getLeaderboardRewards() {
-  const res = await query('SELECT * FROM leaderboard_rewards ORDER BY month DESC LIMIT 12');
-  return rowsToCamel(res.rows);
-}
-
-async function saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id }) {
-  const res = await query(
-    `INSERT INTO leaderboard_rewards (month, prize_1, prize_2, prize_3, winner_1_id, winner_2_id, winner_3_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT (month) DO UPDATE SET
-       prize_1=EXCLUDED.prize_1, prize_2=EXCLUDED.prize_2, prize_3=EXCLUDED.prize_3,
-       winner_1_id=EXCLUDED.winner_1_id, winner_2_id=EXCLUDED.winner_2_id, winner_3_id=EXCLUDED.winner_3_id
-     RETURNING *`,
-    [month, prize1||0, prize2||0, prize3||0, winner1Id||null, winner2Id||null, winner3Id||null]
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function markRewardPaid(month, rank) {
-  const col = `paid_${rank}`;
-  await query(`UPDATE leaderboard_rewards SET ${col} = true WHERE month = $1`, [month]);
-}
-
-async function updateStreak(userId) {
-  const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
-  if (!res.rows.length) return;
-  const { last_login_date, streak } = res.rows[0];
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  if (last_login_date && last_login_date.toISOString().slice(0, 10) === today) return; // déjà compté aujourd'hui
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const lastDate = last_login_date ? last_login_date.toISOString().slice(0, 10) : null;
-  const newStreak = lastDate === yesterday ? (streak || 0) + 1 : 1;
-  await query(
-    'UPDATE users SET streak = $1, last_login_date = $2 WHERE id = $3',
-    [newStreak, today, userId]
-  );
-}
-
-async function updateLastSeen(userId, ts) {
-  await query(
-    `UPDATE users SET last_seen = $1 WHERE id = $2`,
-    [ts, userId]
-  ).catch(() => {});
-}
-
-async function getLastSeen(userId) {
-  try {
-    const res = await query('SELECT last_seen FROM users WHERE id = $1', [userId]);
-    return res.rows[0] ? res.rows[0].last_seen : null;
-  } catch { return null; }
-}
 
 // ═══════════════════════════════════════════════
-// PARTAGES FACEBOOK
+// FEED ALGORITHMIQUE
 // ═══════════════════════════════════════════════
 
-async function recordShare({ postId, userId, refCode }) {
-  await query(
-    `INSERT INTO post_shares (post_id, user_id, ref_code) VALUES ($1,$2,$3)`,
-    [postId, userId, refCode || '']
-  );
-}
+async function getPostsAlgo(userId) {
+  const [postsRes, usersRes] = await Promise.all([
+    query('SELECT * FROM posts ORDER BY COALESCE(created_at, date) DESC LIMIT 200'),
+    query('SELECT id, avatar_photo FROM users')
+  ]);
+  const photoMap = {};
+  for (const u of usersRes.rows) photoMap[u.id] = u.avatar_photo || '';
 
-async function getShareStats() {
-  const res = await query(
-    `SELECT ps.post_id, p.title, u.name AS user_name, ps.ref_code, ps.created_at
-     FROM post_shares ps
-     LEFT JOIN posts p ON p.id = ps.post_id
-     LEFT JOIN users u ON u.id = ps.user_id
-     ORDER BY ps.created_at DESC
-     LIMIT 100`
-  );
-  return rowsToCamel(res.rows);
-}
-
-// ═══════════════════════════════════════════════
-// NAVBAR BUTTON
-// ═══════════════════════════════════════════════
-
-async function getSocialLinks() {
-  const res = await query('SELECT * FROM social_links WHERE id = 1');
-  return res.rows[0] || { facebook: '', tiktok: '', telegram: '', youtube: '' };
-}
-
-async function setSocialLinks({ facebook, tiktok, telegram, youtube }) {
-  await query(
-    `INSERT INTO social_links (id, facebook, tiktok, telegram, youtube)
-     VALUES (1, $1, $2, $3, $4)
-     ON CONFLICT (id) DO UPDATE SET facebook=$1, tiktok=$2, telegram=$3, youtube=$4`,
-    [facebook || '', tiktok || '', telegram || '', youtube || '']
-  );
-}
-
-async function getNavbarButton() {
-  const res = await query('SELECT * FROM navbar_button WHERE id = 1');
-  return res.rows[0] || { enabled: false, label: '', icon_url: '', link: '' };
-}
-
-async function setNavbarButton({ enabled, label, icon_url, link }) {
-  await query(
-    `INSERT INTO navbar_button (id, enabled, label, icon_url, link)
-     VALUES (1, $1, $2, $3, $4)
-     ON CONFLICT (id) DO UPDATE SET enabled=$1, label=$2, icon_url=$3, link=$4`,
-    [!!enabled, label || '', icon_url || '', link || '']
-  );
-}
-
-// ═══════════════════════════════════════════════
-// EBOOKS
-// ═══════════════════════════════════════════════
-
-async function getEbooks() {
-  const res = await query('SELECT * FROM ebooks WHERE is_active = true ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function getAllEbooksAdmin() {
-  const res = await query('SELECT * FROM ebooks ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function getEbookById(id) {
-  const res = await query('SELECT * FROM ebooks WHERE id = $1', [id]);
-  return rowToCamel(res.rows[0]) || null;
-}
-
-async function createEbook({ title, description, cover, price, category, pages, author, fileUrl }) {
-  const res = await query(
-    `INSERT INTO ebooks (title, description, cover, price, category, pages, author, file_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [title, description || '', cover || '', price || 0, category || 'General', pages || null, author || '', fileUrl || '']
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function updateEbook(id, fields) {
-  const allowed = { title: 'title', description: 'description', cover: 'cover', price: 'price',
-    category: 'category', pages: 'pages', author: 'author', fileUrl: 'file_url', isActive: 'is_active' };
-  const keys = Object.keys(fields).filter(k => allowed[k] !== undefined);
-  if (!keys.length) return getEbookById(id);
-  const setQuery = keys.map((k, i) => `${allowed[k]} = $${i + 1}`).join(', ');
-  const res = await query(
-    `UPDATE ebooks SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
-    [...keys.map(k => fields[k]), id]
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function deleteEbook(id) {
-  await query('DELETE FROM ebooks WHERE id = $1', [id]);
-}
-
-async function createEbookPurchase({ userId, ebookId, amount, phone, operator, mmName, txRef, proof }) {
-  const user  = await getUserById(userId);
-  const ebook = await getEbookById(ebookId);
-  const res = await query(
-    `INSERT INTO ebook_purchases (user_id, user_name, ebook_id, ebook_title, amount, phone, operator, mm_name, tx_ref, proof)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [userId, user?.name || '', ebookId, ebook?.title || '', amount, phone || '', operator || '', mmName || '', txRef || '', proof || '']
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function getEbookPurchasesByUser(userId) {
-  const res = await query(
-    `SELECT ep.*, e.file_url, e.cover FROM ebook_purchases ep
-     LEFT JOIN ebooks e ON e.id = ep.ebook_id
-     WHERE ep.user_id = $1 ORDER BY ep.created_at DESC`,
-    [userId]
-  );
-  return rowsToCamel(res.rows);
-}
-
-async function getAllEbookPurchases() {
-  const res = await query('SELECT * FROM ebook_purchases ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function hasEbookPurchase(userId, ebookId) {
-  const res = await query(
-    `SELECT id FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2 AND statut = 'Approuvé'`,
-    [userId, ebookId]
-  );
-  return res.rows.length > 0;
-}
-
-async function updateEbookPurchase(id, { statut, rejectReason }) {
-  const res = await query(
-    `UPDATE ebook_purchases SET statut = $1, reject_reason = $2, treated_at = NOW() WHERE id = $3 RETURNING *`,
-    [statut, rejectReason || '', id]
-  );
-  const purchase = rowToCamel(res.rows[0]);
-  if (!purchase) throw new Error('PURCHASE_NOT_FOUND');
-  if (statut === 'Approuvé') {
-    await createNotification({
-      userId: purchase.userId, type: 'FORMATION_UNLOCKED',
-      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
-      link: 'ebooks.html'
-    });
-  } else if (statut === 'Rejeté') {
-    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
-    await createNotification({
-      userId: purchase.userId, type: 'FORMATION_REJECTED',
-      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été rejeté.${reason}`,
-      link: 'ebooks.html'
-    });
+  // Follows de l'utilisateur connecté
+  let followedIds = new Set();
+  if (userId) {
+    const fRes = await query('SELECT following_id FROM follows WHERE follower_id = $1', [userId]);
+    fRes.rows.forEach(r => followedIds.add(r.following_id));
   }
-  return purchase;
-}
 
-// ═══════════════════════════════════════════════
-// RÉACTIONS POSTS
-// ═══════════════════════════════════════════════
+  const now = Date.now();
+  const posts = rowsToCamel(postsRes.rows).map(p => {
+    const likes    = Array.isArray(p.likes)    ? p.likes    : [];
+    const comments = Array.isArray(p.comments) ? p.comments : [];
+    const totalComments = comments.reduce((a, c) => a + 1 + (Array.isArray(c.replies) ? c.replies.length : 0), 0);
 
-async function togglePostReaction(postId, userId, emoji) {
-  const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
-  if (!ALLOWED.includes(emoji)) throw new Error('EMOJI_INVALIDE');
-  const existing = await query(
-    'SELECT id, emoji FROM post_reactions WHERE post_id=$1 AND user_id=$2',
-    [postId, userId]
-  );
-  if (existing.rows.length) {
-    if (existing.rows[0].emoji === emoji) {
-      await query('DELETE FROM post_reactions WHERE post_id=$1 AND user_id=$2', [postId, userId]);
-      return { action: 'removed', emoji };
+    // ── Idée 2 : Récence exponentielle ──────────────────────────────────────
+    // Décroît très vite après 24h, quasi nul après 72h
+    // score_récence = 20 × e^(-ageH / 12)
+    // à 0h → 20pts | à 12h → 7.4pts | à 24h → 2.7pts | à 48h → 0.37pts
+    const ageHours = (now - new Date(p.createdAt || p.date).getTime()) / 3600000;
+    const recencyScore = 20 * Math.exp(-ageHours / 12);
+
+    // ── Bonus follow ─────────────────────────────────────────────────────────
+    const followBonus = (p.authorId && followedIds.has(p.authorId)) ? 8 : 0;
+
+    // ── Idée 4 : Boost admin ─────────────────────────────────────────────────
+    // Champ boost_score dans la table posts (0 par défaut)
+    const adminBoost = parseFloat(p.boostScore || 0);
+
+    // ── Pénalité contenu vide ────────────────────────────────────────────────
+    const contentLen = (p.content || '').length;
+    const hasImage   = !!(p.image && p.image !== '');
+    const qualityPenalty = (!hasImage && contentLen < 50) ? -3 : 0;
+
+    // Score de base (réactions ajoutées après le batch)
+    p._score = likes.length * 1 + totalComments * 2 + followBonus + recencyScore + adminBoost + qualityPenalty;
+    p._authorId = p.authorId; // garder pour la diversité
+
+    p.authorPhoto = p.authorId ? (photoMap[p.authorId] ?? p.authorPhoto ?? '') : (p.authorPhoto || '');
+    p.likes    = likes;
+    p.comments = comments.filter(c => c && typeof c === 'object').map(c => ({
+      ...c,
+      author: c.author || c.authorName || '',
+      authorPhoto: c.authorId ? (photoMap[c.authorId] ?? c.authorPhoto ?? '') : (c.authorPhoto || ''),
+      replies: Array.isArray(c.replies) ? c.replies.filter(r => r && typeof r === 'object').map(r => ({
+        ...r,
+        author: r.author || r.authorName || '',
+        authorPhoto: r.authorId ? (photoMap[r.authorId] ?? r.authorPhoto ?? '') : (r.authorPhoto || '')
+      })) : []
+    }));
+    p.date = p.createdAt ? new Date(p.createdAt).toISOString() : (p.date ? new Date(p.date).toISOString() : new Date().toISOString());
+    return p;
+  });
+
+  // Enrichir avec les réactions en batch
+  if (posts.length) {
+    const ids = posts.map(p => p.id);
+    const rxRes = await query(
+      'SELECT post_id, COUNT(*) as cnt FROM post_reactions WHERE post_id = ANY($1) GROUP BY post_id',
+      [ids]
+    );
+    const rxMap = {};
+    rxRes.rows.forEach(r => { rxMap[r.post_id] = parseInt(r.cnt); });
+    posts.forEach(p => { p._score += (rxMap[p.id] || 0) * 3; });
+  }
+
+  // Trier par score décroissant
+  posts.sort((a, b) => b._score - a._score);
+
+  // ── Idée 1 : Diversité des auteurs ──────────────────────────────────────────
+  // Intercaler les posts pour qu'un même auteur n'apparaisse pas
+  // plus de 2 fois consécutivement dans le feed final
+  const result = [];
+  const deferred = []; // posts mis de côté temporairement
+  let lastAuthor = null;
+  let consecutiveCount = 0;
+
+  for (const post of posts) {
+    const author = post._authorId || post.author;
+    if (author === lastAuthor && consecutiveCount >= 2) {
+      deferred.push(post);
+    } else {
+      // Insérer un post différé si disponible et auteur différent
+      if (deferred.length && author !== lastAuthor) {
+        const idx = deferred.findIndex(d => (d._authorId || d.author) !== author);
+        if (idx !== -1) {
+          const inserted = deferred.splice(idx, 1)[0];
+          result.push(inserted);
+          lastAuthor = inserted._authorId || inserted.author;
+          consecutiveCount = 1;
+        }
+      }
+      result.push(post);
+      if (author === lastAuthor) {
+        consecutiveCount++;
+      } else {
+        lastAuthor = author;
+        consecutiveCount = 1;
+      }
     }
-    await query('UPDATE post_reactions SET emoji=$1, created_at=NOW() WHERE post_id=$2 AND user_id=$3', [emoji, postId, userId]);
-    return { action: 'changed', emoji };
   }
-  await query('INSERT INTO post_reactions (post_id, user_id, emoji) VALUES ($1,$2,$3)', [postId, userId, emoji]);
-  return { action: 'added', emoji };
-}
+  // Ajouter les posts différés restants à la fin
+  result.push(...deferred);
 
-async function getPostReactions(postId) {
-  const res = await query('SELECT emoji, user_id FROM post_reactions WHERE post_id=$1', [postId]);
-  const grouped = {};
-  for (const row of res.rows) {
-    if (!grouped[row.emoji]) grouped[row.emoji] = [];
-    grouped[row.emoji].push(row.user_id);
-  }
-  return grouped;
-}
-
-
-async function getPostReactionsDetail(postId) {
-  const res = await query(
-    `SELECT r.emoji, r.user_id, u.name, u.avatar_photo, u.avatar_color
-     FROM post_reactions r
-     JOIN users u ON u.id = r.user_id
-     WHERE r.post_id = $1
-     ORDER BY r.created_at DESC`, [postId]
-  );
-  const grouped = {};
-  for (const row of res.rows) {
-    if (!grouped[row.emoji]) grouped[row.emoji] = [];
-    grouped[row.emoji].push({ id: row.user_id, name: row.name, avatarPhoto: row.avatar_photo, avatarColor: row.avatar_color });
-  }
-  return grouped;
-}
-async function getPostsReactionsBatch(postIds) {
-  if (!postIds.length) return {};
-  const res = await query(
-    'SELECT post_id, emoji, user_id FROM post_reactions WHERE post_id = ANY($1)',
-    [postIds]
-  );
-  const result = {};
-  for (const row of res.rows) {
-    if (!result[row.post_id]) result[row.post_id] = {};
-    if (!result[row.post_id][row.emoji]) result[row.post_id][row.emoji] = [];
-    result[row.post_id][row.emoji].push(row.user_id);
-  }
+  // Nettoyer les champs internes
+  result.forEach(p => { delete p._score; delete p._authorId; });
   return result;
 }
 
-// ═══════════════════════════════════════════════
-// UTIL
-// ═══════════════════════════════════════════════
-
-function generateRefCode() {
-  return 'PAG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
-// ═══════════════════════════════════════════════
-
 module.exports = {
   createUser,
   login,
@@ -1894,410 +1608,5 @@ module.exports = {
   getPostReactions,
   getPostReactionsDetail,
   getPostsReactionsBatch,
-};
-
-async function getLeaderboardRewards() {
-  const res = await query('SELECT * FROM leaderboard_rewards ORDER BY month DESC LIMIT 12');
-  return rowsToCamel(res.rows);
-}
-
-async function saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id }) {
-  const res = await query(
-    `INSERT INTO leaderboard_rewards (month, prize_1, prize_2, prize_3, winner_1_id, winner_2_id, winner_3_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
-     ON CONFLICT (month) DO UPDATE SET
-       prize_1=EXCLUDED.prize_1, prize_2=EXCLUDED.prize_2, prize_3=EXCLUDED.prize_3,
-       winner_1_id=EXCLUDED.winner_1_id, winner_2_id=EXCLUDED.winner_2_id, winner_3_id=EXCLUDED.winner_3_id
-     RETURNING *`,
-    [month, prize1||0, prize2||0, prize3||0, winner1Id||null, winner2Id||null, winner3Id||null]
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function markRewardPaid(month, rank) {
-  const col = `paid_${rank}`;
-  await query(`UPDATE leaderboard_rewards SET ${col} = true WHERE month = $1`, [month]);
-}
-
-async function updateStreak(userId) {
-  const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
-  if (!res.rows.length) return;
-  const { last_login_date, streak } = res.rows[0];
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  if (last_login_date && last_login_date.toISOString().slice(0, 10) === today) return; // déjà compté aujourd'hui
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const lastDate = last_login_date ? last_login_date.toISOString().slice(0, 10) : null;
-  const newStreak = lastDate === yesterday ? (streak || 0) + 1 : 1;
-  await query(
-    'UPDATE users SET streak = $1, last_login_date = $2 WHERE id = $3',
-    [newStreak, today, userId]
-  );
-}
-
-async function updateLastSeen(userId, ts) {
-  await query(
-    `UPDATE users SET last_seen = $1 WHERE id = $2`,
-    [ts, userId]
-  ).catch(() => {});
-}
-
-async function getLastSeen(userId) {
-  try {
-    const res = await query('SELECT last_seen FROM users WHERE id = $1', [userId]);
-    return res.rows[0] ? res.rows[0].last_seen : null;
-  } catch { return null; }
-}
-
-// ═══════════════════════════════════════════════
-// PARTAGES FACEBOOK
-// ═══════════════════════════════════════════════
-
-async function recordShare({ postId, userId, refCode }) {
-  await query(
-    `INSERT INTO post_shares (post_id, user_id, ref_code) VALUES ($1,$2,$3)`,
-    [postId, userId, refCode || '']
-  );
-}
-
-async function getShareStats() {
-  const res = await query(
-    `SELECT ps.post_id, p.title, u.name AS user_name, ps.ref_code, ps.created_at
-     FROM post_shares ps
-     LEFT JOIN posts p ON p.id = ps.post_id
-     LEFT JOIN users u ON u.id = ps.user_id
-     ORDER BY ps.created_at DESC
-     LIMIT 100`
-  );
-  return rowsToCamel(res.rows);
-}
-
-// ═══════════════════════════════════════════════
-// NAVBAR BUTTON
-// ═══════════════════════════════════════════════
-
-async function getSocialLinks() {
-  const res = await query('SELECT * FROM social_links WHERE id = 1');
-  return res.rows[0] || { facebook: '', tiktok: '', telegram: '', youtube: '' };
-}
-
-async function setSocialLinks({ facebook, tiktok, telegram, youtube }) {
-  await query(
-    `INSERT INTO social_links (id, facebook, tiktok, telegram, youtube)
-     VALUES (1, $1, $2, $3, $4)
-     ON CONFLICT (id) DO UPDATE SET facebook=$1, tiktok=$2, telegram=$3, youtube=$4`,
-    [facebook || '', tiktok || '', telegram || '', youtube || '']
-  );
-}
-
-async function getNavbarButton() {
-  const res = await query('SELECT * FROM navbar_button WHERE id = 1');
-  return res.rows[0] || { enabled: false, label: '', icon_url: '', link: '' };
-}
-
-async function setNavbarButton({ enabled, label, icon_url, link }) {
-  await query(
-    `INSERT INTO navbar_button (id, enabled, label, icon_url, link)
-     VALUES (1, $1, $2, $3, $4)
-     ON CONFLICT (id) DO UPDATE SET enabled=$1, label=$2, icon_url=$3, link=$4`,
-    [!!enabled, label || '', icon_url || '', link || '']
-  );
-}
-
-// ═══════════════════════════════════════════════
-// EBOOKS
-// ═══════════════════════════════════════════════
-
-async function getEbooks() {
-  const res = await query('SELECT * FROM ebooks WHERE is_active = true ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function getAllEbooksAdmin() {
-  const res = await query('SELECT * FROM ebooks ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function getEbookById(id) {
-  const res = await query('SELECT * FROM ebooks WHERE id = $1', [id]);
-  return rowToCamel(res.rows[0]) || null;
-}
-
-async function createEbook({ title, description, cover, price, category, pages, author, fileUrl }) {
-  const res = await query(
-    `INSERT INTO ebooks (title, description, cover, price, category, pages, author, file_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [title, description || '', cover || '', price || 0, category || 'General', pages || null, author || '', fileUrl || '']
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function updateEbook(id, fields) {
-  const allowed = { title: 'title', description: 'description', cover: 'cover', price: 'price',
-    category: 'category', pages: 'pages', author: 'author', fileUrl: 'file_url', isActive: 'is_active' };
-  const keys = Object.keys(fields).filter(k => allowed[k] !== undefined);
-  if (!keys.length) return getEbookById(id);
-  const setQuery = keys.map((k, i) => `${allowed[k]} = $${i + 1}`).join(', ');
-  const res = await query(
-    `UPDATE ebooks SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
-    [...keys.map(k => fields[k]), id]
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function deleteEbook(id) {
-  await query('DELETE FROM ebooks WHERE id = $1', [id]);
-}
-
-async function createEbookPurchase({ userId, ebookId, amount, phone, operator, mmName, txRef, proof }) {
-  const user  = await getUserById(userId);
-  const ebook = await getEbookById(ebookId);
-  const res = await query(
-    `INSERT INTO ebook_purchases (user_id, user_name, ebook_id, ebook_title, amount, phone, operator, mm_name, tx_ref, proof)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [userId, user?.name || '', ebookId, ebook?.title || '', amount, phone || '', operator || '', mmName || '', txRef || '', proof || '']
-  );
-  return rowToCamel(res.rows[0]);
-}
-
-async function getEbookPurchasesByUser(userId) {
-  const res = await query(
-    `SELECT ep.*, e.file_url, e.cover FROM ebook_purchases ep
-     LEFT JOIN ebooks e ON e.id = ep.ebook_id
-     WHERE ep.user_id = $1 ORDER BY ep.created_at DESC`,
-    [userId]
-  );
-  return rowsToCamel(res.rows);
-}
-
-async function getAllEbookPurchases() {
-  const res = await query('SELECT * FROM ebook_purchases ORDER BY created_at DESC');
-  return rowsToCamel(res.rows);
-}
-
-async function hasEbookPurchase(userId, ebookId) {
-  const res = await query(
-    `SELECT id FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2 AND statut = 'Approuvé'`,
-    [userId, ebookId]
-  );
-  return res.rows.length > 0;
-}
-
-async function updateEbookPurchase(id, { statut, rejectReason }) {
-  const res = await query(
-    `UPDATE ebook_purchases SET statut = $1, reject_reason = $2, treated_at = NOW() WHERE id = $3 RETURNING *`,
-    [statut, rejectReason || '', id]
-  );
-  const purchase = rowToCamel(res.rows[0]);
-  if (!purchase) throw new Error('PURCHASE_NOT_FOUND');
-  if (statut === 'Approuvé') {
-    await createNotification({
-      userId: purchase.userId, type: 'FORMATION_UNLOCKED',
-      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
-      link: 'ebooks.html'
-    });
-  } else if (statut === 'Rejeté') {
-    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
-    await createNotification({
-      userId: purchase.userId, type: 'FORMATION_REJECTED',
-      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été rejeté.${reason}`,
-      link: 'ebooks.html'
-    });
-  }
-  return purchase;
-}
-
-// ═══════════════════════════════════════════════
-// RÉACTIONS POSTS
-// ═══════════════════════════════════════════════
-
-async function togglePostReaction(postId, userId, emoji) {
-  const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
-  if (!ALLOWED.includes(emoji)) throw new Error('EMOJI_INVALIDE');
-  const existing = await query(
-    'SELECT id, emoji FROM post_reactions WHERE post_id=$1 AND user_id=$2',
-    [postId, userId]
-  );
-  if (existing.rows.length) {
-    if (existing.rows[0].emoji === emoji) {
-      await query('DELETE FROM post_reactions WHERE post_id=$1 AND user_id=$2', [postId, userId]);
-      return { action: 'removed', emoji };
-    }
-    await query('UPDATE post_reactions SET emoji=$1, created_at=NOW() WHERE post_id=$2 AND user_id=$3', [emoji, postId, userId]);
-    return { action: 'changed', emoji };
-  }
-  await query('INSERT INTO post_reactions (post_id, user_id, emoji) VALUES ($1,$2,$3)', [postId, userId, emoji]);
-  return { action: 'added', emoji };
-}
-
-async function getPostReactions(postId) {
-  const res = await query('SELECT emoji, user_id FROM post_reactions WHERE post_id=$1', [postId]);
-  const grouped = {};
-  for (const row of res.rows) {
-    if (!grouped[row.emoji]) grouped[row.emoji] = [];
-    grouped[row.emoji].push(row.user_id);
-  }
-  return grouped;
-}
-
-
-async function getPostReactionsDetail(postId) {
-  const res = await query(
-    `SELECT r.emoji, r.user_id, u.name, u.avatar_photo, u.avatar_color
-     FROM post_reactions r
-     JOIN users u ON u.id = r.user_id
-     WHERE r.post_id = $1
-     ORDER BY r.created_at DESC`, [postId]
-  );
-  const grouped = {};
-  for (const row of res.rows) {
-    if (!grouped[row.emoji]) grouped[row.emoji] = [];
-    grouped[row.emoji].push({ id: row.user_id, name: row.name, avatarPhoto: row.avatar_photo, avatarColor: row.avatar_color });
-  }
-  return grouped;
-}
-async function getPostsReactionsBatch(postIds) {
-  if (!postIds.length) return {};
-  const res = await query(
-    'SELECT post_id, emoji, user_id FROM post_reactions WHERE post_id = ANY($1)',
-    [postIds]
-  );
-  const result = {};
-  for (const row of res.rows) {
-    if (!result[row.post_id]) result[row.post_id] = {};
-    if (!result[row.post_id][row.emoji]) result[row.post_id][row.emoji] = [];
-    result[row.post_id][row.emoji].push(row.user_id);
-  }
-  return result;
-}
-
-// ═══════════════════════════════════════════════
-// UTIL
-// ═══════════════════════════════════════════════
-
-function generateRefCode() {
-  return 'PAG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-}
-
-// ═══════════════════════════════════════════════
-
-module.exports = {
-  createUser,
-  login,
-  getUserById,
-  getAllUsers,
-  updateUser,
-  adminUpdateUser,
-  deleteUser,
-
-  createVideo,
-  getVideos,
-  getVideoById,
-  deleteVideo,
-
-  createPost,
-  getPosts,
-  getPostsByUser,
-  getPostById,
-  deletePost,
-  updatePost,
-  toggleLike,
-  addComment,
-  addReply,
-
-  createNotification,
-  getNotifications,
-  countUnreadNotifications,
-  markNotificationsRead,
-  setSseNotifyHook,
-
-  getCommissions,
-  requestWithdraw,
-
-  createUpgradeRequest,
-  getUpgradeRequests,
-  updateUpgradeRequest,
-
-  createVideoPurchase,
-  getVideoPurchasesByUser,
-  getPendingVideoPurchases,
-  hasVideoPurchase,
-  updateVideoPurchase,
-
-  updateVideo,
-
-  getVideoModules,
-  createVideoModule,
-  updateVideoModule,
-  deleteVideoModule,
-
-  createModulePurchase,
-  getModulePurchasesByUser,
-  getAllModulePurchases,
-  hasModulePurchase,
-  updateModulePurchase,
-
-  getPaymentAccounts,
-  updatePaymentAccount,
-  togglePaymentAccount,
-  clearPaymentAccount,
-
-  getPricing,
-  updatePricing,
-
-  addMmAccount,
-  changePassword,
-
-  getAdminStats,
-
-  sendPrivateMessage,
-  getConversations,
-  getPrivateMessages,
-  markMessagesRead,
-  countUnreadMessages,
-  deletePrivateMessage,
-
-  updateLastSeen,
-  updateStreak,
-  incrementMonthlyRef,
-  getMonthlyLeaderboard,
-  getLeaderboardConfig,
-  updateLeaderboardConfig,
-  getLeaderboardRewards,
-  saveLeaderboardReward,
-  markRewardPaid,
-  getLastSeen,
-
-  followUser,
-  unfollowUser,
-  isFollowing,
-  getFollowers,
-  getFollowing,
-  countFollowers,
-  countFollowing,
-
-  getNavbarButton,
-  setNavbarButton,
-
-  getSocialLinks,
-  setSocialLinks,
-
-  recordShare,
-  getShareStats,
-
-  getEbooks,
-  getAllEbooksAdmin,
-  getEbookById,
-  createEbook,
-  updateEbook,
-  deleteEbook,
-  createEbookPurchase,
-  getEbookPurchasesByUser,
-  getAllEbookPurchases,
-  hasEbookPurchase,
-  updateEbookPurchase,
-
-  togglePostReaction,
-  getPostReactions,
-  getPostReactionsDetail,
-  getPostsReactionsBatch,
+  getPostsAlgo,
 };

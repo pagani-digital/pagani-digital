@@ -173,6 +173,12 @@ async function runMigrations(pool) {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0`);
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_date DATE DEFAULT NULL`);
   });
+
+  // Feed algo : colonne boost_score sur posts
+  try {
+    await pool.query('ALTER TABLE posts ADD COLUMN IF NOT EXISTS boost_score NUMERIC DEFAULT 0');
+    console.log('[migrations] boost_score OK');
+  } catch(e) { console.error('[migrations] boost_score:', e.message); }
 }
 
 module.exports = { runMigrations };
