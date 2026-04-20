@@ -5379,7 +5379,7 @@ function _convPreview(c) {
 async function loadConversations() {
   const list = document.getElementById('convList');
   if (!list) return;
-  list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
+  if (!list.children.length) list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
   try {
     const convs = await PaganiAPI.getConversations();
     _allConvs = convs;
@@ -5387,32 +5387,37 @@ async function loadConversations() {
       list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-comment-slash"></i><p>Aucune conversation.<br>Envoyez un message depuis un profil.</p></div>';
       return;
     }
-    list.innerHTML = convs.map(c => {
+    // Supprimer le spinner s'il est encore là
+    const _spinner = list.querySelector('.mpx-conv-empty');
+    if (_spinner) _spinner.remove();
+
+    // Refresh silencieux : diff DOM sans vider la liste
+    const _existingIds = new Set([...list.querySelectorAll('.mpx-conv-item')].map(el => el.dataset.userid));
+    const _newIds = new Set(convs.map(c => String(c.id)));
+    _existingIds.forEach(id => { if (!_newIds.has(id)) { const el = list.querySelector('[data-userid="'+id+'"]'); if (el) el.remove(); } });
+    convs.forEach(function(c, idx) {
       const unread   = parseInt(c.unreadCount) || 0;
       const isActive = _currentChatUserId === c.id;
       const av = c.avatarPhoto
-        ? `<img src="${c.avatarPhoto}" style="width:44px;height:44px;border-radius:50%;object-fit:cover" />`
-        : `<div class="avatar-circle" style="width:44px;height:44px;min-width:44px;font-size:0.85rem;background:${c.avatarColor||'#6c63ff'}">${getInitials(c.name)}</div>`;
+        ? '<img src="'+c.avatarPhoto+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover" />'
+        : '<div class="avatar-circle" style="width:44px;height:44px;min-width:44px;font-size:0.85rem;background:'+(c.avatarColor||'#6c63ff')+'">'+getInitials(c.name)+'</div>';
       const timeStr = c.lastDate ? timeAgo(c.lastDate) : '';
-      return `
-        <div class="mpx-conv-item${isActive ? ' active' : ''}"
-          data-userid="${c.id}"
-          data-name="${c.name.replace(/"/g,'&quot;')}"
-          onclick="openChat(${c.id},'${c.name.replace(/'/g,"\\'")}',' ${c.avatarColor||'#6c63ff'}','${c.avatarPhoto||''}','${c.plan||''}')">
-          <div class="mpx-conv-av">
-            ${av}
-            ${unread ? `<span class="mpx-conv-unread">${unread > 9 ? '9+' : unread}</span>` : ''}
-          </div>
-          <div class="mpx-conv-body">
-            <div class="mpx-conv-name">${esc(c.name)}</div>
-            <div class="mpx-conv-preview">${_convPreview(c)}</div>
-          </div>
-          <div class="mpx-conv-right">
-            ${timeStr ? `<span class="mpx-conv-time">${timeStr}</span>` : ''}
-            <div class="mpx-conv-presence-slot" id="pres-${c.id}"></div>
-          </div>
-        </div>`;
-    }).join('');
+      let item = list.querySelector('[data-userid="'+c.id+'"]');
+      if (!item) {
+        item = document.createElement('div');
+        item.dataset.userid = String(c.id);
+        item.dataset.name = c.name.replace(/"/g,'&quot;');
+        item.addEventListener('click', (function(cv){ return function(){ openChat(cv.id,cv.name,cv.avatarColor||'#6c63ff',cv.avatarPhoto||'',cv.plan||''); }; })(c));
+        list.appendChild(item);
+      }
+      const items = list.querySelectorAll('.mpx-conv-item');
+      if (items[idx] !== item) list.insertBefore(item, items[idx] || null);
+      item.className = 'mpx-conv-item' + (isActive ? ' active' : '');
+      item.innerHTML =
+        '<div class="mpx-conv-av">'+av+(unread ? '<span class="mpx-conv-unread">'+(unread > 9 ? '9+' : unread)+'</span>' : '')+'</div>'+
+        '<div class="mpx-conv-body"><div class="mpx-conv-name">'+esc(c.name)+'</div><div class="mpx-conv-preview">'+_convPreview(c)+'</div></div>'+
+        '<div class="mpx-conv-right">'+(timeStr ? '<span class="mpx-conv-time">'+timeStr+'</span>' : '')+'<div class="mpx-conv-presence-slot" id="pres-'+c.id+'"></div></div>';
+    });
     // Statut de présence dans le slot dédié (colonne droite)
     if (window.PaganiAPI && convs.length) {
       convs.forEach(function(cv) {
