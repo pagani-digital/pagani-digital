@@ -862,6 +862,28 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
+//  LEADERBOARD PARRAINAGES
+// ══════════════════════════════════════════════════════════
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const users = await db.getAllUsers();
+    const leaderboard = users
+      .filter(u => u.isActive && (u.refs || 0) > 0)
+      .sort((a, b) => (b.refs || 0) - (a.refs || 0))
+      .slice(0, 10)
+      .map((u, i) => ({
+        rank: i + 1,
+        id: u.id,
+        name: u.name,
+        plan: u.plan,
+        avatarColor: u.avatarColor,
+        avatarPhoto: u.avatarPhoto || '',
+        refs: u.refs || 0
+      }));
+    res.json(leaderboard);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+// ══════════════════════════════════════════════════════════
 //  EXPLORE — liste publique des membres
 // ══════════════════════════════════════════════════════════
 app.get('/api/members', async (req, res) => {

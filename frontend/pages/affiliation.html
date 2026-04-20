@@ -21,6 +21,41 @@
     .qr-btn.wa   { background:#25d366; color:#fff; }
     .qr-btn.fb   { background:#1877f2; color:#fff; }
     .qr-hint { font-size:0.72rem; color:var(--text2); margin-top:0.8rem; display:flex; align-items:center; justify-content:center; gap:0.3rem; }
+    /* LEADERBOARD */
+    .leaderboard-section { background:var(--bg2); border:1px solid var(--border); border-radius:20px; padding:1.8rem; margin-bottom:2rem; }
+    .leaderboard-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:0.8rem; }
+    .leaderboard-header h2 { font-size:1.2rem; margin:0; }
+    .podium { display:flex; align-items:flex-end; justify-content:center; gap:1rem; margin-bottom:2rem; flex-wrap:wrap; }
+    .podium-item { display:flex; flex-direction:column; align-items:center; gap:0.5rem; cursor:pointer; transition:transform 0.2s; }
+    .podium-item:hover { transform:translateY(-4px); }
+    .podium-item.rank-1 { order:2; }
+    .podium-item.rank-2 { order:1; }
+    .podium-item.rank-3 { order:3; }
+    .podium-avatar { position:relative; }
+    .podium-avatar img, .podium-avatar .avatar-circle { border:3px solid var(--border); }
+    .podium-item.rank-1 .podium-avatar img,
+    .podium-item.rank-1 .podium-avatar .avatar-circle { border-color:var(--gold); box-shadow:0 0 20px rgba(245,158,11,0.4); }
+    .podium-item.rank-2 .podium-avatar img,
+    .podium-item.rank-2 .podium-avatar .avatar-circle { border-color:#c0c0c0; }
+    .podium-item.rank-3 .podium-avatar img,
+    .podium-item.rank-3 .podium-avatar .avatar-circle { border-color:#cd7f32; }
+    .podium-crown { font-size:1.4rem; line-height:1; }
+    .podium-name { font-size:0.85rem; font-weight:700; text-align:center; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .podium-refs { font-size:0.78rem; color:var(--accent2); font-weight:700; }
+    .podium-base { border-radius:10px 10px 0 0; width:70px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; font-weight:800; color:#fff; }
+    .podium-item.rank-1 .podium-base { height:70px; background:linear-gradient(135deg,#f59e0b,#d97706); }
+    .podium-item.rank-2 .podium-base { height:50px; background:linear-gradient(135deg,#9ca3af,#6b7280); }
+    .podium-item.rank-3 .podium-base { height:36px; background:linear-gradient(135deg,#cd7f32,#a0522d); }
+    .lb-list { display:flex; flex-direction:column; gap:0.6rem; }
+    .lb-row { display:flex; align-items:center; gap:0.9rem; padding:0.75rem 1rem; background:var(--bg3); border:1px solid var(--border); border-radius:12px; cursor:pointer; transition:all 0.2s; }
+    .lb-row:hover { border-color:var(--accent); background:rgba(108,99,255,0.06); transform:translateX(4px); }
+    .lb-row.is-me { border-color:var(--accent2); background:rgba(0,212,170,0.06); }
+    .lb-rank { font-size:0.9rem; font-weight:800; width:24px; text-align:center; color:var(--text2); flex-shrink:0; }
+    .lb-refs { margin-left:auto; font-size:0.85rem; font-weight:700; color:var(--accent2); white-space:nowrap; }
+    .lb-plan { font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:50px; font-weight:700; }
+    .lb-empty { text-align:center; padding:3rem 1rem; color:var(--text2); }
+    .lb-empty i { font-size:2.5rem; opacity:0.25; display:block; margin-bottom:0.8rem; }
+    .lb-my-rank { margin-top:1rem; padding:0.8rem 1rem; background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.25); border-radius:12px; font-size:0.85rem; text-align:center; color:var(--accent2); }
   </style>
 </head>
 <body>
@@ -58,6 +93,22 @@
   </div>
 
   <section class="affiliation-section">
+
+    <!-- LEADERBOARD PARRAINAGES -->
+    <div class="leaderboard-section">
+      <div class="leaderboard-header">
+        <div>
+          <h2><i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard des Parrains</h2>
+          <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Les membres qui font le plus grandir la communauté</p>
+        </div>
+        <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadLeaderboard()">
+          <i class="fas fa-sync-alt"></i> Actualiser
+        </button>
+      </div>
+      <div id="leaderboardContent">
+        <div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>
+      </div>
+    </div>
 
     <!-- COMMENT CA MARCHE -->
     <div class="how-it-works">
@@ -322,11 +373,80 @@
   <script src="/js/api.js?v=1776608487261"></script>
   <script src="/js/app.js?v=1776608487261"></script>
   <script>
+    // ── LEADERBOARD ──
+    async function loadLeaderboard() {
+      const el = document.getElementById('leaderboardContent');
+      if (!el) return;
+      el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+        const data = await fetch(API + '/leaderboard').then(r => r.json());
+        const me = window._currentUser;
+
+        if (!data.length) {
+          el.innerHTML = '<div class="lb-empty"><i class="fas fa-trophy"></i><p>Aucun parrain pour le moment.<br>Soyez le premier !</p></div>';
+          return;
+        }
+
+        const top3 = data.slice(0, 3);
+        const rest = data.slice(3);
+        const crowns = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+        const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+
+        function avatar(u, size) {
+          const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+          if (u.avatarPhoto) return `<img src="${u.avatarPhoto}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover" />`;
+          return `<div class="avatar-circle" style="width:${size}px;height:${size}px;min-width:${size}px;font-size:${size*0.35}px;background:${u.avatarColor||'#6c63ff'}">${initials}</div>`;
+        }
+
+        // PODIUM top 3
+        const podiumHTML = `<div class="podium">${top3.map((u, i) => `
+          <div class="podium-item rank-${i+1}" onclick="window.location.href='profil.html?id=${u.id}'">
+            <div class="podium-crown">${crowns[i]}</div>
+            <div class="podium-avatar">${avatar(u, i===0?70:56)}</div>
+            <div class="podium-name">${u.name.split(' ')[0]}</div>
+            <div class="podium-refs"><i class="fas fa-users" style="font-size:0.65rem"></i> ${u.refs} filleul${u.refs>1?'s':''}</div>
+            <div class="podium-base">${i+1}</div>
+          </div>`).join('')}
+        </div>`;
+
+        // LISTE rang 4-10
+        const listHTML = rest.length ? `<div class="lb-list">${rest.map(u => {
+          const isMe = me && me.id === u.id;
+          return `<div class="lb-row${isMe?' is-me':''}" onclick="window.location.href='profil.html?id=${u.id}'">
+            <span class="lb-rank">${u.rank}</span>
+            ${avatar(u, 38)}
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}${isMe?' <span style="font-size:0.7rem;color:var(--accent2)">(vous)</span>':''}</div>
+              <span class="lb-plan" style="background:${planColors[u.plan]||'var(--accent)'}22;color:${planColors[u.plan]||'var(--accent)'}">${u.plan}</span>
+            </div>
+            <span class="lb-refs"><i class="fas fa-users" style="font-size:0.7rem"></i> ${u.refs}</span>
+          </div>`;
+        }).join('')}</div>` : '';
+
+        // Rang de l'utilisateur connecté s'il n'est pas dans le top 10
+        let myRankHTML = '';
+        if (me) {
+          const inTop = data.find(u => u.id === me.id);
+          if (!inTop && (me.refs || 0) > 0) {
+            myRankHTML = `<div class="lb-my-rank"><i class="fas fa-user"></i> Votre position : non classé &mdash; <strong>${me.refs || 0} filleul${(me.refs||0)>1?'s':''}</strong>. Continuez à parrainer !</div>`;
+          } else if (!inTop) {
+            myRankHTML = `<div class="lb-my-rank"><i class="fas fa-star"></i> Parrainez des membres pour apparaître dans le classement !</div>`;
+          }
+        }
+
+        el.innerHTML = podiumHTML + listHTML + myRankHTML;
+      } catch(e) {
+        el.innerHTML = '<div class="lb-empty"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await refreshCurrentUser();
       updateNavbar(user);
       if (window.PaganiNotif) PaganiNotif.startPolling();
       loadFooterSocialLinks();
+      await loadLeaderboard();
 
       // Afficher les sections selon la connexion
       const privateSections = document.getElementById('affPrivateSections');
