@@ -1069,6 +1069,57 @@ app.get('/api/auth/me/badges', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  LEADERBOARD PARRAINAGES
 // ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+//  LEADERBOARD MENSUEL
+// ══════════════════════════════════════════════════════════
+app.get('/api/leaderboard/monthly', async (req, res) => {
+  try {
+    const month = req.query.month || null;
+    res.json(await db.getMonthlyLeaderboard(month));
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.get('/api/leaderboard/config', async (req, res) => {
+  try { res.json(await db.getLeaderboardConfig()); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.put('/api/admin/leaderboard/config', requireAuth, requireAdmin, async (req, res) => {
+  try { res.json(await db.updateLeaderboardConfig(req.body)); }
+  catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+app.get('/api/admin/leaderboard/rewards', requireAuth, requireAdmin, async (req, res) => {
+  try { res.json(await db.getLeaderboardRewards()); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.post('/api/admin/leaderboard/rewards', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { month, prize1, prize2, prize3, winner1Id, winner2Id, winner3Id } = req.body;
+    if (!month) return res.status(400).json({ error: 'MOIS_REQUIS' });
+    const reward = await db.saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id });
+    // Notifier les gagnants
+    const prizes = [{ id: winner1Id, amount: prize1, rank: 1 }, { id: winner2Id, amount: prize2, rank: 2 }, { id: winner3Id, amount: prize3, rank: 3 }];
+    const rankLabels = { 1: '1er', 2: '2eme', 3: '3eme' };
+    for (const p of prizes) {
+      if (p.id && p.amount) {
+        const msg = '🏆 Felicitations ! Vous etes ' + rankLabels[p.rank] + ' du leaderboard de ' + month + ' ! Vous recevrez ' + Number(p.amount).toLocaleString('fr-FR') + ' AR.';
+        await db.createNotification({ userId: p.id, type: 'SUB_CONFIRMED', message: msg, link: 'affiliation.html' });
+      }
+    }
+    res.json(reward);
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+app.patch('/api/admin/leaderboard/rewards/:month/paid/:rank', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await db.markRewardPaid(req.params.month, req.params.rank);
+    res.json({ ok: true });
+  } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
 app.get('/api/leaderboard', async (req, res) => {
   try {
     const users = await db.getAllUsers();

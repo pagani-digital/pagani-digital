@@ -1024,6 +1024,82 @@ async function deletePrivateMessage(msgId, senderId) {
 }
 
 
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD MENSUEL
+// ═══════════════════════════════════════════════
+
+function _currentMonth() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+async function incrementMonthlyRef(userId) {
+  const month = _currentMonth();
+  await query(
+    `INSERT INTO monthly_refs (user_id, month, refs_count) VALUES ($1,$2,1)
+     ON CONFLICT (user_id, month) DO UPDATE SET refs_count = monthly_refs.refs_count + 1`,
+    [userId, month]
+  );
+}
+
+async function getMonthlyLeaderboard(month) {
+  const m = month || _currentMonth();
+  const config = await getLeaderboardConfig();
+  const res = await query(
+    `SELECT mr.user_id, mr.refs_count, u.name, u.avatar_color, u.avatar_photo, u.plan, u.refs
+     FROM monthly_refs mr
+     JOIN users u ON u.id = mr.user_id
+     WHERE mr.month = $1 AND mr.refs_count >= $2 AND u.is_active = true
+     ORDER BY mr.refs_count DESC
+     LIMIT 10`,
+    [m, config.minRefs]
+  );
+  return { month: m, config, rows: rowsToCamel(res.rows) };
+}
+
+async function getLeaderboardConfig() {
+  const res = await query('SELECT * FROM leaderboard_config WHERE id = 1');
+  return rowToCamel(res.rows[0]) || { prize1: 10000, prize2: 5000, prize3: 2000, minRefs: 5 };
+}
+
+async function updateLeaderboardConfig(fields) {
+  const normalized = {};
+  if (fields.prize1  !== undefined) normalized.prize_1  = parseInt(fields.prize1)  || 0;
+  if (fields.prize2  !== undefined) normalized.prize_2  = parseInt(fields.prize2)  || 0;
+  if (fields.prize3  !== undefined) normalized.prize_3  = parseInt(fields.prize3)  || 0;
+  if (fields.minRefs !== undefined) normalized.min_refs = parseInt(fields.minRefs) || 1;
+  const keys = Object.keys(normalized);
+  if (!keys.length) return getLeaderboardConfig();
+  const setQ = keys.map(function(k, i) { return k + ' = $' + (i + 1); }).join(', ');
+  const vals = keys.map(function(k) { return normalized[k]; });
+  vals.push(1);
+  await query('UPDATE leaderboard_config SET ' + setQ + ' WHERE id = $' + (keys.length + 1), vals);
+  return getLeaderboardConfig();
+}
+async function getLeaderboardRewards() {
+  const res = await query('SELECT * FROM leaderboard_rewards ORDER BY month DESC LIMIT 12');
+  return rowsToCamel(res.rows);
+}
+
+async function saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id }) {
+  const res = await query(
+    `INSERT INTO leaderboard_rewards (month, prize_1, prize_2, prize_3, winner_1_id, winner_2_id, winner_3_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (month) DO UPDATE SET
+       prize_1=EXCLUDED.prize_1, prize_2=EXCLUDED.prize_2, prize_3=EXCLUDED.prize_3,
+       winner_1_id=EXCLUDED.winner_1_id, winner_2_id=EXCLUDED.winner_2_id, winner_3_id=EXCLUDED.winner_3_id
+     RETURNING *`,
+    [month, prize1||0, prize2||0, prize3||0, winner1Id||null, winner2Id||null, winner3Id||null]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function markRewardPaid(month, rank) {
+  const col = `paid_${rank}`;
+  await query(`UPDATE leaderboard_rewards SET ${col} = true WHERE month = $1`, [month]);
+}
+
 async function updateStreak(userId) {
   const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
   if (!res.rows.length) return;
@@ -1363,6 +1439,825 @@ module.exports = {
 
   updateLastSeen,
   updateStreak,
+  incrementMonthlyRef,
+  getMonthlyLeaderboard,
+  getLeaderboardConfig,
+  updateLeaderboardConfig,
+  getLeaderboardRewards,
+  saveLeaderboardReward,
+  markRewardPaid,
+  getLastSeen,
+
+  followUser,
+  unfollowUser,
+  isFollowing,
+  getFollowers,
+  getFollowing,
+  countFollowers,
+  countFollowing,
+
+  getNavbarButton,
+  setNavbarButton,
+
+  getSocialLinks,
+  setSocialLinks,
+
+  recordShare,
+  getShareStats,
+
+  getEbooks,
+  getAllEbooksAdmin,
+  getEbookById,
+  createEbook,
+  updateEbook,
+  deleteEbook,
+  createEbookPurchase,
+  getEbookPurchasesByUser,
+  getAllEbookPurchases,
+  hasEbookPurchase,
+  updateEbookPurchase,
+
+  togglePostReaction,
+  getPostReactions,
+  getPostReactionsDetail,
+  getPostsReactionsBatch,
+};
+
+async function getLeaderboardRewards() {
+  const res = await query('SELECT * FROM leaderboard_rewards ORDER BY month DESC LIMIT 12');
+  return rowsToCamel(res.rows);
+}
+
+async function saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id }) {
+  const res = await query(
+    `INSERT INTO leaderboard_rewards (month, prize_1, prize_2, prize_3, winner_1_id, winner_2_id, winner_3_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (month) DO UPDATE SET
+       prize_1=EXCLUDED.prize_1, prize_2=EXCLUDED.prize_2, prize_3=EXCLUDED.prize_3,
+       winner_1_id=EXCLUDED.winner_1_id, winner_2_id=EXCLUDED.winner_2_id, winner_3_id=EXCLUDED.winner_3_id
+     RETURNING *`,
+    [month, prize1||0, prize2||0, prize3||0, winner1Id||null, winner2Id||null, winner3Id||null]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function markRewardPaid(month, rank) {
+  const col = `paid_${rank}`;
+  await query(`UPDATE leaderboard_rewards SET ${col} = true WHERE month = $1`, [month]);
+}
+
+async function updateStreak(userId) {
+  const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
+  if (!res.rows.length) return;
+  const { last_login_date, streak } = res.rows[0];
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  if (last_login_date && last_login_date.toISOString().slice(0, 10) === today) return; // déjà compté aujourd'hui
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const lastDate = last_login_date ? last_login_date.toISOString().slice(0, 10) : null;
+  const newStreak = lastDate === yesterday ? (streak || 0) + 1 : 1;
+  await query(
+    'UPDATE users SET streak = $1, last_login_date = $2 WHERE id = $3',
+    [newStreak, today, userId]
+  );
+}
+
+async function updateLastSeen(userId, ts) {
+  await query(
+    `UPDATE users SET last_seen = $1 WHERE id = $2`,
+    [ts, userId]
+  ).catch(() => {});
+}
+
+async function getLastSeen(userId) {
+  try {
+    const res = await query('SELECT last_seen FROM users WHERE id = $1', [userId]);
+    return res.rows[0] ? res.rows[0].last_seen : null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════
+// PARTAGES FACEBOOK
+// ═══════════════════════════════════════════════
+
+async function recordShare({ postId, userId, refCode }) {
+  await query(
+    `INSERT INTO post_shares (post_id, user_id, ref_code) VALUES ($1,$2,$3)`,
+    [postId, userId, refCode || '']
+  );
+}
+
+async function getShareStats() {
+  const res = await query(
+    `SELECT ps.post_id, p.title, u.name AS user_name, ps.ref_code, ps.created_at
+     FROM post_shares ps
+     LEFT JOIN posts p ON p.id = ps.post_id
+     LEFT JOIN users u ON u.id = ps.user_id
+     ORDER BY ps.created_at DESC
+     LIMIT 100`
+  );
+  return rowsToCamel(res.rows);
+}
+
+// ═══════════════════════════════════════════════
+// NAVBAR BUTTON
+// ═══════════════════════════════════════════════
+
+async function getSocialLinks() {
+  const res = await query('SELECT * FROM social_links WHERE id = 1');
+  return res.rows[0] || { facebook: '', tiktok: '', telegram: '', youtube: '' };
+}
+
+async function setSocialLinks({ facebook, tiktok, telegram, youtube }) {
+  await query(
+    `INSERT INTO social_links (id, facebook, tiktok, telegram, youtube)
+     VALUES (1, $1, $2, $3, $4)
+     ON CONFLICT (id) DO UPDATE SET facebook=$1, tiktok=$2, telegram=$3, youtube=$4`,
+    [facebook || '', tiktok || '', telegram || '', youtube || '']
+  );
+}
+
+async function getNavbarButton() {
+  const res = await query('SELECT * FROM navbar_button WHERE id = 1');
+  return res.rows[0] || { enabled: false, label: '', icon_url: '', link: '' };
+}
+
+async function setNavbarButton({ enabled, label, icon_url, link }) {
+  await query(
+    `INSERT INTO navbar_button (id, enabled, label, icon_url, link)
+     VALUES (1, $1, $2, $3, $4)
+     ON CONFLICT (id) DO UPDATE SET enabled=$1, label=$2, icon_url=$3, link=$4`,
+    [!!enabled, label || '', icon_url || '', link || '']
+  );
+}
+
+// ═══════════════════════════════════════════════
+// EBOOKS
+// ═══════════════════════════════════════════════
+
+async function getEbooks() {
+  const res = await query('SELECT * FROM ebooks WHERE is_active = true ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbooksAdmin() {
+  const res = await query('SELECT * FROM ebooks ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getEbookById(id) {
+  const res = await query('SELECT * FROM ebooks WHERE id = $1', [id]);
+  return rowToCamel(res.rows[0]) || null;
+}
+
+async function createEbook({ title, description, cover, price, category, pages, author, fileUrl }) {
+  const res = await query(
+    `INSERT INTO ebooks (title, description, cover, price, category, pages, author, file_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [title, description || '', cover || '', price || 0, category || 'General', pages || null, author || '', fileUrl || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function updateEbook(id, fields) {
+  const allowed = { title: 'title', description: 'description', cover: 'cover', price: 'price',
+    category: 'category', pages: 'pages', author: 'author', fileUrl: 'file_url', isActive: 'is_active' };
+  const keys = Object.keys(fields).filter(k => allowed[k] !== undefined);
+  if (!keys.length) return getEbookById(id);
+  const setQuery = keys.map((k, i) => `${allowed[k]} = $${i + 1}`).join(', ');
+  const res = await query(
+    `UPDATE ebooks SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...keys.map(k => fields[k]), id]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function deleteEbook(id) {
+  await query('DELETE FROM ebooks WHERE id = $1', [id]);
+}
+
+async function createEbookPurchase({ userId, ebookId, amount, phone, operator, mmName, txRef, proof }) {
+  const user  = await getUserById(userId);
+  const ebook = await getEbookById(ebookId);
+  const res = await query(
+    `INSERT INTO ebook_purchases (user_id, user_name, ebook_id, ebook_title, amount, phone, operator, mm_name, tx_ref, proof)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [userId, user?.name || '', ebookId, ebook?.title || '', amount, phone || '', operator || '', mmName || '', txRef || '', proof || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function getEbookPurchasesByUser(userId) {
+  const res = await query(
+    `SELECT ep.*, e.file_url, e.cover FROM ebook_purchases ep
+     LEFT JOIN ebooks e ON e.id = ep.ebook_id
+     WHERE ep.user_id = $1 ORDER BY ep.created_at DESC`,
+    [userId]
+  );
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbookPurchases() {
+  const res = await query('SELECT * FROM ebook_purchases ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function hasEbookPurchase(userId, ebookId) {
+  const res = await query(
+    `SELECT id FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2 AND statut = 'Approuvé'`,
+    [userId, ebookId]
+  );
+  return res.rows.length > 0;
+}
+
+async function updateEbookPurchase(id, { statut, rejectReason }) {
+  const res = await query(
+    `UPDATE ebook_purchases SET statut = $1, reject_reason = $2, treated_at = NOW() WHERE id = $3 RETURNING *`,
+    [statut, rejectReason || '', id]
+  );
+  const purchase = rowToCamel(res.rows[0]);
+  if (!purchase) throw new Error('PURCHASE_NOT_FOUND');
+  if (statut === 'Approuvé') {
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_UNLOCKED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
+      link: 'ebooks.html'
+    });
+  } else if (statut === 'Rejeté') {
+    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_REJECTED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été rejeté.${reason}`,
+      link: 'ebooks.html'
+    });
+  }
+  return purchase;
+}
+
+// ═══════════════════════════════════════════════
+// RÉACTIONS POSTS
+// ═══════════════════════════════════════════════
+
+async function togglePostReaction(postId, userId, emoji) {
+  const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
+  if (!ALLOWED.includes(emoji)) throw new Error('EMOJI_INVALIDE');
+  const existing = await query(
+    'SELECT id, emoji FROM post_reactions WHERE post_id=$1 AND user_id=$2',
+    [postId, userId]
+  );
+  if (existing.rows.length) {
+    if (existing.rows[0].emoji === emoji) {
+      await query('DELETE FROM post_reactions WHERE post_id=$1 AND user_id=$2', [postId, userId]);
+      return { action: 'removed', emoji };
+    }
+    await query('UPDATE post_reactions SET emoji=$1, created_at=NOW() WHERE post_id=$2 AND user_id=$3', [emoji, postId, userId]);
+    return { action: 'changed', emoji };
+  }
+  await query('INSERT INTO post_reactions (post_id, user_id, emoji) VALUES ($1,$2,$3)', [postId, userId, emoji]);
+  return { action: 'added', emoji };
+}
+
+async function getPostReactions(postId) {
+  const res = await query('SELECT emoji, user_id FROM post_reactions WHERE post_id=$1', [postId]);
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push(row.user_id);
+  }
+  return grouped;
+}
+
+
+async function getPostReactionsDetail(postId) {
+  const res = await query(
+    `SELECT r.emoji, r.user_id, u.name, u.avatar_photo, u.avatar_color
+     FROM post_reactions r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.post_id = $1
+     ORDER BY r.created_at DESC`, [postId]
+  );
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push({ id: row.user_id, name: row.name, avatarPhoto: row.avatar_photo, avatarColor: row.avatar_color });
+  }
+  return grouped;
+}
+async function getPostsReactionsBatch(postIds) {
+  if (!postIds.length) return {};
+  const res = await query(
+    'SELECT post_id, emoji, user_id FROM post_reactions WHERE post_id = ANY($1)',
+    [postIds]
+  );
+  const result = {};
+  for (const row of res.rows) {
+    if (!result[row.post_id]) result[row.post_id] = {};
+    if (!result[row.post_id][row.emoji]) result[row.post_id][row.emoji] = [];
+    result[row.post_id][row.emoji].push(row.user_id);
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════
+// UTIL
+// ═══════════════════════════════════════════════
+
+function generateRefCode() {
+  return 'PAG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// ═══════════════════════════════════════════════
+
+module.exports = {
+  createUser,
+  login,
+  getUserById,
+  getAllUsers,
+  updateUser,
+  adminUpdateUser,
+  deleteUser,
+
+  createVideo,
+  getVideos,
+  getVideoById,
+  deleteVideo,
+
+  createPost,
+  getPosts,
+  getPostsByUser,
+  getPostById,
+  deletePost,
+  updatePost,
+  toggleLike,
+  addComment,
+  addReply,
+
+  createNotification,
+  getNotifications,
+  countUnreadNotifications,
+  markNotificationsRead,
+  setSseNotifyHook,
+
+  getCommissions,
+  requestWithdraw,
+
+  createUpgradeRequest,
+  getUpgradeRequests,
+  updateUpgradeRequest,
+
+  createVideoPurchase,
+  getVideoPurchasesByUser,
+  getPendingVideoPurchases,
+  hasVideoPurchase,
+  updateVideoPurchase,
+
+  updateVideo,
+
+  getVideoModules,
+  createVideoModule,
+  updateVideoModule,
+  deleteVideoModule,
+
+  createModulePurchase,
+  getModulePurchasesByUser,
+  getAllModulePurchases,
+  hasModulePurchase,
+  updateModulePurchase,
+
+  getPaymentAccounts,
+  updatePaymentAccount,
+  togglePaymentAccount,
+  clearPaymentAccount,
+
+  getPricing,
+  updatePricing,
+
+  addMmAccount,
+  changePassword,
+
+  getAdminStats,
+
+  sendPrivateMessage,
+  getConversations,
+  getPrivateMessages,
+  markMessagesRead,
+  countUnreadMessages,
+  deletePrivateMessage,
+
+  updateLastSeen,
+  updateStreak,
+  incrementMonthlyRef,
+  getMonthlyLeaderboard,
+  getLeaderboardConfig,
+  updateLeaderboardConfig,
+  getLeaderboardRewards,
+  saveLeaderboardReward,
+  markRewardPaid,
+  getLastSeen,
+
+  followUser,
+  unfollowUser,
+  isFollowing,
+  getFollowers,
+  getFollowing,
+  countFollowers,
+  countFollowing,
+
+  getNavbarButton,
+  setNavbarButton,
+
+  getSocialLinks,
+  setSocialLinks,
+
+  recordShare,
+  getShareStats,
+
+  getEbooks,
+  getAllEbooksAdmin,
+  getEbookById,
+  createEbook,
+  updateEbook,
+  deleteEbook,
+  createEbookPurchase,
+  getEbookPurchasesByUser,
+  getAllEbookPurchases,
+  hasEbookPurchase,
+  updateEbookPurchase,
+
+  togglePostReaction,
+  getPostReactions,
+  getPostReactionsDetail,
+  getPostsReactionsBatch,
+};
+
+async function getLeaderboardRewards() {
+  const res = await query('SELECT * FROM leaderboard_rewards ORDER BY month DESC LIMIT 12');
+  return rowsToCamel(res.rows);
+}
+
+async function saveLeaderboardReward(month, { prize1, prize2, prize3, winner1Id, winner2Id, winner3Id }) {
+  const res = await query(
+    `INSERT INTO leaderboard_rewards (month, prize_1, prize_2, prize_3, winner_1_id, winner_2_id, winner_3_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     ON CONFLICT (month) DO UPDATE SET
+       prize_1=EXCLUDED.prize_1, prize_2=EXCLUDED.prize_2, prize_3=EXCLUDED.prize_3,
+       winner_1_id=EXCLUDED.winner_1_id, winner_2_id=EXCLUDED.winner_2_id, winner_3_id=EXCLUDED.winner_3_id
+     RETURNING *`,
+    [month, prize1||0, prize2||0, prize3||0, winner1Id||null, winner2Id||null, winner3Id||null]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function markRewardPaid(month, rank) {
+  const col = `paid_${rank}`;
+  await query(`UPDATE leaderboard_rewards SET ${col} = true WHERE month = $1`, [month]);
+}
+
+async function updateStreak(userId) {
+  const res = await query('SELECT last_login_date, streak FROM users WHERE id = $1', [userId]);
+  if (!res.rows.length) return;
+  const { last_login_date, streak } = res.rows[0];
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  if (last_login_date && last_login_date.toISOString().slice(0, 10) === today) return; // déjà compté aujourd'hui
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const lastDate = last_login_date ? last_login_date.toISOString().slice(0, 10) : null;
+  const newStreak = lastDate === yesterday ? (streak || 0) + 1 : 1;
+  await query(
+    'UPDATE users SET streak = $1, last_login_date = $2 WHERE id = $3',
+    [newStreak, today, userId]
+  );
+}
+
+async function updateLastSeen(userId, ts) {
+  await query(
+    `UPDATE users SET last_seen = $1 WHERE id = $2`,
+    [ts, userId]
+  ).catch(() => {});
+}
+
+async function getLastSeen(userId) {
+  try {
+    const res = await query('SELECT last_seen FROM users WHERE id = $1', [userId]);
+    return res.rows[0] ? res.rows[0].last_seen : null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════
+// PARTAGES FACEBOOK
+// ═══════════════════════════════════════════════
+
+async function recordShare({ postId, userId, refCode }) {
+  await query(
+    `INSERT INTO post_shares (post_id, user_id, ref_code) VALUES ($1,$2,$3)`,
+    [postId, userId, refCode || '']
+  );
+}
+
+async function getShareStats() {
+  const res = await query(
+    `SELECT ps.post_id, p.title, u.name AS user_name, ps.ref_code, ps.created_at
+     FROM post_shares ps
+     LEFT JOIN posts p ON p.id = ps.post_id
+     LEFT JOIN users u ON u.id = ps.user_id
+     ORDER BY ps.created_at DESC
+     LIMIT 100`
+  );
+  return rowsToCamel(res.rows);
+}
+
+// ═══════════════════════════════════════════════
+// NAVBAR BUTTON
+// ═══════════════════════════════════════════════
+
+async function getSocialLinks() {
+  const res = await query('SELECT * FROM social_links WHERE id = 1');
+  return res.rows[0] || { facebook: '', tiktok: '', telegram: '', youtube: '' };
+}
+
+async function setSocialLinks({ facebook, tiktok, telegram, youtube }) {
+  await query(
+    `INSERT INTO social_links (id, facebook, tiktok, telegram, youtube)
+     VALUES (1, $1, $2, $3, $4)
+     ON CONFLICT (id) DO UPDATE SET facebook=$1, tiktok=$2, telegram=$3, youtube=$4`,
+    [facebook || '', tiktok || '', telegram || '', youtube || '']
+  );
+}
+
+async function getNavbarButton() {
+  const res = await query('SELECT * FROM navbar_button WHERE id = 1');
+  return res.rows[0] || { enabled: false, label: '', icon_url: '', link: '' };
+}
+
+async function setNavbarButton({ enabled, label, icon_url, link }) {
+  await query(
+    `INSERT INTO navbar_button (id, enabled, label, icon_url, link)
+     VALUES (1, $1, $2, $3, $4)
+     ON CONFLICT (id) DO UPDATE SET enabled=$1, label=$2, icon_url=$3, link=$4`,
+    [!!enabled, label || '', icon_url || '', link || '']
+  );
+}
+
+// ═══════════════════════════════════════════════
+// EBOOKS
+// ═══════════════════════════════════════════════
+
+async function getEbooks() {
+  const res = await query('SELECT * FROM ebooks WHERE is_active = true ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbooksAdmin() {
+  const res = await query('SELECT * FROM ebooks ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function getEbookById(id) {
+  const res = await query('SELECT * FROM ebooks WHERE id = $1', [id]);
+  return rowToCamel(res.rows[0]) || null;
+}
+
+async function createEbook({ title, description, cover, price, category, pages, author, fileUrl }) {
+  const res = await query(
+    `INSERT INTO ebooks (title, description, cover, price, category, pages, author, file_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [title, description || '', cover || '', price || 0, category || 'General', pages || null, author || '', fileUrl || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function updateEbook(id, fields) {
+  const allowed = { title: 'title', description: 'description', cover: 'cover', price: 'price',
+    category: 'category', pages: 'pages', author: 'author', fileUrl: 'file_url', isActive: 'is_active' };
+  const keys = Object.keys(fields).filter(k => allowed[k] !== undefined);
+  if (!keys.length) return getEbookById(id);
+  const setQuery = keys.map((k, i) => `${allowed[k]} = $${i + 1}`).join(', ');
+  const res = await query(
+    `UPDATE ebooks SET ${setQuery} WHERE id = $${keys.length + 1} RETURNING *`,
+    [...keys.map(k => fields[k]), id]
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function deleteEbook(id) {
+  await query('DELETE FROM ebooks WHERE id = $1', [id]);
+}
+
+async function createEbookPurchase({ userId, ebookId, amount, phone, operator, mmName, txRef, proof }) {
+  const user  = await getUserById(userId);
+  const ebook = await getEbookById(ebookId);
+  const res = await query(
+    `INSERT INTO ebook_purchases (user_id, user_name, ebook_id, ebook_title, amount, phone, operator, mm_name, tx_ref, proof)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [userId, user?.name || '', ebookId, ebook?.title || '', amount, phone || '', operator || '', mmName || '', txRef || '', proof || '']
+  );
+  return rowToCamel(res.rows[0]);
+}
+
+async function getEbookPurchasesByUser(userId) {
+  const res = await query(
+    `SELECT ep.*, e.file_url, e.cover FROM ebook_purchases ep
+     LEFT JOIN ebooks e ON e.id = ep.ebook_id
+     WHERE ep.user_id = $1 ORDER BY ep.created_at DESC`,
+    [userId]
+  );
+  return rowsToCamel(res.rows);
+}
+
+async function getAllEbookPurchases() {
+  const res = await query('SELECT * FROM ebook_purchases ORDER BY created_at DESC');
+  return rowsToCamel(res.rows);
+}
+
+async function hasEbookPurchase(userId, ebookId) {
+  const res = await query(
+    `SELECT id FROM ebook_purchases WHERE user_id = $1 AND ebook_id = $2 AND statut = 'Approuvé'`,
+    [userId, ebookId]
+  );
+  return res.rows.length > 0;
+}
+
+async function updateEbookPurchase(id, { statut, rejectReason }) {
+  const res = await query(
+    `UPDATE ebook_purchases SET statut = $1, reject_reason = $2, treated_at = NOW() WHERE id = $3 RETURNING *`,
+    [statut, rejectReason || '', id]
+  );
+  const purchase = rowToCamel(res.rows[0]);
+  if (!purchase) throw new Error('PURCHASE_NOT_FOUND');
+  if (statut === 'Approuvé') {
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_UNLOCKED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
+      link: 'ebooks.html'
+    });
+  } else if (statut === 'Rejeté') {
+    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+    await createNotification({
+      userId: purchase.userId, type: 'FORMATION_REJECTED',
+      message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été rejeté.${reason}`,
+      link: 'ebooks.html'
+    });
+  }
+  return purchase;
+}
+
+// ═══════════════════════════════════════════════
+// RÉACTIONS POSTS
+// ═══════════════════════════════════════════════
+
+async function togglePostReaction(postId, userId, emoji) {
+  const ALLOWED = ['❤️','😂','😮','😢','😡','👍'];
+  if (!ALLOWED.includes(emoji)) throw new Error('EMOJI_INVALIDE');
+  const existing = await query(
+    'SELECT id, emoji FROM post_reactions WHERE post_id=$1 AND user_id=$2',
+    [postId, userId]
+  );
+  if (existing.rows.length) {
+    if (existing.rows[0].emoji === emoji) {
+      await query('DELETE FROM post_reactions WHERE post_id=$1 AND user_id=$2', [postId, userId]);
+      return { action: 'removed', emoji };
+    }
+    await query('UPDATE post_reactions SET emoji=$1, created_at=NOW() WHERE post_id=$2 AND user_id=$3', [emoji, postId, userId]);
+    return { action: 'changed', emoji };
+  }
+  await query('INSERT INTO post_reactions (post_id, user_id, emoji) VALUES ($1,$2,$3)', [postId, userId, emoji]);
+  return { action: 'added', emoji };
+}
+
+async function getPostReactions(postId) {
+  const res = await query('SELECT emoji, user_id FROM post_reactions WHERE post_id=$1', [postId]);
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push(row.user_id);
+  }
+  return grouped;
+}
+
+
+async function getPostReactionsDetail(postId) {
+  const res = await query(
+    `SELECT r.emoji, r.user_id, u.name, u.avatar_photo, u.avatar_color
+     FROM post_reactions r
+     JOIN users u ON u.id = r.user_id
+     WHERE r.post_id = $1
+     ORDER BY r.created_at DESC`, [postId]
+  );
+  const grouped = {};
+  for (const row of res.rows) {
+    if (!grouped[row.emoji]) grouped[row.emoji] = [];
+    grouped[row.emoji].push({ id: row.user_id, name: row.name, avatarPhoto: row.avatar_photo, avatarColor: row.avatar_color });
+  }
+  return grouped;
+}
+async function getPostsReactionsBatch(postIds) {
+  if (!postIds.length) return {};
+  const res = await query(
+    'SELECT post_id, emoji, user_id FROM post_reactions WHERE post_id = ANY($1)',
+    [postIds]
+  );
+  const result = {};
+  for (const row of res.rows) {
+    if (!result[row.post_id]) result[row.post_id] = {};
+    if (!result[row.post_id][row.emoji]) result[row.post_id][row.emoji] = [];
+    result[row.post_id][row.emoji].push(row.user_id);
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════
+// UTIL
+// ═══════════════════════════════════════════════
+
+function generateRefCode() {
+  return 'PAG-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+// ═══════════════════════════════════════════════
+
+module.exports = {
+  createUser,
+  login,
+  getUserById,
+  getAllUsers,
+  updateUser,
+  adminUpdateUser,
+  deleteUser,
+
+  createVideo,
+  getVideos,
+  getVideoById,
+  deleteVideo,
+
+  createPost,
+  getPosts,
+  getPostsByUser,
+  getPostById,
+  deletePost,
+  updatePost,
+  toggleLike,
+  addComment,
+  addReply,
+
+  createNotification,
+  getNotifications,
+  countUnreadNotifications,
+  markNotificationsRead,
+  setSseNotifyHook,
+
+  getCommissions,
+  requestWithdraw,
+
+  createUpgradeRequest,
+  getUpgradeRequests,
+  updateUpgradeRequest,
+
+  createVideoPurchase,
+  getVideoPurchasesByUser,
+  getPendingVideoPurchases,
+  hasVideoPurchase,
+  updateVideoPurchase,
+
+  updateVideo,
+
+  getVideoModules,
+  createVideoModule,
+  updateVideoModule,
+  deleteVideoModule,
+
+  createModulePurchase,
+  getModulePurchasesByUser,
+  getAllModulePurchases,
+  hasModulePurchase,
+  updateModulePurchase,
+
+  getPaymentAccounts,
+  updatePaymentAccount,
+  togglePaymentAccount,
+  clearPaymentAccount,
+
+  getPricing,
+  updatePricing,
+
+  addMmAccount,
+  changePassword,
+
+  getAdminStats,
+
+  sendPrivateMessage,
+  getConversations,
+  getPrivateMessages,
+  markMessagesRead,
+  countUnreadMessages,
+  deletePrivateMessage,
+
+  updateLastSeen,
+  updateStreak,
+  incrementMonthlyRef,
+  getMonthlyLeaderboard,
+  getLeaderboardConfig,
+  updateLeaderboardConfig,
+  getLeaderboardRewards,
+  saveLeaderboardReward,
+  markRewardPaid,
   getLastSeen,
 
   followUser,

@@ -7,6 +7,12 @@
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    .lb-search-wrap { position:relative; }
+    .lb-dropdown { position:absolute; top:100%; left:0; right:0; background:var(--bg2); border:1px solid var(--border); border-radius:10px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 8px 24px rgba(0,0,0,0.2); margin-top:2px; }
+    .lb-dropdown-item { display:flex; align-items:center; gap:0.5rem; padding:0.6rem 0.8rem; cursor:pointer; font-size:0.85rem; transition:background 0.15s; }
+    .lb-dropdown-item:hover { background:rgba(108,99,255,0.1); }
+  </style>
 </head>
 <body>
   <nav class="navbar">
@@ -462,8 +468,98 @@
             <i class="fas fa-shopping-bag" style="color:var(--accent2)"></i> Achats Ebooks
             <span class="admin-subnav-badge" id="ebookPurchasesBadge" style="display:none">0</span>
           </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('leaderboard', this)">
+            <i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard
+          </button>
         </div>
         </div>
+        <!-- SECTION : LEADERBOARD -->
+        <div id="adminSection-leaderboard" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1.2rem">
+            <div>
+              <h3><i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard Mensuel</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Configurez les prix et déclarez les gagnants chaque mois.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminLeaderboard()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+
+          <!-- CONFIG PRIX -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem">
+            <h4 style="font-size:0.9rem;margin-bottom:1rem"><i class="fas fa-cog" style="color:var(--accent)"></i> Configuration des prix</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:0.8rem;margin-bottom:1rem">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥇 1ère place (AR)</label>
+                <input type="number" id="lbPrize1" class="upgrade-input" placeholder="Ex: 10000" min="0" step="500" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥈 2ème place (AR)</label>
+                <input type="number" id="lbPrize2" class="upgrade-input" placeholder="Ex: 5000" min="0" step="500" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥉 3ème place (AR)</label>
+                <input type="number" id="lbPrize3" class="upgrade-input" placeholder="Ex: 2000" min="0" step="500" />
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem"><i class="fas fa-users"></i> Min. filleuls requis</label>
+                <input type="number" id="lbMinRefs" class="upgrade-input" placeholder="Ex: 5" min="1" />
+              </div>
+            </div>
+            <p id="lbConfigMsg" style="font-size:0.78rem;min-height:1rem;color:var(--accent2)"></p>
+            <button class="btn-primary" style="padding:0.5rem 1.2rem;font-size:0.82rem" onclick="saveLbConfig()">
+              <i class="fas fa-save"></i> Enregistrer la configuration
+            </button>
+          </div>
+
+          <!-- DÉCLARER GAGNANTS -->
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem">
+            <h4 style="font-size:0.9rem;margin-bottom:1rem"><i class="fas fa-crown" style="color:var(--gold)"></i> Déclarer les gagnants du mois</h4>
+            <div style="display:flex;gap:0.8rem;flex-wrap:wrap;margin-bottom:1rem">
+              <div class="form-group" style="margin:0;flex:1;min-width:140px">
+                <label style="font-size:0.78rem">Mois (YYYY-MM)</label>
+                <input type="month" id="lbWinMonth" class="upgrade-input" />
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.8rem;margin-bottom:1rem">
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥇 1er — Rechercher</label>
+                <div class="lb-search-wrap" id="lbSearchWrap1">
+                  <input type="text" id="lbSearch1" class="upgrade-input" placeholder="Nom du gagnant..." autocomplete="off" oninput="filterLbSearch(1)" onfocus="showLbDropdown(1)" />
+                  <div class="lb-dropdown" id="lbDropdown1" style="display:none"></div>
+                  <input type="hidden" id="lbWin1" />
+                </div>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥈 2ème — Rechercher</label>
+                <div class="lb-search-wrap" id="lbSearchWrap2">
+                  <input type="text" id="lbSearch2" class="upgrade-input" placeholder="Nom du gagnant..." autocomplete="off" oninput="filterLbSearch(2)" onfocus="showLbDropdown(2)" />
+                  <div class="lb-dropdown" id="lbDropdown2" style="display:none"></div>
+                  <input type="hidden" id="lbWin2" />
+                </div>
+              </div>
+              <div class="form-group" style="margin:0">
+                <label style="font-size:0.78rem">🥉 3ème — Rechercher</label>
+                <div class="lb-search-wrap" id="lbSearchWrap3">
+                  <input type="text" id="lbSearch3" class="upgrade-input" placeholder="Nom du gagnant..." autocomplete="off" oninput="filterLbSearch(3)" onfocus="showLbDropdown(3)" />
+                  <div class="lb-dropdown" id="lbDropdown3" style="display:none"></div>
+                  <input type="hidden" id="lbWin3" />
+                </div>
+              </div>
+            </div>
+            <p id="lbWinMsg" style="font-size:0.78rem;min-height:1rem;color:var(--accent2)"></p>
+            <button class="btn-primary" style="padding:0.5rem 1.2rem;font-size:0.82rem" onclick="saveLbWinners()">
+              <i class="fas fa-trophy"></i> Déclarer les gagnants
+            </button>
+          </div>
+
+          <!-- HISTORIQUE -->
+          <div>
+            <h4 style="font-size:0.9rem;margin-bottom:1rem"><i class="fas fa-history" style="color:var(--accent)"></i> Historique des récompenses</h4>
+            <div id="lbHistoryList"></div>
+          </div>
+        </div>
+
         <!-- SECTION : ACHATS EBOOKS -->
         <div id="adminSection-ebookpurchases" class="admin-sub-section" style="display:none">
           <div class="admin-users-toolbar">
@@ -1310,6 +1406,188 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   <script src="/js/app.js?v=1776608487261"></script>
   <script src="https://www.youtube.com/iframe_api" referrerpolicy="strict-origin-when-cross-origin" defer></script>
   <script>
+    // ── LEADERBOARD ADMIN ──
+    let _lbUsers = [];
+
+    function filterLbSearch(rank) {
+      const input = document.getElementById('lbSearch' + rank);
+      const dropdown = document.getElementById('lbDropdown' + rank);
+      const q = input.value.toLowerCase().trim();
+      // Reset hidden si on retape
+      document.getElementById('lbWin' + rank).value = '';
+      input.style.borderColor = '';
+      const filtered = q ? _lbUsers.filter(u => u.name.toLowerCase().includes(q)) : _lbUsers;
+      renderLbDropdown(rank, filtered);
+      dropdown.style.display = filtered.length ? 'block' : 'none';
+    }
+
+    function showLbDropdown(rank) {
+      const dropdown = document.getElementById('lbDropdown' + rank);
+      renderLbDropdown(rank, _lbUsers);
+      dropdown.style.display = _lbUsers.length ? 'block' : 'none';
+    }
+
+    function renderLbDropdown(rank, users) {
+      const dropdown = document.getElementById('lbDropdown' + rank);
+      dropdown.innerHTML = users.slice(0, 20).map(u =>
+        '<div class="lb-dropdown-item" onmousedown="selectLbWinner(' + rank + ',' + u.id + ',\'' + u.name.replace(/'/g,"\\'" ) + '\',' + (u.refs||0) + ')">' +
+        '<span style="font-weight:600">' + u.name + '</span>' +
+        '<span style="font-size:0.72rem;color:var(--text2);margin-left:auto">' + (u.refs||0) + ' filleuls</span>' +
+        '</div>'
+      ).join('');
+    }
+
+    function selectLbWinner(rank, id, name, refs) {
+      document.getElementById('lbSearch' + rank).value = name + ' (' + refs + ' filleuls)';
+      document.getElementById('lbWin' + rank).value = id;
+      document.getElementById('lbDropdown' + rank).style.display = 'none';
+      document.getElementById('lbSearch' + rank).style.borderColor = 'var(--accent2)';
+    }
+
+    // Fermer les dropdowns en cliquant ailleurs
+    document.addEventListener('click', function(e) {
+      [1,2,3].forEach(function(rank) {
+        const wrap = document.getElementById('lbSearchWrap' + rank);
+        if (wrap && !wrap.contains(e.target)) {
+          const dd = document.getElementById('lbDropdown' + rank);
+          if (dd) dd.style.display = 'none';
+        }
+      });
+    });
+
+
+    async function loadAdminLeaderboard() {
+      const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+      const token = localStorage.getItem('pd_jwt');
+      const headers = { 'Authorization': 'Bearer ' + token };
+
+      // Charger config
+      try {
+        const cfg = await fetch(API + '/leaderboard/config').then(r => r.json());
+        document.getElementById('lbPrize1').value  = cfg.prize1 || '';
+        document.getElementById('lbPrize2').value  = cfg.prize2 || '';
+        document.getElementById('lbPrize3').value  = cfg.prize3 || '';
+        document.getElementById('lbMinRefs').value = cfg.minRefs || '';
+      } catch(e) {}
+
+      // Mois courant par défaut
+      const now = new Date();
+      const monthVal = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+      document.getElementById('lbWinMonth').value = monthVal;
+
+      // Charger users pour la recherche
+      try {
+        const users = await fetch(API + '/admin/users', { headers }).then(r => r.json());
+        _lbUsers = users.filter(u => u.role !== 'admin').sort((a,b) => (b.refs||0)-(a.refs||0));
+      } catch(e) {}
+
+      // Charger historique
+      await loadLbHistory();
+    }
+
+    async function saveLbConfig() {
+      const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+      const token = localStorage.getItem('pd_jwt');
+      const msg = document.getElementById('lbConfigMsg');
+      const body = {
+        prize1:   parseInt(document.getElementById('lbPrize1').value)  || 0,
+        prize2:   parseInt(document.getElementById('lbPrize2').value)  || 0,
+        prize3:   parseInt(document.getElementById('lbPrize3').value)  || 0,
+        minRefs:  parseInt(document.getElementById('lbMinRefs').value) || 1,
+      };
+      try {
+        await fetch(API + '/admin/leaderboard/config', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify(body)
+        });
+        msg.style.color = 'var(--accent2)';
+        msg.textContent = '\u2705 Configuration enregistrée !';
+        setTimeout(() => msg.textContent = '', 3000);
+      } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
+    }
+
+    async function saveLbWinners() {
+      const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+      const token = localStorage.getItem('pd_jwt');
+      const msg = document.getElementById('lbWinMsg');
+      const month = document.getElementById('lbWinMonth').value;
+      if (!month) { msg.style.color='var(--red)'; msg.textContent='Sélectionnez un mois.'; return; }
+      const w1 = parseInt(document.getElementById('lbWin1').value) || null;
+      const w2 = parseInt(document.getElementById('lbWin2').value) || null;
+      const w3 = parseInt(document.getElementById('lbWin3').value) || null;
+      if (!w1) { msg.style.color='var(--red)'; msg.textContent='Sélectionnez au moins le 1er gagnant.'; return; }
+      const cfg = {
+        prize1: parseInt(document.getElementById('lbPrize1').value) || 0,
+        prize2: parseInt(document.getElementById('lbPrize2').value) || 0,
+        prize3: parseInt(document.getElementById('lbPrize3').value) || 0,
+      };
+      try {
+        await fetch(API + '/admin/leaderboard/rewards', {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ month, winner1Id: w1, winner2Id: w2, winner3Id: w3, ...cfg })
+        });
+        msg.style.color = 'var(--accent2)';
+        msg.textContent = '\uD83C\uDFC6 Gagnants déclarés ! Notifications envoyées.';
+        setTimeout(() => msg.textContent = '', 4000);
+        await loadLbHistory();
+      } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
+    }
+
+    async function loadLbHistory() {
+      const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+      const token = localStorage.getItem('pd_jwt');
+      const wrap = document.getElementById('lbHistoryList');
+      if (!wrap) return;
+      try {
+        const rewards = await fetch(API + '/admin/leaderboard/rewards', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+        if (!rewards.length) { wrap.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucune récompense déclarée pour le moment.</p>'; return; }
+        const fmt = n => Number(n).toLocaleString('fr-FR');
+        const monthNames = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+        wrap.innerHTML = rewards.map(function(r) {
+          const [y, m] = r.month.split('-');
+          const mLabel = monthNames[parseInt(m)-1] + ' ' + y;
+          const winners = [
+            { id: r.winner1Id, prize: r.prize1, paid: r.paid1, rank: 1, icon: '\uD83E\uDD47' },
+            { id: r.winner2Id, prize: r.prize2, paid: r.paid2, rank: 2, icon: '\uD83E\uDD48' },
+            { id: r.winner3Id, prize: r.prize3, paid: r.paid3, rank: 3, icon: '\uD83E\uDD49' },
+          ].filter(w => w.id);
+          const winnersHTML = winners.map(function(w) {
+            const u = _lbUsers.find(u => u.id === w.id);
+            const name = u ? u.name : 'ID ' + w.id;
+            return '<div style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;border-bottom:1px solid var(--border)">' +
+              '<span style="font-size:1.1rem">' + w.icon + '</span>' +
+              '<span style="flex:1;font-size:0.85rem;font-weight:600">' + name + '</span>' +
+              '<span style="font-size:0.82rem;color:var(--accent2);font-weight:700">' + fmt(w.prize) + ' AR</span>' +
+              (w.paid
+                ? '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.15rem 0.5rem;border-radius:50px">\u2713 Payé</span>'
+                : '<button onclick="markLbPaid(\'' + r.month + '\',' + w.rank + ',this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.15rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Marquer payé</button>') +
+            '</div>';
+          }).join('');
+          return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem">' +
+            '<div style="font-weight:700;font-size:0.88rem;margin-bottom:0.6rem;color:var(--accent)">' +
+              '<i class="fas fa-calendar-alt"></i> ' + mLabel +
+            '</div>' +
+            winnersHTML +
+          '</div>';
+        }).join('');
+      } catch(e) { wrap.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
+    }
+
+    async function markLbPaid(month, rank, btn) {
+      const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
+      const token = localStorage.getItem('pd_jwt');
+      btn.disabled = true;
+      try {
+        await fetch(API + '/admin/leaderboard/rewards/' + month + '/paid/' + rank, {
+          method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token }
+        });
+        btn.outerHTML = '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.15rem 0.5rem;border-radius:50px">\u2713 Payé</span>';
+      } catch(e) { btn.disabled = false; }
+    }
+
+    // Auto-charger quand on clique sur la section
+    // (injecté via switchAdminSection dans app.js)
+
     // ── PARTAGE PROFIL ──
     function openShareMyProfileModal() {
       const user = window._currentUser;

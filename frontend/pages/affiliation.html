@@ -55,6 +55,21 @@
     .lb-plan { font-size:0.7rem; padding:0.15rem 0.5rem; border-radius:50px; font-weight:700; }
     .lb-empty { text-align:center; padding:3rem 1rem; color:var(--text2); }
     .lb-empty i { font-size:2.5rem; opacity:0.25; display:block; margin-bottom:0.8rem; }
+    /* BADGES PALIERS */
+    .palier-row { display:flex; align-items:center; gap:0.9rem; padding:0.75rem 1rem; border-radius:12px; border:1px solid var(--border); background:var(--bg3); transition:all 0.2s; }
+    .palier-row.unlocked { border-color:var(--accent2); background:rgba(0,212,170,0.06); }
+    .palier-row.next { border-color:var(--accent); background:rgba(108,99,255,0.06); }
+    .palier-icon { font-size:1.6rem; width:40px; text-align:center; flex-shrink:0; }
+    .palier-info { flex:1; min-width:0; }
+    .palier-info strong { font-size:0.9rem; display:block; }
+    .palier-info span { font-size:0.75rem; color:var(--text2); }
+    .palier-status { font-size:0.75rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:50px; white-space:nowrap; }
+    .palier-status.done { background:rgba(0,212,170,0.15); color:var(--accent2); }
+    .palier-status.next { background:rgba(108,99,255,0.15); color:var(--accent); }
+    .palier-status.locked { background:rgba(150,150,150,0.1); color:var(--text2); }
+    .palier-progress { height:4px; background:var(--border); border-radius:2px; margin-top:0.4rem; overflow:hidden; }
+    .palier-progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.5s ease; }
+    /* BADGES PALIERS */
     .lb-my-rank { margin-top:1rem; padding:0.8rem 1rem; background:rgba(0,212,170,0.08); border:1px solid rgba(0,212,170,0.25); border-radius:12px; font-size:0.85rem; text-align:center; color:var(--accent2); }
   </style>
 </head>
@@ -98,15 +113,22 @@
     <div class="leaderboard-section">
       <div class="leaderboard-header">
         <div>
-          <h2><i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard des Parrains</h2>
-          <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Les membres qui font le plus grandir la communauté</p>
+          <h2><i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard du mois</h2>
+          <p id="lbMonthLabel" style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Classement mensuel des meilleurs parrains</p>
         </div>
         <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadLeaderboard()">
           <i class="fas fa-sync-alt"></i> Actualiser
         </button>
       </div>
+      <!-- PRIZES -->
+      <div id="lbPrizes" style="display:none;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem"></div>
       <div id="leaderboardContent">
         <div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>
+      </div>
+      <!-- CONDITIONS -->
+      <div id="lbConditions" style="display:none;margin-top:1rem;padding:0.8rem 1rem;background:rgba(108,99,255,0.06);border:1px solid rgba(108,99,255,0.15);border-radius:10px;font-size:0.78rem;color:var(--text2)">
+        <i class="fas fa-info-circle" style="color:var(--accent)"></i>
+        <span id="lbConditionsText"></span>
       </div>
     </div>
 
@@ -262,6 +284,22 @@
       </div>
     </div>
 
+    <!-- BADGES PARRAINAGE -->
+    <div class="affiliate-link-section" id="badgesSection">
+      <h2><i class="fas fa-medal" style="color:var(--gold)"></i> Mes Badges de Parrainage</h2>
+      <p style="color:var(--text2);font-size:0.85rem;margin-bottom:1.2rem">Débloquez des badges exclusifs en parrainant des membres.</p>
+
+      <!-- BADGE ACTUEL -->
+      <div id="currentBadgeWrap" style="display:none;margin-bottom:1.5rem;padding:1rem;background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.2);border-radius:14px;text-align:center">
+        <div id="currentBadgeIcon" style="font-size:2.5rem;margin-bottom:0.4rem"></div>
+        <div id="currentBadgeLabel" style="font-weight:800;font-size:1rem"></div>
+        <div style="font-size:0.78rem;color:var(--text2);margin-top:0.2rem">Votre badge actuel</div>
+      </div>
+
+      <!-- PALIERS -->
+      <div id="badgePaliers" style="display:flex;flex-direction:column;gap:0.6rem"></div>
+    </div>
+
     <!-- STATS PARRAINAGE -->
     <div class="aff-stats">
       <div class="aff-stat-card">
@@ -373,66 +411,150 @@
   <script src="/js/api.js?v=1776608487261"></script>
   <script src="/js/app.js?v=1776608487261"></script>
   <script>
-    // ── LEADERBOARD ──
+    // ── BADGES PALIERS ──
+    const PALIERS = [
+      { refs: 1,  icon: '\uD83C\uDF1F', label: 'Ambassadeur',  color: '#f59e0b' },
+      { refs: 3,  icon: '\uD83C\uDFAF', label: 'Recruteur',    color: '#8b5cf6' },
+      { refs: 5,  icon: '\uD83D\uDE80', label: 'Super Parrain',color: '#6c63ff' },
+      { refs: 10, icon: '\uD83D\uDC8E', label: 'L\u00e9gende',       color: '#00d4aa' },
+      { refs: 20, icon: '\uD83D\uDC51', label: 'Ic\u00f4ne',         color: '#f59e0b' },
+    ];
+
+    function renderBadgePaliers(totalRefs) {
+      const wrap = document.getElementById('badgePaliers');
+      const currentWrap = document.getElementById('currentBadgeWrap');
+      const currentIcon = document.getElementById('currentBadgeIcon');
+      const currentLabel = document.getElementById('currentBadgeLabel');
+      if (!wrap) return;
+
+      // Badge actuel
+      let currentBadge = null;
+      for (const p of PALIERS) { if (totalRefs >= p.refs) currentBadge = p; }
+      if (currentBadge && currentWrap) {
+        currentIcon.textContent = currentBadge.icon;
+        currentLabel.textContent = currentBadge.label;
+        currentLabel.style.color = currentBadge.color;
+        currentWrap.style.borderColor = currentBadge.color + '44';
+        currentWrap.style.background = currentBadge.color + '11';
+        currentWrap.style.display = 'block';
+      }
+
+      // Paliers
+      wrap.innerHTML = PALIERS.map(function(p, i) {
+        const unlocked = totalRefs >= p.refs;
+        const isNext   = !unlocked && (i === 0 || totalRefs >= PALIERS[i-1].refs);
+        const prev     = i > 0 ? PALIERS[i-1].refs : 0;
+        const progress = unlocked ? 100 : Math.min(100, Math.round((totalRefs - prev) / (p.refs - prev) * 100));
+        const rowClass = unlocked ? 'unlocked' : isNext ? 'next' : '';
+        const statusHTML = unlocked
+          ? '<span class="palier-status done">\u2713 D\u00e9bloqu\u00e9</span>'
+          : isNext
+            ? '<span class="palier-status next">\u2192 ' + (p.refs - totalRefs) + ' restant' + (p.refs - totalRefs > 1 ? 's' : '') + '</span>'
+            : '<span class="palier-status locked">\uD83D\uDD12 Verrouill\u00e9</span>';
+        const progressBar = !unlocked && isNext
+          ? '<div class="palier-progress"><div class="palier-progress-fill" style="width:' + progress + '%"></div></div>'
+          : '';
+        return '<div class="palier-row ' + rowClass + '">' +
+          '<div class="palier-icon">' + (unlocked ? p.icon : '\uD83D\uDD12') + '</div>' +
+          '<div class="palier-info">' +
+            '<strong style="color:' + (unlocked ? p.color : 'var(--text)') + '">' + p.icon + ' ' + p.label + '</strong>' +
+            '<span>' + p.refs + ' filleul' + (p.refs > 1 ? 's' : '') + ' requis</span>' +
+            progressBar +
+          '</div>' +
+          statusHTML +
+        '</div>';
+      }).join('');
+    }
+
+    // ── LEADERBOARD MENSUEL ──
     async function loadLeaderboard() {
       const el = document.getElementById('leaderboardContent');
       if (!el) return;
       el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
       try {
         const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
-        const data = await fetch(API + '/leaderboard').then(r => r.json());
+        const res  = await fetch(API + '/leaderboard/monthly').then(r => r.json());
+        const { month, config, rows } = res;
         const me = window._currentUser;
 
-        if (!data.length) {
-          el.innerHTML = '<div class="lb-empty"><i class="fas fa-trophy"></i><p>Aucun parrain pour le moment.<br>Soyez le premier !</p></div>';
+        // Label du mois
+        const [y, m] = month.split('-');
+        const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+        const lbLabel = document.getElementById('lbMonthLabel');
+        if (lbLabel) lbLabel.textContent = 'Classement de ' + monthNames[parseInt(m)-1] + ' ' + y;
+
+        // Afficher les prix
+        const prizesEl = document.getElementById('lbPrizes');
+        if (prizesEl && (config.prize1 || config.prize2 || config.prize3)) {
+          const fmt = n => Number(n).toLocaleString('fr-FR');
+          prizesEl.style.display = 'flex';
+          prizesEl.innerHTML = [
+            { rank: 1, icon: '🥇', amount: config.prize1, color: '#f59e0b' },
+            { rank: 2, icon: '🥈', amount: config.prize2, color: '#9ca3af' },
+            { rank: 3, icon: '🥉', amount: config.prize3, color: '#cd7f32' }
+          ].filter(p => p.amount > 0).map(p =>
+            '<div style="text-align:center;padding:0.6rem 1.2rem;background:' + p.color + '18;border:1px solid ' + p.color + '44;border-radius:12px">' +
+            '<div style="font-size:1.4rem">' + p.icon + '</div>' +
+            '<div style="font-weight:800;color:' + p.color + ';font-size:0.95rem">' + fmt(p.amount) + ' AR</div>' +
+            '<div style="font-size:0.7rem;color:var(--text2)">' + (p.rank === 1 ? '1ère place' : p.rank + 'ème place') + '</div>' +
+            '</div>'
+          ).join('');
+        }
+
+        // Conditions
+        const condEl = document.getElementById('lbConditions');
+        const condText = document.getElementById('lbConditionsText');
+        if (condEl && condText) {
+          condText.textContent = 'Minimum ' + config.minRefs + ' filleuls ce mois pour être éligible. Le leaderboard se réinitialise le 1er de chaque mois.';
+          condEl.style.display = 'block';
+        }
+
+        if (!rows.length) {
+          el.innerHTML = '<div class="lb-empty"><i class="fas fa-trophy"></i><p>Aucun parrain éligible ce mois.<br>Parrainez ' + config.minRefs + ' membres pour apparaître !</p></div>';
           return;
         }
 
-        const top3 = data.slice(0, 3);
-        const rest = data.slice(3);
-        const crowns = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49'];
+        const top3 = rows.slice(0, 3);
+        const rest = rows.slice(3);
+        const crowns = ['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
         const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
 
         function avatar(u, size) {
           const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
-          if (u.avatarPhoto) return `<img src="${u.avatarPhoto}" style="width:${size}px;height:${size}px;border-radius:50%;object-fit:cover" />`;
-          return `<div class="avatar-circle" style="width:${size}px;height:${size}px;min-width:${size}px;font-size:${size*0.35}px;background:${u.avatarColor||'#6c63ff'}">${initials}</div>`;
+          if (u.avatarPhoto) return '<img src="' + u.avatarPhoto + '" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover" />';
+          return '<div class="avatar-circle" style="width:' + size + 'px;height:' + size + 'px;min-width:' + size + 'px;font-size:' + (size*0.35) + 'px;background:' + (u.avatarColor||'#6c63ff') + '">' + initials + '</div>';
         }
 
         // PODIUM top 3
-        const podiumHTML = `<div class="podium">${top3.map((u, i) => `
-          <div class="podium-item rank-${i+1}" onclick="window.location.href='profil.html?id=${u.id}'">
-            <div class="podium-crown">${crowns[i]}</div>
-            <div class="podium-avatar">${avatar(u, i===0?70:56)}</div>
-            <div class="podium-name">${u.name.split(' ')[0]}</div>
-            <div class="podium-refs"><i class="fas fa-users" style="font-size:0.65rem"></i> ${u.refs} filleul${u.refs>1?'s':''}</div>
-            <div class="podium-base">${i+1}</div>
-          </div>`).join('')}
-        </div>`;
+        const podiumHTML = '<div class="podium">' + top3.map(function(u, i) {
+          return '<div class="podium-item rank-' + (i+1) + '" onclick="window.location.href=\'profil.html?id=' + u.userId + '\'">' +
+            '<div class="podium-crown">' + crowns[i] + '</div>' +
+            '<div class="podium-avatar">' + avatar(u, i===0?70:56) + '</div>' +
+            '<div class="podium-name">' + u.name.split(' ')[0] + '</div>' +
+            '<div class="podium-refs"><i class="fas fa-users" style="font-size:0.65rem"></i> ' + u.refsCount + ' ce mois</div>' +
+            '<div class="podium-base">' + (i+1) + '</div>' +
+          '</div>';
+        }).join('') + '</div>';
 
-        // LISTE rang 4-10
-        const listHTML = rest.length ? `<div class="lb-list">${rest.map(u => {
-          const isMe = me && me.id === u.id;
-          return `<div class="lb-row${isMe?' is-me':''}" onclick="window.location.href='profil.html?id=${u.id}'">
-            <span class="lb-rank">${u.rank}</span>
-            ${avatar(u, 38)}
-            <div style="flex:1;min-width:0">
-              <div style="font-weight:700;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${u.name}${isMe?' <span style="font-size:0.7rem;color:var(--accent2)">(vous)</span>':''}</div>
-              <span class="lb-plan" style="background:${planColors[u.plan]||'var(--accent)'}22;color:${planColors[u.plan]||'var(--accent)'}">${u.plan}</span>
-            </div>
-            <span class="lb-refs"><i class="fas fa-users" style="font-size:0.7rem"></i> ${u.refs}</span>
-          </div>`;
-        }).join('')}</div>` : '';
+        // LISTE rang 4+
+        const listHTML = rest.length ? '<div class="lb-list">' + rest.map(function(u, i) {
+          const isMe = me && me.id === u.userId;
+          return '<div class="lb-row' + (isMe?' is-me':'') + '" onclick="window.location.href=\'profil.html?id=' + u.userId + '\'">' +
+            '<span class="lb-rank">' + (i+4) + '</span>' +
+            avatar(u, 38) +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-weight:700;font-size:0.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + u.name + (isMe?' <span style="font-size:0.7rem;color:var(--accent2)">(vous)</span>':'') + '</div>' +
+              '<span class="lb-plan" style="background:' + (planColors[u.plan]||'var(--accent)') + '22;color:' + (planColors[u.plan]||'var(--accent)') + '">' + u.plan + '</span>' +
+            '</div>' +
+            '<span class="lb-refs"><i class="fas fa-users" style="font-size:0.7rem"></i> ' + u.refsCount + '</span>' +
+          '</div>';
+        }).join('') + '</div>' : '';
 
-        // Rang de l'utilisateur connecté s'il n'est pas dans le top 10
+        // Mon rang
         let myRankHTML = '';
         if (me) {
-          const inTop = data.find(u => u.id === me.id);
-          if (!inTop && (me.refs || 0) > 0) {
-            myRankHTML = `<div class="lb-my-rank"><i class="fas fa-user"></i> Votre position : non classé &mdash; <strong>${me.refs || 0} filleul${(me.refs||0)>1?'s':''}</strong>. Continuez à parrainer !</div>`;
-          } else if (!inTop) {
-            myRankHTML = `<div class="lb-my-rank"><i class="fas fa-star"></i> Parrainez des membres pour apparaître dans le classement !</div>`;
-          }
+          const inTop = rows.find(u => u.userId === me.id);
+          if (!inTop) myRankHTML = '<div class="lb-my-rank"><i class="fas fa-star"></i> Parrainez ' + config.minRefs + ' membres ce mois pour apparaître dans le classement !</div>';
         }
 
         el.innerHTML = podiumHTML + listHTML + myRankHTML;
@@ -455,6 +577,7 @@
         if (privateSections) privateSections.style.display = 'block';
         if (loginWall)       loginWall.style.display       = 'none';
         await updateAffiliateStats(user);
+        renderBadgePaliers(user.refs || 0);
       } else {
         if (privateSections) privateSections.style.display = 'none';
         if (loginWall)       loginWall.style.display       = 'block';

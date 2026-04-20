@@ -6334,6 +6334,7 @@ function switchAdminSection(section, btn) {
   if (section === 'videopurchases')  renderAdminVideoPurchases();
   if (section === 'modules')         renderAdminModules();
   if (section === 'modulepurchases') renderAdminModulePurchases();
+  if (section === 'leaderboard')     { if (typeof loadAdminLeaderboard === 'function') loadAdminLeaderboard(); }
   if (section === 'navbarbtn') loadNavbarBtnAdmin();
   if (section === 'sociallinks') loadSocialLinksAdmin();
   if (section === 'shares')          loadAdminShares();

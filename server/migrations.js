@@ -125,6 +125,49 @@ async function runMigrations(pool) {
     )`);
   });
 
+
+  // monthly_refs : compteur mensuel de parrainages
+  await run('monthly_refs', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS monthly_refs (
+      id         SERIAL PRIMARY KEY,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      month      TEXT NOT NULL,
+      refs_count INTEGER DEFAULT 0,
+      UNIQUE(user_id, month)
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_monthly_refs_month ON monthly_refs(month)`);
+  });
+
+  // leaderboard_rewards : config prix + historique gagnants
+  await run('leaderboard_rewards', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS leaderboard_rewards (
+      id           SERIAL PRIMARY KEY,
+      month        TEXT NOT NULL UNIQUE,
+      prize_1      INTEGER DEFAULT 0,
+      prize_2      INTEGER DEFAULT 0,
+      prize_3      INTEGER DEFAULT 0,
+      min_refs     INTEGER DEFAULT 5,
+      winner_1_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      winner_2_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      winner_3_id  INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      paid_1       BOOLEAN DEFAULT false,
+      paid_2       BOOLEAN DEFAULT false,
+      paid_3       BOOLEAN DEFAULT false,
+      created_at   TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  });
+
+  // leaderboard_config : paramètres globaux (prix par défaut, min_refs)
+  await run('leaderboard_config', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS leaderboard_config (
+      id       INTEGER PRIMARY KEY DEFAULT 1,
+      prize_1  INTEGER DEFAULT 10000,
+      prize_2  INTEGER DEFAULT 5000,
+      prize_3  INTEGER DEFAULT 2000,
+      min_refs INTEGER DEFAULT 5
+    )`);
+    await pool.query(`INSERT INTO leaderboard_config (id) VALUES (1) ON CONFLICT (id) DO NOTHING`);
+  });
   // streak d'activité
   await run('users.streak', async () => {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS streak INTEGER DEFAULT 0`);
