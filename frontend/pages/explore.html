@@ -148,8 +148,8 @@
       
       try {
         // Charger tous les users publics depuis l'API admin
-        const users = await PaganiAPI.admin.getUsers();
-        _allUsers = users.filter(u => u.isActive && u.id !== (_currentUser ? _currentUser.id : null));
+        const users = await fetch((window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api') + '/members').then(r => r.json());
+        _allUsers = users.filter(u => u.id !== (_currentUser ? _currentUser.id : null));
         
         // Charger les stats follow pour chaque user
         await Promise.all(_allUsers.map(async u => {

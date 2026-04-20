@@ -862,6 +862,22 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
+//  EXPLORE — liste publique des membres
+// ══════════════════════════════════════════════════════════
+app.get('/api/members', async (req, res) => {
+  try {
+    const users = await db.getAllUsers();
+    res.json(users
+      .filter(u => u.isActive)
+      .map(u => ({
+        id: u.id, name: u.name, plan: u.plan,
+        avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',
+        bio: u.bio || '', createdAt: u.createdAt
+      }))
+    );
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+// ══════════════════════════════════════════════════════════
 //  PROFIL PUBLIC
 // ══════════════════════════════════════════════════════════
 app.get('/api/users/:id', async (req, res) => {
