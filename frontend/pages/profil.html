@@ -420,7 +420,7 @@
     function openShareProfileModal() {
       const params = new URLSearchParams(window.location.search);
       const userId = params.get('id');
-      const link = `https://pagani-digital.netlify.app/profil.html?id=${userId}`;
+      const link = `https://pagani-digital.vercel.app /profil.html?id=${userId}`;
       document.getElementById('shareProfileLinkInput').value = link;
       const text = encodeURIComponent(`Découvrez ce profil sur Pagani Digital ! ${link}`);
       document.getElementById('shareProfileWaBtn').href = `https://wa.me/?text=${text}`;

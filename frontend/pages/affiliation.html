@@ -217,7 +217,7 @@
     <div class="affiliate-link-section">
       <h2>Mon Lien de Parrainage</h2>
       <div class="link-box">
-        <input type="text" id="affiliateLink" value="https://pagani-digital.netlify.app/dashboard.html?ref=USER123" readonly />
+        <input type="text" id="affiliateLink" value="https://pagani-digital.vercel.app /dashboard.html?ref=USER123" readonly />
         <button onclick="copyLink()"><i class="fas fa-copy"></i> Copier</button>
       </div>
       <p id="copyMsg" class="copy-msg"></p>
@@ -460,7 +460,7 @@
         if (loginWall)       loginWall.style.display       = 'block';
       }
 
-      const refLink = user ? `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}` : 'https://pagani-digital.netlify.app';
+      const refLink = user ? `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}` : 'https://pagani-digital.vercel.app ';
       const msg = encodeURIComponent(`Rejoignez Pagani Digital et developpez votre business en ligne ! ${refLink}`);
       const wa = document.getElementById('whatsappShareBtn');
       if (wa) wa.href = `https://wa.me/?text=${msg}`;
@@ -471,7 +471,7 @@
 
       // Lien profil public
       if (user) {
-        const profileLink = `https://pagani-digital.netlify.app/profil.html?id=${user.id}`;
+        const profileLink = `https://pagani-digital.vercel.app /profil.html?id=${user.id}`;
         const profileMsg  = encodeURIComponent(`Suivez-moi sur Pagani Digital ! ${profileLink}`);
         const profileRow  = document.getElementById('profileShareRow');
         if (profileRow) profileRow.style.display = 'block';

@@ -4378,7 +4378,7 @@ function copyLink() {
   const input = document.getElementById("affiliateLink");
   if (!input) return;
   const user = getUser();
-  if (user) input.value = `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}`;
+  if (user) input.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
     msg.textContent = "? Lien copie dans le presse-papiers !";
@@ -4400,7 +4400,7 @@ async function updateAffiliateStats(user) {
   if (pending) pending.textContent = formatAR(user.pendingAR  || 0);
   if (paid)    paid.textContent    = formatAR(user.paidAR     || 0);
   if (balance) balance.textContent = formatAR(user.pendingAR  || 0);
-  if (affLink) affLink.value = `https://pagani-digital.netlify.app/dashboard.html?ref=${user.refCode}`;
+  if (affLink) affLink.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
   _renderWithdrawMmSelector(user);
   await renderCommissionHistory(user);
 }
