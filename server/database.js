@@ -1369,6 +1369,76 @@ function generateRefCode() {
 // ═══════════════════════════════════════════════
 
 
+
+// ═══════════════════════════════════════════════
+// ML — SCORE D'AFFINITÉ
+// ═══════════════════════════════════════════════
+
+// Incrémente le compteur d'interaction entre deux utilisateurs
+async function incrementInteraction(userId, targetUserId, field) {
+  if (!userId || !targetUserId || userId === targetUserId) return;
+  const allowed = ['reactions_count', 'comments_count', 'likes_count'];
+  if (!allowed.includes(field)) return;
+  await query(
+    `INSERT INTO user_interactions (user_id, target_user_id, ${field}, last_updated)
+     VALUES ($1, $2, 1, NOW())
+     ON CONFLICT (user_id, target_user_id) DO UPDATE
+     SET ${field} = user_interactions.${field} + 1, last_updated = NOW()`,
+    [userId, targetUserId]
+  );
+}
+
+// Retourne un map { targetUserId -> score } pour un utilisateur donné
+async function getAffinityScores(userId) {
+  if (!userId) return {};
+  const res = await query(
+    `SELECT target_user_id,
+            (reactions_count * 3 + comments_count * 2 + likes_count * 1) AS score
+     FROM user_interactions
+     WHERE user_id = $1 AND
+           (reactions_count + comments_count + likes_count) > 0`,
+    [userId]
+  );
+  const map = {};
+  for (const row of res.rows) {
+    map[row.target_user_id] = parseFloat(row.score);
+  }
+  return map;
+}
+
+
+// ═══════════════════════════════════════════════
+// ML — PERTINENCE PAR CATÉGORIE
+// ═══════════════════════════════════════════════
+
+async function incrementCategoryPref(userId, category) {
+  if (!userId || !category) return;
+  await query(
+    `INSERT INTO user_category_prefs (user_id, category, interactions, last_updated)
+     VALUES ($1, $2, 1, NOW())
+     ON CONFLICT (user_id, category) DO UPDATE
+     SET interactions = user_category_prefs.interactions + 1, last_updated = NOW()`,
+    [userId, category]
+  );
+}
+
+// Retourne un map { category -> score 0-10 } normalisé pour un utilisateur
+async function getCategoryScores(userId) {
+  if (!userId) return {};
+  const res = await query(
+    `SELECT category, interactions FROM user_category_prefs WHERE user_id = $1`,
+    [userId]
+  );
+  if (!res.rows.length) return {};
+  const total = res.rows.reduce((s, r) => s + parseInt(r.interactions), 0);
+  const map = {};
+  for (const row of res.rows) {
+    // Score normalisé entre 0 et 10
+    map[row.category.toLowerCase()] = Math.min(10, (parseInt(row.interactions) / total) * 10 * res.rows.length);
+  }
+  return map;
+}
+
 // ═══════════════════════════════════════════════
 // FEED ALGORITHMIQUE
 // ═══════════════════════════════════════════════
@@ -1381,11 +1451,19 @@ async function getPostsAlgo(userId) {
   const photoMap = {};
   for (const u of usersRes.rows) photoMap[u.id] = u.avatar_photo || '';
 
-  // Follows de l'utilisateur connecté
+  // Follows + scores d'affinité + préférences catégories
   let followedIds = new Set();
+  let affinityMap = {};
+  let categoryMap = {};
   if (userId) {
-    const fRes = await query('SELECT following_id FROM follows WHERE follower_id = $1', [userId]);
+    const [fRes, affScores, catScores] = await Promise.all([
+      query('SELECT following_id FROM follows WHERE follower_id = $1', [userId]),
+      getAffinityScores(userId),
+      getCategoryScores(userId)
+    ]);
     fRes.rows.forEach(r => followedIds.add(r.following_id));
+    affinityMap = affScores;
+    categoryMap = catScores;
   }
 
   const now = Date.now();
@@ -1393,6 +1471,7 @@ async function getPostsAlgo(userId) {
     const likes    = Array.isArray(p.likes)    ? p.likes    : [];
     const comments = Array.isArray(p.comments) ? p.comments : [];
     const totalComments = comments.reduce((a, c) => a + 1 + (Array.isArray(c.replies) ? c.replies.length : 0), 0);
+    p._totalComments = totalComments; // utilisé pour le score viral
 
     // ── Idée 2 : Récence exponentielle ──────────────────────────────────────
     // Décroît très vite après 24h, quasi nul après 72h
@@ -1401,8 +1480,11 @@ async function getPostsAlgo(userId) {
     const ageHours = (now - new Date(p.createdAt || p.date).getTime()) / 3600000;
     const recencyScore = 20 * Math.exp(-ageHours / 12);
 
-    // ── Bonus follow ─────────────────────────────────────────────────────────
-    const followBonus = (p.authorId && followedIds.has(p.authorId)) ? 8 : 0;
+    // ── Bonus affinité dynamique (ML) ────────────────────────────────────────
+    // Score d'affinité basé sur l'historique réel d'interactions
+    // Max plafonné à 20pts pour ne pas écraser les autres signaux
+    const rawAffinity = p.authorId ? (affinityMap[p.authorId] || 0) : 0;
+    const followBonus = Math.min(20, rawAffinity + ((p.authorId && followedIds.has(p.authorId)) ? 4 : 0));
 
     // ── Idée 4 : Boost admin ─────────────────────────────────────────────────
     // Champ boost_score dans la table posts (0 par défaut)
@@ -1413,8 +1495,12 @@ async function getPostsAlgo(userId) {
     const hasImage   = !!(p.image && p.image !== '');
     const qualityPenalty = (!hasImage && contentLen < 50) ? -3 : 0;
 
+    // ── Bonus catégorie (ML) ─────────────────────────────────────────────────
+    const postCat = (p.category || '').toLowerCase();
+    const categoryBonus = categoryMap[postCat] || 0;
+
     // Score de base (réactions ajoutées après le batch)
-    p._score = likes.length * 1 + totalComments * 2 + followBonus + recencyScore + adminBoost + qualityPenalty;
+    p._score = likes.length * 1 + totalComments * 2 + followBonus + recencyScore + adminBoost + qualityPenalty + categoryBonus;
     p._authorId = p.authorId; // garder pour la diversité
 
     p.authorPhoto = p.authorId ? (photoMap[p.authorId] ?? p.authorPhoto ?? '') : (p.authorPhoto || '');
@@ -1442,7 +1528,23 @@ async function getPostsAlgo(userId) {
     );
     const rxMap = {};
     rxRes.rows.forEach(r => { rxMap[r.post_id] = parseInt(r.cnt); });
-    posts.forEach(p => { p._score += (rxMap[p.id] || 0) * 3; });
+    posts.forEach(p => {
+      const rxCount = rxMap[p.id] || 0;
+      p._score += rxCount * 3;
+
+      // ── Détection viralité ────────────────────────────────────────────────
+      // vitesse = (réactions + commentaires) / max(ageHeures, 0.5)
+      // Bonus viral plafonné à 15pts — évite qu'un post spam domine
+      // Seuil minimum : au moins 3 interactions pour être considéré viral
+      const totalInteractions = rxCount + p._totalComments;
+      if (totalInteractions >= 3) {
+        const ageH = Math.max(0.5, (now - new Date(p.createdAt || p.date).getTime()) / 3600000);
+        const viralSpeed = totalInteractions / ageH;
+        // log pour lisser les valeurs extrêmes : ln(1 + vitesse) × 4
+        const viralBonus = Math.min(15, Math.log(1 + viralSpeed) * 4);
+        p._score += viralBonus;
+      }
+    });
   }
 
   // Trier par score décroissant
@@ -1484,7 +1586,7 @@ async function getPostsAlgo(userId) {
   result.push(...deferred);
 
   // Nettoyer les champs internes
-  result.forEach(p => { delete p._score; delete p._authorId; });
+  result.forEach(p => { delete p._score; delete p._authorId; delete p._totalComments; });
   return result;
 }
 
@@ -1609,4 +1711,8 @@ module.exports = {
   getPostReactionsDetail,
   getPostsReactionsBatch,
   getPostsAlgo,
+  incrementInteraction,
+  getAffinityScores,
+  incrementCategoryPref,
+  getCategoryScores,
 };

@@ -299,6 +299,9 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
           message: `${user?.name} a réagi ${emoji} à votre publication.`,
           link: `index.html#post-${post.id}`
         });
+        // ML : incrémenter l'affinité + préférence catégorie
+        await db.incrementInteraction(req.user.id, post.authorId, 'reactions_count');
+        await db.incrementCategoryPref(req.user.id, post.category);
       }
     }
     res.json(result);
@@ -448,6 +451,9 @@ app.post('/api/posts/:id/like', requireAuth, async (req, res) => {
         if (_uid1 !== null) await db.createNotification({ userId: _uid1, type: 'REACTION',
           message: `${user?.name} a aimé votre publication.`,
           link: `index.html#post-${post.id}` });
+        // ML : incrémenter l'affinité + préférence catégorie
+        await db.incrementInteraction(req.user.id, post.authorId, 'likes_count');
+        await db.incrementCategoryPref(req.user.id, post.category);
       }
     }
     res.json(result);
@@ -469,6 +475,9 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       if (_uid2 !== null) await db.createNotification({ userId: _uid2, type: 'COMMENT',
         message: `${user.name} a commenté votre publication.`,
         link: `index.html#post-${post.id}` });
+      // ML : incrémenter l'affinité + préférence catégorie
+      await db.incrementInteraction(req.user.id, post.authorId, 'comments_count');
+      await db.incrementCategoryPref(req.user.id, post.category);
     }
     res.json(comment);
   } catch(e) { res.status(400).json({ error: e.message }); }

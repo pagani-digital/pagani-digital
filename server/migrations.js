@@ -179,6 +179,38 @@ async function runMigrations(pool) {
     await pool.query('ALTER TABLE posts ADD COLUMN IF NOT EXISTS boost_score NUMERIC DEFAULT 0');
     console.log('[migrations] boost_score OK');
   } catch(e) { console.error('[migrations] boost_score:', e.message); }
+
+  // ML : table user_interactions pour score d'affinité
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_interactions (
+        user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        reactions_count INTEGER DEFAULT 0,
+        comments_count  INTEGER DEFAULT 0,
+        likes_count     INTEGER DEFAULT 0,
+        last_updated    TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (user_id, target_user_id)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_ui_user ON user_interactions(user_id)');
+    console.log('[migrations] user_interactions OK');
+  } catch(e) { console.error('[migrations] user_interactions:', e.message); }
+
+  // ML : table user_category_prefs pour pertinence par catégorie
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_category_prefs (
+        user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category       TEXT NOT NULL,
+        interactions   INTEGER DEFAULT 0,
+        last_updated   TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (user_id, category)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_ucp_user ON user_category_prefs(user_id)');
+    console.log('[migrations] user_category_prefs OK');
+  } catch(e) { console.error('[migrations] user_category_prefs:', e.message); }
 }
 
 module.exports = { runMigrations };
