@@ -62,6 +62,7 @@
       <li><a href="formations.html">Formations</a></li>
       <li><a href="ebooks.html">Ebooks</a></li>
       <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="explore.html" class="active">Explorer</a></li>
       <li><a href="plans.html">Tarifs</a></li>
       <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
     </ul>
@@ -251,7 +252,7 @@
                 <span>Abonnements</span>
               </div>
             </div>
-            ${followBtn}
+            <div id="follow-zone-${u.id}">${followBtn}</div>
           </div>`;
       }).join('');
     }
@@ -292,21 +293,22 @@
         const user = _allUsers.find(u => u.id === userId);
         if (user) user.followers = (user.followers || 0) + (res.following ? 1 : -1);
 
-        // Remplacer le bouton par le bon état
-        const wrap = btn.closest('.explore-card');
-        const btnArea = btn.parentElement;
+        // Remplacer uniquement la zone boutons
+        const zone = document.getElementById(`follow-zone-${userId}`);
+        if (!zone) return;
         if (res.following) {
-          btnArea.innerHTML = `<div style="display:flex;gap:0.5rem">
+          zone.innerHTML = `<div style="display:flex;gap:0.5rem">
             <button class="explore-follow-btn following" style="flex:1" onclick="toggleFollowExplore(${userId}, this)"><i class="fas fa-user-check"></i> Suivi</button>
             <a href="profil.html?id=${userId}" class="explore-follow-btn follow" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
           </div>`;
         } else {
-          btnArea.innerHTML = `<button class="explore-follow-btn follow" onclick="toggleFollowExplore(${userId}, this)"><i class="fas fa-user-plus"></i> Suivre</button>`;
+          zone.innerHTML = `<button class="explore-follow-btn follow" onclick="toggleFollowExplore(${userId}, this)"><i class="fas fa-user-plus"></i> Suivre</button>`;
         }
       } catch(e) {
         if (e.message === 'CANNOT_UNFOLLOW_ADMIN') {
           _followStates[userId] = { following: true, isAdmin: true };
-          btn.parentElement.innerHTML = `<div style="display:flex;gap:0.5rem">
+          const zone = document.getElementById(`follow-zone-${userId}`);
+          if (zone) zone.innerHTML = `<div style="display:flex;gap:0.5rem">
             <button class="explore-follow-btn admin-locked" style="flex:1" disabled><i class="fas fa-lock"></i> Suivi</button>
             <a href="profil.html?id=${userId}" class="explore-follow-btn follow" style="flex:1;text-align:center;text-decoration:none" onclick="event.stopPropagation()"><i class="fas fa-eye"></i> Profil</a>
           </div>`;
