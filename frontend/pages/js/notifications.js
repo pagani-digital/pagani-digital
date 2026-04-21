@@ -31,7 +31,7 @@ function _showToast(title, message, icon, url) {
       '<div class="pagani-toast-title">' + (title || '') + '</div>' +
       '<div class="pagani-toast-msg">' + (message || '') + '</div>' +
     '</div>' +
-    '<button class="pagani-toast-close" onclick="this.closest('.pagani-toast').remove()"><i class="fas fa-times"></i></button>';
+    '<button class="pagani-toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
   if (url) toast.onclick = function(e) { if (e.target.closest('.pagani-toast-close')) return; window.location.href = url; };
   wrap.appendChild(toast);
   setTimeout(function() {
