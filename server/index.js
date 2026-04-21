@@ -12,6 +12,7 @@ webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, p
 // Envoyer une push notification à un user (silencieux si erreur)
 async function sendPush(userId, title, body, url) {
   try {
+  console.log('[sendPush] called userId=' + userId + ' title=' + title);
     if (!db.pool) return;
     const subs = await db.pool.query('SELECT * FROM push_subscriptions WHERE user_id=$1', [userId]);
     if (!subs.rows.length) return;
@@ -334,6 +335,7 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'reactions_count');
         await db.incrementCategoryPref(req.user.id, post.category);
+        console.log('[event] reaction post _uid=' + _uid);
         if (_uid !== null) sendPush(_uid, req.user.name + ' a réagi', 'Nouvelle réaction sur votre publication', 'index.html');
       }
     }
@@ -495,6 +497,7 @@ app.post('/api/posts/:id/like', requireAuth, async (req, res) => {
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'likes_count');
         await db.incrementCategoryPref(req.user.id, post.category);
+        console.log('[event] like _uid1=' + _uid1);
         if (_uid1 !== null) sendPush(_uid1, req.user.name + ' a aimé', 'Votre publication a reçu un like', 'index.html');
       }
     }
@@ -520,6 +523,7 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       // ML : incrémenter l'affinité + préférence catégorie
       await db.incrementInteraction(req.user.id, post.authorId, 'comments_count');
       await db.incrementCategoryPref(req.user.id, post.category);
+        console.log('[event] comment _uid2=' + _uid2);
       if (_uid2 !== null) sendPush(_uid2, req.user.name + ' a commenté', 'Nouveau commentaire sur votre publication', 'index.html');
     }
     res.json(comment);
