@@ -905,8 +905,8 @@ app.post('/api/video-purchase', requireAuth, async (req, res) => {
       userId: 0, type: 'NEW_FORMATION',
       message: `${user.name} a achete la video "${video.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
       link: 'dashboard.html?tab=admin&section=videopurchases'
-    sendPushToAdmin('Achat vidéo', user.name + ' a acheté une vidéo', 'dashboard.html?tab=admin&section=videopurchases');
     });
+    sendPushToAdmin('Achat video', user.name + ' a acheté une vidéo', 'dashboard.html?tab=admin&section=videopurchases');
     res.json({ ok: true, id: purchase.id });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
