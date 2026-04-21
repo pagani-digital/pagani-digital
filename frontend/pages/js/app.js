@@ -8520,11 +8520,13 @@ function _onRxSSE(notif) {
 async function initPushNotifications() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
   try {
+    // Demander la permission explicitement
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
     const reg = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
     const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
-    // Récupérer la clé publique VAPID
     const { key } = await fetch(API + '/push/vapid-public-key').then(r => r.json());
-    // Vérifier si déjà abonné
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
       sub = await reg.pushManager.subscribe({
@@ -8532,7 +8534,6 @@ async function initPushNotifications() {
         applicationServerKey: _urlBase64ToUint8Array(key)
       });
     }
-    // Envoyer la subscription au serveur
     const token = localStorage.getItem('pd_jwt');
     await fetch(API + '/push/subscribe', {
       method: 'POST',
