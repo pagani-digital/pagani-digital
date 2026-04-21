@@ -7,7 +7,11 @@ self.addEventListener('push', function(e) {
       icon: '/assets/favicon.svg',
       badge: '/assets/favicon.svg',
       data: { url: data.url || '/' },
-      vibrate: [200, 100, 200]
+      vibrate: [200, 100, 200],
+      requireInteraction: false,
+      silent: false,
+      tag: 'pagani-notif-' + Date.now(),
+      renotify: true
     })
   );
 });
