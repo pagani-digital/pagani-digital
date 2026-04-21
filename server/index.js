@@ -1595,6 +1595,33 @@ app.put('/api/admin/ebook-purchases/:id', requireAuth, requireAdmin, async (req,
     res.json(await db.updateEbookPurchase(id, req.body));
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
+// ── PUSH ROUTES ─────────────────────────────────────────────────────────────
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ key: process.env.VAPID_PUBLIC_KEY });
+});
+
+app.post('/api/push/subscribe', requireAuth, async (req, res) => {
+  const { endpoint, keys } = req.body;
+  if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'INVALID_SUB' });
+  try {
+    await db.pool.query(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (endpoint) DO UPDATE SET user_id=$1, p256dh=$3, auth=$4`,
+      [req.user.id, endpoint, keys.p256dh, keys.auth]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.post('/api/push/unsubscribe', requireAuth, async (req, res) => {
+  const { endpoint } = req.body;
+  if (!endpoint) return res.status(400).json({ error: 'INVALID_SUB' });
+  try {
+    await db.pool.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND endpoint=$2', [req.user.id, endpoint]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 // Route migration one-shot — supprimer après usage
 app.get('/api/run-migration-push', async (req, res) => {
   if (req.query.secret !== process.env.JWT_SECRET) return res.status(403).json({ error: 'FORBIDDEN' });
@@ -1613,37 +1640,9 @@ app.get('/api/run-migration-push', async (req, res) => {
 });
 
 app.get('*', (req, res) => {
-  try {
-    await db.pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      endpoint TEXT NOT NULL UNIQUE,
-      p256dh TEXT NOT NULL,
-      auth TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
-    await db.pool.query('CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id)');
-    res.json({ ok: true, message: 'Table push_subscriptions créée' });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
-
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));
   } else {
-  try {
-    await db.pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-      endpoint TEXT NOT NULL UNIQUE,
-      p256dh TEXT NOT NULL,
-      auth TEXT NOT NULL,
-      created_at TIMESTAMPTZ DEFAULT NOW()
-    )`);
-    await db.pool.query('CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id)');
-    res.json({ ok: true, message: 'Table push_subscriptions créée' });
-  } catch(e) { res.status(500).json({ error: e.message }); }
-});
-
     res.status(404).json({ error: 'ROUTE_INTROUVABLE' });
   }
 });
@@ -1685,33 +1684,6 @@ async function runMigrations() {
     await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_story_reactions_story ON story_reactions(story_id)`);
   } catch(e) { console.error('migrate story_reactions:', e.message); }
 }
-
-// ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
-app.get('/api/push/vapid-public-key', (req, res) => {
-  res.json({ key: process.env.VAPID_PUBLIC_KEY });
-});
-
-app.post('/api/push/subscribe', requireAuth, async (req, res) => {
-  const { endpoint, keys } = req.body;
-  if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'INVALID_SUB' });
-  try {
-    await db.pool.query(
-      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
-       VALUES ($1,$2,$3,$4) ON CONFLICT (endpoint) DO UPDATE SET user_id=$1, p256dh=$3, auth=$4`,
-      [req.user.id, endpoint, keys.p256dh, keys.auth]
-    );
-    res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-});
-
-app.post('/api/push/unsubscribe', requireAuth, async (req, res) => {
-  const { endpoint } = req.body;
-  if (!endpoint) return res.status(400).json({ error: 'INVALID_SUB' });
-  try {
-    await db.pool.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND endpoint=$2', [req.user.id, endpoint]);
-    res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-});
 
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();
