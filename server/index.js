@@ -334,10 +334,10 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'reactions_count');
         await db.incrementCategoryPref(req.user.id, post.category);
+        if (_uid !== null) sendPush(_uid, req.user.name + ' a réagi', 'Nouvelle réaction sur votre publication', 'index.html');
       }
     }
     res.json(result);
-      if (_uid1 !== null) sendPush(_uid1, 'Nouvelle réaction', req.user.name + ' a réagi à votre post', 'index.html');
   } catch(e) {
     if (e.message === 'EMOJI_INVALIDE') return res.status(400).json({ error: 'EMOJI_INVALIDE' });
     res.status(500).json({ error: 'ERREUR_SERVEUR' });
