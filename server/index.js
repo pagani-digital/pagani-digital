@@ -334,7 +334,7 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'reactions_count');
         await db.incrementCategoryPref(req.user.id, post.category);
-        if (_uid !== null) sendPush(_uid, user.name + ' a réagi', 'Nouvelle réaction sur votre publication', 'index.html');
+        if (_uid !== null) sendPush(_uid, user.name + ' a réagi', 'Nouvelle réaction sur votre publication', `index.html#post-${post.id}`);
       }
     }
     res.json(result);
@@ -426,7 +426,7 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', 'index.html'));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `index.html#post-${post.id}`));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -449,7 +449,7 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', 'index.html'));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `index.html#post-${post.id}`));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -498,7 +498,7 @@ app.post('/api/posts/:id/like', requireAuth, async (req, res) => {
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'likes_count');
         await db.incrementCategoryPref(req.user.id, post.category);
-        if (_uid1 !== null) sendPush(_uid1, user.name + ' a aimé', 'Votre publication a reçu un like', 'index.html');
+        if (_uid1 !== null) sendPush(_uid1, user.name + ' a aimé', 'Votre publication a reçu un like', `index.html#post-${post.id}`);
       }
     }
     res.json(result);
@@ -523,7 +523,7 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       // ML : incrémenter l'affinité + préférence catégorie
       await db.incrementInteraction(req.user.id, post.authorId, 'comments_count');
       await db.incrementCategoryPref(req.user.id, post.category);
-      if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', 'index.html');
+      if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', `index.html#post-${post.id}`);
     }
     res.json(comment);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -545,7 +545,7 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
       if (_uid3 !== null) await db.createNotification({ userId: _uid3, type: 'COMMENT',
         message: `${user.name} a repondu a votre commentaire sur "${post.title}"`,
         link: `index.html#post-${post.id}` });
-      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', 'index.html');
+      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `index.html#post-${post.id}`);
     }
     res.json(reply);
   } catch(e) { res.status(400).json({ error: e.message }); }

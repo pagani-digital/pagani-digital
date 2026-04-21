@@ -14,7 +14,9 @@ self.addEventListener('push', function(e) {
 
 self.addEventListener('notificationclick', function(e) {
   e.notification.close();
-  const url = e.notification.data?.url || '/';
+  const base = 'https://pagani-digital.vercel.app/';
+  const raw = e.notification.data?.url || '/';
+  const url = raw.startsWith('http') ? raw : base + raw;
   e.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(list) {
       for (const c of list) {
