@@ -8514,3 +8514,39 @@ function _onRxSSE(notif) {
   }
   _renderRxZone(msgId);
 }
+
+
+// ── PUSH NOTIFICATIONS PWA ───────────────────────────────────────────────────
+async function initPushNotifications() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
+    // Récupérer la clé publique VAPID
+    const { key } = await fetch(API + '/push/vapid-public-key').then(r => r.json());
+    // Vérifier si déjà abonné
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: _urlBase64ToUint8Array(key)
+      });
+    }
+    // Envoyer la subscription au serveur
+    const token = localStorage.getItem('pd_jwt');
+    await fetch(API + '/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(sub.toJSON())
+    });
+  } catch(e) {}
+}
+
+function _urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}

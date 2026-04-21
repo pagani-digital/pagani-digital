@@ -6,6 +6,23 @@ const jwt       = require('jsonwebtoken');
 const path      = require('path');
 const rateLimit = require('express-rate-limit');
 const db        = require('./database');
+const webpush   = require('web-push');
+webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
+
+// Envoyer une push notification à un user (silencieux si erreur)
+async function sendPush(userId, title, body, url) {
+  try {
+    const { Pool } = require('pg');
+    const subs = await db.pool ? db.pool.query('SELECT * FROM push_subscriptions WHERE user_id=$1', [userId]) : null;
+    if (!subs || !subs.rows.length) return;
+    const payload = JSON.stringify({ title, body, url: url || '/' });
+    for (const s of subs.rows) {
+      webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload)
+        .catch(() => {});
+    }
+  } catch(e) {}
+}
+
 const app        = express();
 const PORT       = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -320,6 +337,7 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
       }
     }
     res.json(result);
+      if (_uid1 !== null) sendPush(_uid1, 'Nouvelle réaction', req.user.name + ' a réagi à votre post', 'index.html');
   } catch(e) {
     if (e.message === 'EMOJI_INVALIDE') return res.status(400).json({ error: 'EMOJI_INVALIDE' });
     res.status(500).json({ error: 'ERREUR_SERVEUR' });
@@ -1259,6 +1277,7 @@ app.post('/api/users/:id/follow', requireAuth, async (req, res) => {
         link: `profil.html?id=${req.user.id}`
       });
       res.json({ following: true });
+      sendPush(targetId, follower.name + ' vous suit', 'Nouveau abonné sur Pagani Digital', `profil.html?id=${req.user.id}`);
     }
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -1389,6 +1408,7 @@ app.post('/api/messages/:userId', requireAuth, async (req, res) => {
       link: `messages.html?with=${req.user.id}`
     });
     res.json(msg);
+    sendPush(receiverId, sender.name, content ? content.trim().slice(0,80) : 'Photo', `messages.html?with=${req.user.id}`);
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // Marquer les messages d'une conversation comme lus
@@ -1620,6 +1640,33 @@ async function runMigrations() {
     await _migPool.query(`CREATE INDEX IF NOT EXISTS idx_story_reactions_story ON story_reactions(story_id)`);
   } catch(e) { console.error('migrate story_reactions:', e.message); }
 }
+
+// ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
+app.get('/api/push/vapid-public-key', (req, res) => {
+  res.json({ key: process.env.VAPID_PUBLIC_KEY });
+});
+
+app.post('/api/push/subscribe', requireAuth, async (req, res) => {
+  const { endpoint, keys } = req.body;
+  if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'INVALID_SUB' });
+  try {
+    await db.pool.query(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (endpoint) DO UPDATE SET user_id=$1, p256dh=$3, auth=$4`,
+      [req.user.id, endpoint, keys.p256dh, keys.auth]
+    );
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.post('/api/push/unsubscribe', requireAuth, async (req, res) => {
+  const { endpoint } = req.body;
+  if (!endpoint) return res.status(400).json({ error: 'INVALID_SUB' });
+  try {
+    await db.pool.query('DELETE FROM push_subscriptions WHERE user_id=$1 AND endpoint=$2', [req.user.id, endpoint]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();

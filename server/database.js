@@ -1632,6 +1632,7 @@ async function getPublicMembers() {
 }
 
 module.exports = {
+  pool,
   createUser,
   login,
   getUserById,
