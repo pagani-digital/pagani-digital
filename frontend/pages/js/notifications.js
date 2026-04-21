@@ -287,7 +287,8 @@ function _connectSSE(userId) {
   if (_sseSource) return; // déjà connecté
   const token = localStorage.getItem('pd_jwt') || '';
   if (!token) return;
-  _sseSource = new EventSource(`/api/notifications/stream?token=${encodeURIComponent(token)}`);
+  const _sseBase = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
+  _sseSource = new EventSource(`${_sseBase}/notifications/stream?token=${encodeURIComponent(token)}`);
   _sseSource.onmessage = async (e) => {
     if (!e.data || e.data.startsWith(':')) return;
     let isPrivateMsg = false;
