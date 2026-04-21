@@ -426,7 +426,7 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, 'Pagani Digital', 'Nouvelle publication : "' + post.title + '"', 'index.html'));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', 'index.html'));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -443,13 +443,13 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     const allUsers = await db.getAllUsers();
     for (const u of allUsers.filter(u => u.role !== 'admin')) {
       await db.createNotification({ userId: u.id, type: 'NEW_POST',
-        message: `Pagani Digital a publie : "${post.title}"`,
+        message: `${user.name} a publié : "${post.title}"`,
         link: `index.html#post-${post.id}` });
     }
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, 'Pagani Digital', 'Nouvelle publication : "' + post.title + '"', 'index.html'));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', 'index.html'));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
