@@ -8641,7 +8641,15 @@ function showPushBanner() {
 }
 
 async function acceptPushBanner() {
-  dismissPushBanner();
+  const b = document.getElementById('pushBanner');
+  if (b) b.remove();
+  // Demander la permission directement au clic (requis par Chrome mobile)
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') {
+    localStorage.setItem('pd_push_banner_dismissed', '1');
+    return;
+  }
+  localStorage.setItem('pd_push_banner_dismissed', '1');
   await initPushNotifications();
   updatePushNotifUI();
 }
