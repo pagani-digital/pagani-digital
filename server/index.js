@@ -542,8 +542,8 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
       if (_uid3 !== null) await db.createNotification({ userId: _uid3, type: 'COMMENT',
         message: `${user.name} a repondu a votre commentaire sur "${post.title}"`,
         link: `index.html#post-${post.id}` });
-    }
       if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', 'index.html');
+    }
     res.json(reply);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
