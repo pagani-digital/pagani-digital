@@ -23,6 +23,14 @@ async function sendPush(userId, title, body, url) {
   } catch(e) {}
 }
 
+async function sendPushToAdmin(title, body, url) {
+  try {
+    if (!db.pool) return;
+    const admins = await db.pool.query("SELECT id FROM users WHERE role='admin'");
+    for (const a of admins.rows) sendPush(a.id, title, body, url || 'dashboard.html');
+  } catch(e) {}
+}
+
 const app        = express();
 const PORT       = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -188,6 +196,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
         await db.followUser(user.id, admin.id);
       }
     } catch(e) {}
+    sendPushToAdmin('Nouveau membre', name + " vient de s'inscrire", 'dashboard.html?tab=admin&section=users');
     res.json({ token: makeToken(user), user: safeUser(user) });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -639,6 +648,7 @@ app.post('/api/withdraws', requireAuth, async (req, res) => {
     await db.createNotification({ userId: 0, type: 'WITHDRAW_REQUEST',
       message: `${user?.name} demande un retrait de ${w.montant.toLocaleString('fr-FR')} AR`,
       link: 'dashboard.html' });
+    sendPushToAdmin('Demande de retrait', user?.name + ' demande un retrait', 'dashboard.html');
     res.json(w);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -689,6 +699,7 @@ app.post('/api/upgrade-request', requireAuth, async (req, res) => {
     await db.createNotification({ userId: 0, type: 'NEW_SUBSCRIPTION',
       message: `${user.name} demande le plan ${plan} - ${amount.toLocaleString('fr-FR')} AR via ${operator} (${phone})${txRef ? ' | Ref: ' + txRef : ''}`,
       link: 'dashboard.html?tab=admin&section=subscriptions' });
+    sendPushToAdmin('Nouvelle souscription', user.name + ' demande le plan ' + plan, 'dashboard.html?tab=admin&section=subscriptions');
     res.json({ ok: true, id: upgradeReq.id });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -761,6 +772,7 @@ app.post('/api/module-purchase', requireAuth, async (req, res) => {
       message: `${user.name} a acheté le module "${mod.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
       link: 'dashboard.html?tab=admin&section=modulepurchases'
     });
+    sendPushToAdmin('Achat module', user.name + ' a acheté un module', 'dashboard.html?tab=admin&section=modulepurchases');
     res.json({ ok: true, id: purchase.id });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -892,6 +904,7 @@ app.post('/api/video-purchase', requireAuth, async (req, res) => {
       userId: 0, type: 'NEW_FORMATION',
       message: `${user.name} a achete la video "${video.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
       link: 'dashboard.html?tab=admin&section=videopurchases'
+    sendPushToAdmin('Achat vidéo', user.name + ' a acheté une vidéo', 'dashboard.html?tab=admin&section=videopurchases');
     });
     res.json({ ok: true, id: purchase.id });
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -1587,6 +1600,7 @@ app.post('/api/ebook-purchase', requireAuth, async (req, res) => {
       message: `${user.name} a acheté l'ebook "${ebook.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
       link: 'dashboard.html?tab=admin&section=ebookpurchases'
     });
+    sendPushToAdmin('Achat ebook', user.name + " a acheté un ebook", 'dashboard.html?tab=admin&section=ebookpurchases');
     res.json({ ok: true, id: purchase.id });
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
