@@ -346,12 +346,14 @@ function _connectSSE(userId) {
       if (notif.type === 'PRIVATE_MESSAGE') isPrivateMsg = true;
       if (notif.type === 'REACTION') {
         if (typeof _onRxSSE === 'function') _onRxSSE(notif);
+        _notifToToast(notif);
         return;
       }
     } catch(e) {}
     if (isPrivateMsg) {
       // Mettre à jour le badge messages navbar instantanément
       if (typeof _updateMsgBadge === 'function') _updateMsgBadge();
+      try { const _n = JSON.parse(e.data); _notifToToast(_n); } catch(ee) {}
       return;
     }
     // Récupérer le vrai compte depuis le serveur pour éviter les sauts dus au buffering SSE
