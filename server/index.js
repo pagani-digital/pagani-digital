@@ -1595,13 +1595,41 @@ app.put('/api/admin/ebook-purchases/:id', requireAuth, requireAdmin, async (req,
     res.json(await db.updateEbookPurchase(id, req.body));
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
-app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));
-  } else {
 // Route migration one-shot — supprimer après usage
 app.get('/api/run-migration-push', async (req, res) => {
   if (req.query.secret !== process.env.JWT_SECRET) return res.status(403).json({ error: 'FORBIDDEN' });
+  try {
+    await db.pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await db.pool.query('CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id)');
+    res.json({ ok: true, message: 'Table push_subscriptions cree' });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('*', (req, res) => {
+  try {
+    await db.pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      endpoint TEXT NOT NULL UNIQUE,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await db.pool.query('CREATE INDEX IF NOT EXISTS idx_push_subs_user ON push_subscriptions(user_id)');
+    res.json({ ok: true, message: 'Table push_subscriptions créée' });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));
+  } else {
   try {
     await db.pool.query(`CREATE TABLE IF NOT EXISTS push_subscriptions (
       id SERIAL PRIMARY KEY,
