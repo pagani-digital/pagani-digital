@@ -27,6 +27,7 @@ async function sendPushToAdmin(title, body, url) {
   try {
     if (!db.pool) return;
     const admins = await db.pool.query("SELECT id FROM users WHERE role='admin'");
+    console.log('[pushAdmin] admins trouvés=' + admins.rows.length + ' title=' + title);
     for (const a of admins.rows) sendPush(a.id, title, body, url || 'dashboard.html');
   } catch(e) {}
 }
