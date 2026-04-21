@@ -1,3 +1,52 @@
+
+// ── IN-APP TOAST ──────────────────────────────────────────────────────────────
+(function() {
+  const s = document.createElement('style');
+  s.textContent = `
+    #paganiToastWrap { position:fixed;top:70px;right:16px;z-index:9998;display:flex;flex-direction:column;gap:8px;pointer-events:none }
+    .pagani-toast { background:var(--bg2,#1e1e2e);border:1px solid var(--accent,#6c63ff);border-radius:14px;padding:0.75rem 1rem;display:flex;align-items:center;gap:0.75rem;box-shadow:0 4px 24px rgba(0,0,0,0.35);min-width:260px;max-width:340px;pointer-events:all;cursor:pointer;animation:toastIn 0.3s ease;transition:opacity 0.3s }
+    .pagani-toast.hiding { opacity:0 }
+    .pagani-toast-icon { font-size:1.2rem;flex-shrink:0 }
+    .pagani-toast-body { flex:1;min-width:0 }
+    .pagani-toast-title { font-weight:700;font-size:0.85rem;color:var(--text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+    .pagani-toast-msg { font-size:0.75rem;color:var(--text2,#aaa);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:0.1rem }
+    .pagani-toast-close { background:none;border:none;color:var(--text2,#aaa);cursor:pointer;font-size:0.9rem;flex-shrink:0;padding:0 }
+    @keyframes toastIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+    @media(max-width:600px){ #paganiToastWrap{right:8px;left:8px} .pagani-toast{min-width:0;max-width:100%} }
+  `;
+  document.head.appendChild(s);
+  const wrap = document.createElement('div');
+  wrap.id = 'paganiToastWrap';
+  document.body.appendChild(wrap);
+})();
+
+function _showToast(title, message, icon, url) {
+  const wrap = document.getElementById('paganiToastWrap');
+  if (!wrap) return;
+  const toast = document.createElement('div');
+  toast.className = 'pagani-toast';
+  toast.innerHTML =
+    '<div class="pagani-toast-icon">' + (icon || '🔔') + '</div>' +
+    '<div class="pagani-toast-body">' +
+      '<div class="pagani-toast-title">' + (title || '') + '</div>' +
+      '<div class="pagani-toast-msg">' + (message || '') + '</div>' +
+    '</div>' +
+    '<button class="pagani-toast-close" onclick="this.closest('.pagani-toast').remove()"><i class="fas fa-times"></i></button>';
+  if (url) toast.onclick = function(e) { if (e.target.closest('.pagani-toast-close')) return; window.location.href = url; };
+  wrap.appendChild(toast);
+  setTimeout(function() {
+    toast.classList.add('hiding');
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 5000);
+}
+
+function _notifToToast(notif) {
+  const icons = { PRIVATE_MESSAGE:'💬', REACTION:'❤️', COMMENT:'💬', NEW_FOLLOWER:'👤', NEW_POST:'📢', WITHDRAW_REQUEST:'💰', NEW_SUBSCRIPTION:'🎉', NEW_FORMATION:'🎓', SUB_CONFIRMED:'✅' };
+  const icon = icons[notif.type] || '🔔';
+  const url = notif.link ? notif.link : null;
+  _showToast(notif.type === 'PRIVATE_MESSAGE' ? 'Nouveau message' : 'Notification', notif.message || '', icon, url);
+}
+
 /**
  * ============================================================
  *  PAGANI DIGITAL — Système de Notifications v5 (API-first)
@@ -330,6 +379,8 @@ function _connectSSE(userId) {
     // Rafraîchir panel si ouvert
     const panel = document.getElementById('notifPanel');
     if (panel && panel.classList.contains('open')) renderNotifPanel(userId);
+    // Toast in-app
+    try { const notif = JSON.parse(e.data); _notifToToast(notif); } catch(ee) {}
   };
   _sseSource.onerror = () => {
     _sseSource.close();
