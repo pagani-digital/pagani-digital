@@ -7640,6 +7640,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (window.PaganiNotif) {
     PaganiNotif.startPolling();
     if (user) PaganiNotif.refreshBadge();
+    if (user && 'Notification' in window && Notification.permission === 'default') {
+      setTimeout(initPushNotifications, 3000);
+    } else if (user && Notification.permission === 'granted') {
+      initPushNotifications();
+    }
   }
   // Toujours afficher le feed et les cours (meme sans etre connect)
   if (window.PaganiAPI) {
