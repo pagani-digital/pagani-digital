@@ -294,6 +294,17 @@
               </button>
             </form>
           </div>
+          <!-- NOTIFICATIONS PUSH -->
+          <div id="pushNotifBlock" style="margin-bottom:1rem;padding:1rem;background:var(--bg3);border:1px solid var(--border);border-radius:14px;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <div>
+              <div style="font-weight:700;font-size:0.9rem"><i class="fas fa-bell" style="color:var(--accent)"></i> Notifications push</div>
+              <div id="pushNotifStatus" style="font-size:0.78rem;color:var(--text2);margin-top:0.2rem">Chargement...</div>
+            </div>
+            <button id="pushNotifBtn" class="btn-primary" style="padding:0.45rem 1.1rem;font-size:0.82rem" onclick="togglePushNotif()">
+              <i class="fas fa-bell"></i> Activer
+            </button>
+          </div>
+
           <div class="profile-stats">
             <div class="profile-stat"><strong id="pStatCourses">0</strong><span>Cours suivis</span></div>
             <div class="profile-stat"><strong id="pStatRefs">0</strong><span>Filleuls</span></div>

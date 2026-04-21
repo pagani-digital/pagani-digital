@@ -2784,6 +2784,7 @@ function switchTab(tab, btn) {
     }
   }
   if (tab === "myposts")      { loadMyPosts(); _initMyPostsPanel(); }
+  if (tab === "profile")      { updatePushNotifUI(); }
   if (tab === "subscription") renderUserSubscriptions();
   if (tab === "myvideos")     renderUserVideoPurchases();
   if (tab === "myebooks")     loadMyEbooks();
@@ -8550,4 +8551,64 @@ function _urlBase64ToUint8Array(base64String) {
   const arr = new Uint8Array(raw.length);
   for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
   return arr;
+}
+
+// ── TOGGLE PUSH DEPUIS DASHBOARD ─────────────────────────────────────────────
+async function togglePushNotif() {
+  const btn = document.getElementById('pushNotifBtn');
+  const status = document.getElementById('pushNotifStatus');
+  const perm = Notification.permission;
+  if (perm === 'denied') {
+    alert('Les notifications sont bloquées. Allez dans les paramètres de votre navigateur pour les autoriser.');
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+  await initPushNotifications();
+  updatePushNotifUI();
+  if (btn) btn.disabled = false;
+}
+
+async function updatePushNotifUI() {
+  const btn = document.getElementById('pushNotifBtn');
+  const status = document.getElementById('pushNotifStatus');
+  if (!btn || !status) return;
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg ? await reg.pushManager.getSubscription() : null;
+    if (sub) {
+      status.textContent = 'Activées — vous recevrez des notifications';
+      status.style.color = 'var(--accent2)';
+      btn.innerHTML = '<i class="fas fa-bell-slash"></i> Désactiver';
+      btn.onclick = disablePushNotif;
+      return;
+    }
+  }
+  if (perm === 'denied') {
+    status.textContent = 'Bloquées dans les paramètres du navigateur';
+    status.style.color = 'var(--red)';
+    btn.innerHTML = '<i class="fas fa-ban"></i> Bloquées';
+    btn.disabled = true;
+    return;
+  }
+  status.textContent = 'Désactivées — cliquez pour recevoir des notifications';
+  status.style.color = 'var(--text2)';
+  btn.innerHTML = '<i class="fas fa-bell"></i> Activer';
+  btn.onclick = togglePushNotif;
+}
+
+async function disablePushNotif() {
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = reg ? await reg.pushManager.getSubscription() : null;
+  if (sub) {
+    const token = localStorage.getItem('pd_jwt');
+    await fetch(API + '/push/unsubscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ endpoint: sub.endpoint })
+    }).catch(() => {});
+    await sub.unsubscribe();
+  }
+  updatePushNotifUI();
 }
