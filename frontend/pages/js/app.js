@@ -7640,10 +7640,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (window.PaganiNotif) {
     PaganiNotif.startPolling();
     if (user) PaganiNotif.refreshBadge();
-    if (user && 'Notification' in window && Notification.permission === 'default') {
-      setTimeout(initPushNotifications, 3000);
-    } else if (user && Notification.permission === 'granted') {
+    if (user && 'Notification' in window && Notification.permission === 'granted') {
       initPushNotifications();
+    } else if (user && 'Notification' in window && Notification.permission === 'default') {
+      setTimeout(showPushBanner, 4000);
     }
   }
   // Toujours afficher le feed et les cours (meme sans etre connect)
@@ -8616,4 +8616,38 @@ async function disablePushNotif() {
     await sub.unsubscribe();
   }
   updatePushNotifUI();
+}
+
+// ── BANNIÈRE PUSH ─────────────────────────────────────────────────────────────
+function showPushBanner() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'default') return;
+  if (localStorage.getItem('pd_push_banner_dismissed')) return;
+  if (document.getElementById('pushBanner')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'pushBanner';
+  banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--bg2);border:1px solid var(--accent);border-radius:14px;padding:0.8rem 1rem;display:flex;align-items:center;gap:0.8rem;box-shadow:0 4px 24px rgba(0,0,0,0.3);max-width:360px;width:calc(100% - 2rem);animation:slideUp 0.3s ease';
+  banner.innerHTML =
+    '<i class="fas fa-bell" style="color:var(--accent);font-size:1.2rem;flex-shrink:0"></i>' +
+    '<div style="flex:1;min-width:0">' +
+      '<div style="font-weight:700;font-size:0.88rem">Activer les notifications</div>' +
+      '<div style="font-size:0.75rem;color:var(--text2)">Recevez les alertes en temps réel</div>' +
+    '</div>' +
+    '<button onclick="acceptPushBanner()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.4rem 0.8rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Activer</button>' +
+    '<button onclick="dismissPushBanner()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0.2rem;flex-shrink:0"><i class="fas fa-times"></i></button>';
+
+  document.body.appendChild(banner);
+}
+
+async function acceptPushBanner() {
+  dismissPushBanner();
+  await initPushNotifications();
+  updatePushNotifUI();
+}
+
+function dismissPushBanner() {
+  const b = document.getElementById('pushBanner');
+  if (b) b.remove();
+  localStorage.setItem('pd_push_banner_dismissed', '1');
 }
