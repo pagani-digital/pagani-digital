@@ -12,17 +12,15 @@ webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, p
 // Envoyer une push notification à un user (silencieux si erreur)
 async function sendPush(userId, title, body, url) {
   try {
-    if (!db.pool) { console.log('[push] db.pool indisponible'); return; }
+    if (!db.pool) return;
     const subs = await db.pool.query('SELECT * FROM push_subscriptions WHERE user_id=$1', [userId]);
-    console.log('[push] userId=' + userId + ' subs=' + subs.rows.length);
     if (!subs.rows.length) return;
     const payload = JSON.stringify({ title, body, url: url || '/' });
     for (const s of subs.rows) {
       webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload)
-        .then(() => console.log('[push] envoyé à ' + userId))
-        .catch(e => console.log('[push] erreur:', e.statusCode, e.body));
+        .catch(() => {});
     }
-  } catch(e) { console.log('[push] catch:', e.message); }
+  } catch(e) {}
 }
 
 const app        = express();
