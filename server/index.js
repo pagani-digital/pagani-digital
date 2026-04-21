@@ -11,6 +11,7 @@ webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, p
 
 // Envoyer une push notification à un user (silencieux si erreur)
 async function sendPush(userId, title, body, url) {
+  if (userId === 0) { sendPushToAdmin(title, body, url); return; }
   try {
     if (!db.pool) return;
     const subs = await db.pool.query('SELECT * FROM push_subscriptions WHERE user_id=$1', [userId]);
@@ -27,7 +28,6 @@ async function sendPushToAdmin(title, body, url) {
   try {
     if (!db.pool) return;
     const admins = await db.pool.query("SELECT id FROM users WHERE role='admin'");
-    console.log('[pushAdmin] admins trouvés=' + admins.rows.length + ' title=' + title);
     for (const a of admins.rows) sendPush(a.id, title, body, url || 'dashboard.html');
   } catch(e) {}
 }
