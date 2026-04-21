@@ -5364,7 +5364,7 @@ function _convPreview(c) {
   if (c.lastRxEmoji && rxDate >= msgDate) {
     // La réaction est plus récente (ou égale) au dernier message
     const iMReacted = String(c.lastRxUserId) === String(myId);
-    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'—' : c.lastRxMsgContent) : '??';
+    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'...' : c.lastRxMsgContent) : (c.lastRxMsgImage ? 'Photo' : 'Photo');
     if (iMReacted) {
       return c.lastRxEmoji + ' Vous avez réagi : ' + preview;
     } else {

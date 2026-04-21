@@ -992,7 +992,7 @@ async function getConversations(userId) {
        ORDER BY created_at DESC LIMIT 1
      ) last_msg ON true
      LEFT JOIN LATERAL (
-       SELECT r.emoji, r.user_id, r.created_at, m.content AS msg_content, m.sender_id AS msg_sender_id
+       SELECT r.emoji, r.user_id, r.created_at, m.content AS msg_content, m.image AS msg_image, m.sender_id AS msg_sender_id
        FROM message_reactions r
        JOIN private_messages m ON m.id = r.message_id
        WHERE (m.sender_id = $1 AND m.receiver_id = u.id)
