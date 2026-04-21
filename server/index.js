@@ -448,6 +448,9 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     }
     // Invalider le cache visiteurs
     _guestFeedCache = null;
+    db.getAllUsers().then(users => {
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, 'Pagani Digital', 'Nouvelle publication : "' + post.title + '"', 'index.html'));
+    }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
