@@ -15,6 +15,7 @@ async function sendPush(userId, title, body, url) {
   console.log('[sendPush] called userId=' + userId + ' title=' + title);
     if (!db.pool) return;
     const subs = await db.pool.query('SELECT * FROM push_subscriptions WHERE user_id=$1', [userId]);
+    console.log('[sendPush] subs trouvées=' + subs.rows.length + ' pour userId=' + userId);
     if (!subs.rows.length) return;
     const payload = JSON.stringify({ title, body, url: url || '/' });
     for (const s of subs.rows) {
