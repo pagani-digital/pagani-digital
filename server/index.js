@@ -122,10 +122,12 @@ app.options('*', cors(corsOptions));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
 const _staticOpts = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
-app.use(express.static(path.join(__dirname, '../frontend/pages'), _staticOpts));
+// /js, /css, /assets servis depuis frontend/ (source unique)
+// IMPORTANT : déclarés AVANT frontend/pages pour avoir la priorité
 app.use('/js',     express.static(path.join(__dirname, '../frontend/js'),      _staticOpts));
 app.use('/css',    express.static(path.join(__dirname, '../frontend/css'),     _staticOpts));
 app.use('/assets', express.static(path.join(__dirname, '../frontend/assets'),  _staticOpts));
+app.use(express.static(path.join(__dirname, '../frontend/pages'), _staticOpts));
 // Gestionnaire d'erreur CORS — renvoie 403 au lieu de planter le serveur
 app.use((err, req, res, next) => {
   if (err.message === 'CORS_ORIGIN_NON_AUTORISEE') {
