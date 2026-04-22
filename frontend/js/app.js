@@ -1201,6 +1201,8 @@ function showDashboard(user) {
     if (myVideosTabBtn) myVideosTabBtn.style.display = 'flex';
     const myPostsTabBtn = document.getElementById('myPostsTabBtn');
     if (myPostsTabBtn) myPostsTabBtn.style.display = 'flex';
+    const trainerTabBtn = document.getElementById('trainerTabBtn');
+    if (trainerTabBtn) trainerTabBtn.style.display = 'flex';
     switchTab('myposts', myPostsTabBtn);
   }
   // Activer les notifications
@@ -1212,7 +1214,8 @@ function showDashboard(user) {
   if (user.role === 'admin') _startAdminPolling();
   // Vérifier si on doit ouvrir l'onglet messages depuis une notification
   const urlParams = new URLSearchParams(window.location.search);
-  const tabParam  = urlParams.get('tab');
+  const tabParam  = urlParams.get('tab') || sessionStorage.getItem('pd_pending_tab');
+  sessionStorage.removeItem('pd_pending_tab');
   const withParam = urlParams.get('with');
   if (tabParam === 'messages') {
     // Rediriger vers la page dédiée
@@ -1227,6 +1230,16 @@ function showDashboard(user) {
         const btn = document.querySelector(`.admin-subnav-btn[onclick*="'${sectionParam}'"]`);
         if (btn) btn.click();
       }, 300);
+    }
+  }
+  if (tabParam === 'trainer') {
+    const trainerBtn = document.getElementById('trainerTabBtn');
+    if (trainerBtn && trainerBtn.style.display !== 'none') {
+      switchTab('trainer', trainerBtn);
+    } else {
+      // Pas encore formateur : ouvrir le tab myposts mais scroller vers la section formateur
+      const myPostsBtn = document.getElementById('myPostsTabBtn');
+      switchTab('myposts', myPostsBtn);
     }
   }
   renderProgress();
@@ -1598,7 +1611,7 @@ async function changePassword(e) {
 }
 // ===== TABS DASHBOARD =====
 function switchTab(tab, btn) {
-  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "admin", "videos"].forEach(t => {
+  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "admin", "videos", "trainer"].forEach(t => {
     const el = document.getElementById("tab-" + t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
@@ -1616,6 +1629,7 @@ function switchTab(tab, btn) {
   if (tab === "myvideos")     renderUserVideoPurchases();
   if (tab === "admin")  loadAdminStats();
   if (tab === "videos") renderAdminVideos();
+  if (tab === "trainer") loadTrainerTab();
 }
 // ===== ADMIN STATS =====
 async function loadAdminStats() {
@@ -3524,6 +3538,356 @@ function animateCounters() {
     }, 20);
   });
 }
+
+// ===== FORMATEUR =====
+
+async function loadTrainerTab() {
+  const user = getUser();
+  if (!user) return;
+  const _API = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3001/api');
+  const statusEl   = document.getElementById('trainerRequestStatus');
+  const formEl     = document.getElementById('trainerRequestForm');
+  const submitEl   = document.getElementById('trainerSubmitSection');
+  const earningsEl = document.getElementById('trainerEarningsSection');
+  const listEl     = document.getElementById('trainerSubmissionsList');
+
+  // Formateur ou admin : afficher espace formateur
+  if (user.role === 'formateur' || user.role === 'admin') {
+    if (statusEl) statusEl.innerHTML =
+      '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:12px">'
+      + '<i class="fas fa-check-circle" style="color:var(--accent2);font-size:1.4rem"></i>'
+      + '<div><strong style="color:var(--accent2)">Formateur Partenaire actif</strong><br>'
+      + '<span style="font-size:0.82rem;color:var(--text2)">Vous pouvez soumettre des contenus pour publication.</span></div>'
+      + '</div>';
+    if (formEl)     formEl.style.display     = 'none';
+    if (submitEl)   submitEl.style.display   = 'block';
+    if (earningsEl) earningsEl.style.display = 'block';
+    if (listEl)     listEl.style.display     = 'block';
+    await loadTrainerSubmissions();
+    await loadTrainerEarnings();
+    return;
+  }
+
+  // Vérifier si une demande existe
+  try {
+    const req = await fetch(_API + '/trainer/my-request', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+
+    if (req && req.statut === 'En attente') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px">'
+        + '<i class="fas fa-clock" style="color:var(--gold);font-size:1.4rem"></i>'
+        + '<div><strong style="color:var(--gold)">Demande en cours d&#39;examen</strong><br>'
+        + '<span style="font-size:0.82rem;color:var(--text2)">Soumise le ' + new Date(req.created_at).toLocaleDateString('fr-FR') + '. Vous serez notifié dès qu&#39;une décision sera prise.</span></div>'
+        + '</div>';
+      if (formEl) formEl.style.display = 'none';
+      return;
+    }
+    if (req && req.statut === 'Rejeté') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.25);border-radius:12px">'
+        + '<i class="fas fa-times-circle" style="color:var(--red);font-size:1.4rem"></i>'
+        + '<div><strong style="color:var(--red)">Demande refusée</strong><br>'
+        + '<span style="font-size:0.82rem;color:var(--text2)">' + (req.reject_reason || 'Contactez l&#39;administrateur.') + '</span></div>'
+        + '</div>';
+      if (formEl) formEl.style.display = 'block';
+      return;
+    }
+  } catch(e) {}
+
+  // Pas de demande : afficher le formulaire
+  if (statusEl) statusEl.innerHTML = '';
+  if (formEl)   formEl.style.display = 'block';
+}
+
+async function submitTrainerRequest() {
+  const expertise   = document.getElementById('trainerExpertise')?.value.trim();
+  const description = document.getElementById('trainerDescription')?.value.trim();
+  const demoUrl     = document.getElementById('trainerDemoUrl')?.value.trim();
+  const msg         = document.getElementById('trainerRequestMsg');
+  if (!expertise || !description) { if(msg){msg.style.color='var(--red)';msg.textContent='Remplissez tous les champs obligatoires.';} return; }
+  try {
+    await fetch(API_URL + '/trainer/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
+      body: JSON.stringify({ expertise, description, demoUrl })
+    }).then(r => { if(!r.ok) return r.json().then(e => { throw new Error(e.error); }); return r.json(); });
+    if(msg){msg.style.color='var(--accent2)';msg.textContent='✅ Candidature envoyée ! Vous serez notifié dès qu\'une décision sera prise.';}
+    setTimeout(() => loadTrainerTab(), 1500);
+  } catch(e) {
+    const errs = { DEMANDE_DEJA_EN_COURS: 'Une demande est déjà en cours d\'examen.', FORMATEUR_REQUIS: 'Vous êtes déjà formateur.' };
+    if(msg){msg.style.color='var(--red)';msg.textContent=errs[e.message]||'Erreur : '+e.message;}
+  }
+}
+
+async function loadTrainerSubmissions() {
+  const wrap = document.getElementById('trainerSubmissionsContent');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const subs = await fetch(API_URL + '/trainer/my-submissions', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+    if (!subs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucun contenu soumis pour le moment.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    const statusIcons  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
+    wrap.innerHTML = subs.map(s => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(108,99,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas ${s.content_type==='video'?'fa-play-circle':'fa-book-open'}" style="color:var(--accent)"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <strong style="font-size:0.92rem">${esc(s.title)}</strong>
+          <span style="display:block;font-size:0.75rem;color:var(--text2)">${s.content_type==='video'?'Vidéo':'Ebook'} · ${Number(s.price).toLocaleString('fr-FR')} AR · ${new Date(s.created_at).toLocaleDateString('fr-FR')}</span>
+          ${s.reject_reason ? `<span style="font-size:0.75rem;color:var(--red)">Raison : ${esc(s.reject_reason)}</span>` : ''}
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:700;color:${statusColors[s.statut]||'var(--text2)'};background:${statusColors[s.statut]||'var(--text2)'}22;border:1px solid ${statusColors[s.statut]||'var(--text2)'}44;padding:0.25rem 0.7rem;border-radius:50px;white-space:nowrap">
+          <i class="fas ${statusIcons[s.statut]||'fa-question'}"></i> ${s.statut}
+        </span>
+      </div>`).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function loadTrainerEarnings() {
+  const statsEl = document.getElementById('trainerEarningsStats');
+  const listEl  = document.getElementById('trainerEarningsList');
+  if (!statsEl || !listEl) return;
+  try {
+    const data = await fetch(API_URL + '/trainer/my-earnings', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    statsEl.innerHTML = `
+      <div class="aff-stat-card"><i class="fas fa-coins"></i><strong>${fmt(data.total||0)} AR</strong><span>Gains totaux</span></div>
+      <div class="aff-stat-card"><i class="fas fa-clock"></i><strong>${fmt(data.pending||0)} AR</strong><span>En attente</span></div>
+      <div class="aff-stat-card"><i class="fas fa-check-circle"></i><strong>${fmt(data.paid||0)} AR</strong><span>Versé</span></div>`;
+    if (!data.earnings.length) { listEl.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission pour le moment.</p></div>'; return; }
+    listEl.innerHTML = `
+      <div class="history-header" style="grid-template-columns:1fr 1.5fr 1fr 1fr 1fr"><span>Date</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span></div>
+      ${data.earnings.map(e => `
+      <div class="history-row" style="grid-template-columns:1fr 1.5fr 1fr 1fr 1fr">
+        <span>${new Date(e.created_at).toLocaleDateString('fr-FR')}</span>
+        <span style="font-size:0.82rem">${esc(e.content_title||'—')}</span>
+        <span class="green">${fmt(e.sale_amount)} AR</span>
+        <span class="green">${fmt(e.commission_amount)} AR <small style="color:var(--text2)">(${e.commission_rate}%)</small></span>
+        <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+      </div>`).join('')}`;
+  } catch(e) { if(listEl) listEl.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+function openTrainerSubmitModal() {
+  document.getElementById('trainerSubmitOverlay').style.display = 'flex';
+  document.getElementById('trainerSubmitMsg').textContent = '';
+}
+function closeTrainerSubmitModal() {
+  document.getElementById('trainerSubmitOverlay').style.display = 'none';
+}
+function toggleTrainerContentType(type) {
+  document.getElementById('tsVideoFields').style.display = type === 'video' ? 'block' : 'none';
+  document.getElementById('tsEbookFields').style.display = type === 'ebook' ? 'block' : 'none';
+}
+
+async function submitTrainerContent() {
+  const msg = document.getElementById('trainerSubmitMsg');
+  const contentType = document.querySelector('input[name="trainerContentType"]:checked')?.value || 'video';
+  const title = document.getElementById('tsTitle')?.value.trim();
+  const price = parseInt(document.getElementById('tsPrice')?.value) || 0;
+  if (!title) { msg.style.color='var(--red)'; msg.textContent='Le titre est obligatoire.'; return; }
+  if (!price) { msg.style.color='var(--red)'; msg.textContent='Le prix est obligatoire.'; return; }
+  const payload = {
+    contentType, title, price,
+    description: document.getElementById('tsDescription')?.value.trim() || '',
+    category:    document.getElementById('tsCategory')?.value || 'debutant',
+    level:       document.getElementById('tsLevel')?.value || 'Débutant',
+    accessType:  'unit',
+  };
+  if (contentType === 'video') {
+    const src = document.getElementById('tsVideoSource')?.value || 'youtube';
+    const vid = document.getElementById('tsVideoId')?.value.trim() || '';
+    payload.videoSource = src;
+    payload.videoId     = src === 'youtube' ? vid : '';
+    payload.driveId     = src === 'drive'   ? vid : '';
+    payload.duration    = document.getElementById('tsDuration')?.value.trim() || '';
+    payload.thumbnail   = document.getElementById('tsThumbnail')?.value.trim() || '';
+  } else {
+    payload.authorName = document.getElementById('tsAuthorName')?.value.trim() || '';
+    payload.pages      = parseInt(document.getElementById('tsPages')?.value) || null;
+    payload.cover      = document.getElementById('tsCover')?.value.trim() || '';
+    payload.fileUrl    = document.getElementById('tsFileUrl')?.value.trim() || '';
+  }
+  try {
+    await fetch(API_URL + '/trainer/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
+      body: JSON.stringify(payload)
+    }).then(r => { if(!r.ok) return r.json().then(e => { throw new Error(e.error); }); return r.json(); });
+    msg.style.color = 'var(--accent2)';
+    msg.textContent = '✅ Contenu soumis ! L\'admin le validera sous 24-48h.';
+    setTimeout(() => { closeTrainerSubmitModal(); loadTrainerSubmissions(); }, 1500);
+  } catch(e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+// ── ADMIN FORMATEURS ──────────────────────────────────────────────────────────
+
+async function loadAdminTrainers() {
+  const wrap = document.getElementById('adminTrainersList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const reqs  = await fetch(API_URL + '/admin/trainer-requests', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    const badge = document.getElementById('trainerRequestsBadge');
+    const pending = reqs.filter(r => r.statut === 'En attente').length;
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!reqs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-chalkboard-teacher"></i><p>Aucune demande formateur.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    wrap.innerHTML = reqs.map(r => {
+      const av = r.avatar_photo
+        ? `<img src="${r.avatar_photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+        : `<div class="avatar-circle" style="width:40px;height:40px;min-width:40px;font-size:0.8rem;background:${r.avatar_color||'#6c63ff'}">${getInitials(r.user_name)}</div>`;
+      return `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;flex-wrap:wrap">
+            ${av}
+            <div style="flex:1;min-width:0">
+              <strong>${esc(r.user_name)}</strong>
+              <span style="display:block;font-size:0.75rem;color:var(--text2)">${new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+            <span style="font-size:0.78rem;font-weight:700;color:${statusColors[r.statut]||'var(--text2)'};background:${statusColors[r.statut]||'var(--text2)'}22;padding:0.2rem 0.6rem;border-radius:50px">${r.statut}</span>
+          </div>
+          <div style="font-size:0.85rem;margin-bottom:0.5rem"><strong>Expertise :</strong> ${esc(r.expertise)}</div>
+          <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem">${esc(r.description)}</div>
+          ${r.demo_url ? `<a href="${r.demo_url}" target="_blank" style="font-size:0.78rem;color:var(--accent)"><i class="fas fa-external-link-alt"></i> Voir la démo</a>` : ''}
+          ${r.statut === 'En attente' ? `
+            <div style="display:flex;gap:0.6rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
+              <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem">
+                <label>Commission :</label>
+                <input type="number" id="comm-${r.id}" value="50" min="0" max="90" step="5" style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0.3rem 0.5rem;font-size:0.82rem" /> %
+              </div>
+              <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="treatTrainerRequest(${r.id},'Approuvé')">
+                <i class="fas fa-check"></i> Accepter
+              </button>
+              <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;color:var(--red);border-color:var(--red)" onclick="treatTrainerRequest(${r.id},'Rejeté')">
+                <i class="fas fa-times"></i> Refuser
+              </button>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function treatTrainerRequest(id, statut) {
+  const token = localStorage.getItem('pd_jwt');
+  const commRate = parseInt(document.getElementById('comm-' + id)?.value) || 50;
+  let rejectReason = '';
+  if (statut === 'Rejeté') {
+    rejectReason = prompt('Raison du refus (optionnel) :') || '';
+  }
+  try {
+    await fetch(API_URL + '/admin/trainer-requests/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut, rejectReason, commissionRate: commRate })
+    });
+    await loadAdminTrainers();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerSubmissions() {
+  const wrap = document.getElementById('adminTrainerSubmissionsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const subs  = await fetch(API_URL + '/admin/trainer-submissions', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    const badge = document.getElementById('trainerSubmissionsBadge');
+    const pending = subs.filter(s => s.statut === 'En attente').length;
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!subs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-file-upload"></i><p>Aucun contenu soumis.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    wrap.innerHTML = subs.map(s => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;flex-wrap:wrap">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(108,99,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas ${s.content_type==='video'?'fa-play-circle':'fa-book-open'}" style="color:var(--accent)"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <strong>${esc(s.title)}</strong>
+            <span style="display:block;font-size:0.75rem;color:var(--text2)">Par ${esc(s.trainer_name)} · ${s.content_type==='video'?'Vidéo':'Ebook'} · ${Number(s.price).toLocaleString('fr-FR')} AR · Commission formateur : ${s.trainer_commission_rate}%</span>
+          </div>
+          <span style="font-size:0.78rem;font-weight:700;color:${statusColors[s.statut]||'var(--text2)'};background:${statusColors[s.statut]||'var(--text2)'}22;padding:0.2rem 0.6rem;border-radius:50px">${s.statut}</span>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem">${esc(s.description||'')}</div>
+        ${s.statut === 'En attente' ? `
+          <div style="display:flex;gap:0.6rem;margin-top:0.8rem;flex-wrap:wrap">
+            <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="treatTrainerSubmission(${s.id},'Approuvé')">
+              <i class="fas fa-check"></i> Valider et Publier
+            </button>
+            <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;color:var(--red);border-color:var(--red)" onclick="treatTrainerSubmission(${s.id},'Rejeté')">
+              <i class="fas fa-times"></i> Refuser
+            </button>
+          </div>` : ''}
+      </div>`).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function treatTrainerSubmission(id, statut) {
+  const token = localStorage.getItem('pd_jwt');
+  let rejectReason = '';
+  if (statut === 'Rejeté') {
+    rejectReason = prompt('Raison du refus (optionnel) :') || '';
+  }
+  try {
+    await fetch(API_URL + '/admin/trainer-submissions/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut, rejectReason })
+    });
+    await loadAdminTrainerSubmissions();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerEarnings() {
+  const wrap = document.getElementById('adminTrainerEarningsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const data  = await fetch(API_URL + '/admin/trainer-earnings', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    if (!data.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission formateur.</p></div>'; return; }
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span>Formateur</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span><span>Action</span>
+      </div>
+      ${data.map(e => `
+      <div class="video-admin-row" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span style="font-weight:600;font-size:0.85rem">${esc(e.trainer_name)}</span>
+        <span style="font-size:0.82rem;color:var(--text2)">${esc(e.content_title||'—')}</span>
+        <span class="green">${fmt(e.sale_amount)} AR</span>
+        <span class="green">${fmt(e.commission_amount)} AR <small>(${e.commission_rate}%)</small></span>
+        <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+        <span>
+          ${e.statut !== 'Payé' ? `<button class="admin-action-btn edit" title="Marquer payé" onclick="markTrainerEarningPaid(${e.id})"><i class="fas fa-check"></i></button>` : '—'}
+        </span>
+      </div>`).join('')}`;
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function markTrainerEarningPaid(id) {
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/trainer-earnings/' + id + '/paid', {
+      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token }
+    });
+    await loadAdminTrainerEarnings();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
 // ===== NAVBAR MOBILE =====
 function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("open");
@@ -4718,8 +5082,15 @@ function switchAdminSection(section, btn) {
   if (section === 'videopurchases')  renderAdminVideoPurchases();
   if (section === 'modules')         renderAdminModules();
   if (section === 'modulepurchases') renderAdminModulePurchases();
-    if (section === 'navbarbtn') loadNavbarBtnAdmin();
+  if (section === 'navbarbtn') loadNavbarBtnAdmin();
   if (section === 'shares')          loadAdminShares();
+  if (section === 'leaderboard')     loadAdminLeaderboard();
+  if (section === 'ebookpurchases')  renderAdminEbookPurchases();
+  if (section === 'sociallinks')     loadAdminSocialLinks();
+  if (section === 'plans')           loadAdminStats();
+  if (section === 'trainers')        loadAdminTrainers();
+  if (section === 'trainersubmissions') loadAdminTrainerSubmissions();
+  if (section === 'trainerearnings') loadAdminTrainerEarnings();
 }
 // ===== TARIFS ADMIN â€” ONGLETS =====
 function switchPricingTab(tab, btn) {

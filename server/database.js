@@ -459,7 +459,6 @@ async function updateUpgradeRequest(id, { statut, rejectReason }) {
   const req = rowToCamel(res.rows[0]);
   if (!req) throw new Error('REQUEST_NOT_FOUND');
   if (statut === 'Approuvé') {
-    console.log('[updateVideoPurchase] purchase:', JSON.stringify({ id: purchase.id, videoId: purchase.videoId, userId: purchase.userId, amount: purchase.amount }));
     await query('UPDATE users SET plan = $1, updated_at = NOW() WHERE id = $2', [req.plan, req.userId]);
   } else if (statut === 'Rejeté') {
     // Remettre le plan a Starter (depossession abonnement)

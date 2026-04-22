@@ -177,6 +177,13 @@ function parseId(val) {
   return isNaN(n) ? null : n;
 }
 // ══════════════════════════════════════════════════════════
+//  POOL MIGRATIONS (déclaré tôt pour les routes formateur)
+// ══════════════════════════════════════════════════════════
+const { Pool } = require('pg');
+const _migPool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
+// ══════════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════════
 app.post('/api/auth/register', authLimiter, async (req, res) => {
@@ -1012,10 +1019,9 @@ app.put('/api/admin/video-purchases/:id', requireAuth, requireAdmin, async (req,
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    console.log('[video-purchases PUT] id:', id, 'body:', JSON.stringify(req.body));
     const purchase = await db.updateVideoPurchase(id, req.body);
     res.json(purchase);
-  } catch(e) { console.error('[video-purchases PUT] erreur:', e.message); res.status(400).json({ error: e.message }); }
+  } catch(e) { res.status(400).json({ error: e.message }); }
 });
 // ══════════════════════════════════════════════════════════
 //  PARTAGES FACEBOOK
@@ -1581,13 +1587,7 @@ app.post('/api/messages/:userId/:msgId/reaction', requireAuth, async (req, res) 
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
-// ══════════════════════════════════════════════════════════
-//  POOL MIGRATIONS (déclaré tôt pour les routes formateur)
-// ══════════════════════════════════════════════════════════
-const { Pool } = require('pg');
-const _migPool = process.env.DATABASE_URL
-  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
-  : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
+
 
 // ══════════════════════════════════════════════════════════
 //  FORMATEURS PARTENAIRES
