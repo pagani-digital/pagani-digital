@@ -3578,8 +3578,11 @@ async function loadTrainerTab() {
     if (submitEl)   submitEl.style.display   = 'block';
     if (earningsEl) earningsEl.style.display = 'block';
     if (listEl)     listEl.style.display     = 'block';
+    const modulesEl = document.getElementById('trainerModulesSection');
+    if (modulesEl) modulesEl.style.display = 'block';
     await loadTrainerSubmissions();
     await loadTrainerEarnings();
+    await loadTrainerModules();
     return;
   }
 
@@ -7018,6 +7021,44 @@ async function submitMyPostsDashboard() {
 // ===== DESIGN AMÉLIORATIONS =====
 
 // Étape 1 : Navbar scroll effect
+async function loadTrainerModules() {
+  const wrap = document.getElementById('trainerModulesList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const mods = await fetch(API_URL + '/trainer/my-modules', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+
+    if (!mods.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module créé. Créez votre premier module !</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    wrap.innerHTML = mods.map(m => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:0.8rem">
+        <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
+          <div style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:${(m.color||'#6c63ff')}22;color:${m.color||'#6c63ff'}">
+            <i class="${m.icon||'fas fa-layer-group'}"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <strong style="font-size:0.95rem">${esc(m.title)}</strong>
+            <span style="display:block;font-size:0.75rem;color:var(--text2)">${m.video_count||0} vidéo(s) · ${m.sales_count||0} vente(s) · ${fmt(m.total_revenue||0)} AR</span>
+            ${m.module_price ? `<span style="font-size:0.75rem;color:var(--accent2)"><i class="fas fa-tag"></i> ${fmt(m.module_price)} AR</span>` : ''}
+          </div>
+          <div style="display:flex;gap:0.5rem">
+            <button onclick="openTrainerModuleModal(${m.id})" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit">
+              <i class="fas fa-edit"></i> Modifier
+            </button>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
 // ===== MODULES FORMATEUR =====
 
 var _editingTrainerModuleId = null;
