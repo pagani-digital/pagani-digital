@@ -1248,7 +1248,7 @@ app.get('/api/my-referrals', requireAuth, async (req, res) => {
   try {
     const all = await db.getAllUsers();
     const list = all
-      .filter(u => u.referredBy === req.user.id)
+      .filter(u => u.referredBy != null && String(u.referredBy) === String(req.user.id))
       .map(u => ({
         id: u.id, name: u.name, plan: u.plan,
         avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',

@@ -534,8 +534,17 @@ async function updateVideoPurchase(id, { statut, rejectReason }) {
            VALUES ($1,$2,$3,'video',$4,$5,$6,$7,$8)`,
           [v.trainer_id, purchase.userId, purchase.userName, purchase.videoId, purchase.videoTitle, purchase.amount, v.trainer_commission, commAmount]
         );
+        // Notification au formateur
+        try {
+          await createNotification({
+            userId: v.trainer_id,
+            type: 'FORMATION_UNLOCKED',
+            message: `💰 ${purchase.userName} a acheté votre vidéo "${purchase.videoTitle}" ! Commission : ${commAmount.toLocaleString('fr-FR')} AR.`,
+            link: 'dashboard.html?tab=trainer'
+          });
+        } catch(ne) {}
       }
-    } catch(e) {}
+    } catch(e) { console.error('commission formateur:', e.message); }
   } else if (statut === 'Rejeté') {
     await query(
       `UPDATE users SET unlocked_courses = (
