@@ -1598,11 +1598,11 @@ app.get('/api/admin/trainer-requests', requireAuth, requireAdmin, async (req, re
     const r = await _migPool.query(
       `SELECT tr.*, u.avatar_photo, u.avatar_color, u.plan
        FROM trainer_requests tr
-       JOIN users u ON u.id = tr.user_id
+       LEFT JOIN users u ON u.id = tr.user_id
        ORDER BY tr.created_at DESC`
     );
     res.json(r.rows);
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+  } catch(e) { console.error('trainer-requests error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
 });
 
 // Traiter une demande formateur (accepter/refuser)
@@ -1643,11 +1643,11 @@ app.get('/api/admin/trainer-submissions', requireAuth, requireAdmin, async (req,
     const r = await _migPool.query(
       `SELECT ts.*, u.avatar_photo, u.avatar_color, u.trainer_commission_rate
        FROM trainer_submissions ts
-       JOIN users u ON u.id = ts.trainer_id
+       LEFT JOIN users u ON u.id = ts.trainer_id
        ORDER BY ts.created_at DESC`
     );
     res.json(r.rows);
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+  } catch(e) { console.error('trainer-submissions error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
 });
 
 // Valider ou refuser une soumission — si validée, publie automatiquement le contenu
