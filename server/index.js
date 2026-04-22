@@ -119,6 +119,7 @@ app.use((req, res, next) => {
 });
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, '../frontend/pages')));
 app.use('/js',     express.static(path.join(__dirname, '../frontend/js')));
@@ -1011,9 +1012,10 @@ app.put('/api/admin/video-purchases/:id', requireAuth, requireAdmin, async (req,
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    console.log('[video-purchases PUT] id:', id, 'body:', JSON.stringify(req.body));
     const purchase = await db.updateVideoPurchase(id, req.body);
     res.json(purchase);
-  } catch(e) { res.status(400).json({ error: e.message }); }
+  } catch(e) { console.error('[video-purchases PUT] erreur:', e.message); res.status(400).json({ error: e.message }); }
 });
 // ══════════════════════════════════════════════════════════
 //  PARTAGES FACEBOOK
