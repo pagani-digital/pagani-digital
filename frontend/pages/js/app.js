@@ -3253,6 +3253,21 @@ async function loadAdminStats() {
   }).join("");
   // Charger les comptes de paiement
   await loadAdminPaymentAccounts();
+  // Mini-KPI Finance auto
+  setTimeout(async () => {
+    try {
+      const token = localStorage.getItem('pd_jwt');
+      const fin = await fetch(API_URL + '/admin/finance-summary', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.json());
+      const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+      const el = id => document.getElementById(id);
+      if (el('kpiTotalSales'))      el('kpiTotalSales').textContent      = fmt(fin.totalSales);
+      if (el('kpiTrainerBrut'))     el('kpiTrainerBrut').textContent     = fmt(fin.trainerBrut);
+      if (el('kpiWithdrawPending')) el('kpiWithdrawPending').textContent = fmt(fin.withdrawPending);
+      if (el('kpiNetAdmin'))        el('kpiNetAdmin').textContent        = fmt(fin.netAdmin);
+    } catch(e) {}
+  }, 500);
   // Badge abonnements en attente
   try {
     if (window.PaganiAPI) {
@@ -6823,6 +6838,7 @@ function switchAdminSection(section, btn) {
   if (section === 'trainers')          loadAdminTrainers();
   if (section === 'trainersubmissions') loadAdminTrainerSubmissions();
   if (section === 'trainerearnings')    loadAdminTrainerEarnings();
+  if (section === 'finance')            loadAdminFinance();
 }
 // ===== ADMIN FORMATEURS =====
 async function loadAdminTrainers() {
