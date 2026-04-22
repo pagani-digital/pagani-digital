@@ -459,6 +459,7 @@ async function updateUpgradeRequest(id, { statut, rejectReason }) {
   const req = rowToCamel(res.rows[0]);
   if (!req) throw new Error('REQUEST_NOT_FOUND');
   if (statut === 'Approuvé') {
+    console.log('[updateVideoPurchase] purchase:', JSON.stringify({ id: purchase.id, videoId: purchase.videoId, userId: purchase.userId, amount: purchase.amount }));
     await query('UPDATE users SET plan = $1, updated_at = NOW() WHERE id = $2', [req.plan, req.userId]);
   } else if (statut === 'Rejeté') {
     // Remettre le plan a Starter (depossession abonnement)
@@ -514,13 +515,13 @@ async function updateVideoPurchase(id, { statut, rejectReason }) {
 
   if (statut === 'Approuvé') {
     await query(
-      `UPDATE users SET unlocked_courses = unlocked_courses || $1::jsonb, updated_at = NOW() WHERE id = $2`,
-      [JSON.stringify([purchase.videoId]), purchase.userId]
+      `UPDATE users SET unlocked_courses = COALESCE(unlocked_courses, '[]'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify([parseInt(purchase.videoId)]), purchase.userId]
     );
     await createNotification({
       userId: purchase.userId,
       type: 'FORMATION_UNLOCKED',
-      message: `Votre achat de "${purchase.videoTitle}" a été approuvé ! La formation est maintenant accessible.`,
+      message: `✅ Votre achat de "${purchase.videoTitle}" a été approuvé ! La formation est maintenant accessible.`,
       link: 'formations.html'
     });
     // Commission formateur automatique
