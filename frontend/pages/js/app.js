@@ -7754,7 +7754,7 @@ async function approveVideoPurchase(id) {
   const btn = document.getElementById('vp-btn-approve-' + id);
   if (btn) { btn.classList.add('vp-loading'); btn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Approuve' });
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Approuvé' });
     r.statut = 'Approuve';
     r.treatedAt = new Date().toISOString();
     const card = document.getElementById('vp-' + id);
@@ -7784,7 +7784,7 @@ async function rejectVideoPurchase(id) {
   const confirmBtn = document.querySelector('#vp-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Rejete', rejectReason: reason });
+    await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Rejeté', rejectReason: reason });
     r.statut = 'Rejete';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
@@ -8622,7 +8622,7 @@ async function rejectModulePurchase(id) {
   const confirmBtn = document.querySelector('#mpc-reject-modal-' + id + ' .vp-reject-confirm');
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
-    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'Rejete', rejectReason: reason });
+    await PaganiAPI.admin.updateModulePurchase(id, { statut: 'Rejeté', rejectReason: reason });
     r.statut = 'Rejet\u00e9';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
