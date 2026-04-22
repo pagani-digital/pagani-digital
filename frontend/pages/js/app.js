@@ -7018,6 +7018,100 @@ async function submitMyPostsDashboard() {
 // ===== DESIGN AMÉLIORATIONS =====
 
 // Étape 1 : Navbar scroll effect
+// ===== MODULES FORMATEUR =====
+
+var _editingTrainerModuleId = null;
+
+async function _loadTrainerModules() {
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/trainer/my-modules', { headers: { 'Authorization': 'Bearer ' + token } });
+    _trainerModules = await r.json();
+  } catch(e) { _trainerModules = []; }
+}
+
+async function _renderTrainerModules() {
+  var list = document.getElementById('trainerModulesList');
+  if (!list) return;
+  await _loadTrainerModules();
+  if (!_trainerModules.length) {
+    list.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun module créé. Cliquez sur <strong>Créer un module</strong> pour commencer.</p>';
+    return;
+  }
+  var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
+  list.innerHTML = _trainerModules.map(function(m) {
+    var hasPrice = m.module_price && m.module_price > 0;
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:0.8rem">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.6rem">' +
+      '<div><strong style="font-size:0.95rem">' + m.title + '</strong>' +
+      (m.description ? '<span style="display:block;font-size:0.78rem;color:var(--text2);margin-top:0.2rem">' + m.description + '</span>' : '') + '</div>' +
+      '<div style="display:flex;gap:0.4rem">' +
+      '<button onclick="openTrainerModuleModal(' + m.id + ')" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-edit"></i></button>' +
+      '<button onclick="_deleteTrainerModule(' + m.id + ')" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);color:var(--red);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-trash"></i></button>' +
+      '</div></div>' +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
+      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-play-circle"></i> ' + (m.video_count || 0) + ' vidéo(s)</span>' +
+      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-shopping-cart"></i> ' + (m.sales_count || 0) + ' vente(s)</span>' +
+      (hasPrice ? '<span style="font-size:0.75rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-tag"></i> Pack : ' + fmt(m.module_price) + ' AR</span>' : '<span style="font-size:0.75rem;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px">Pas de prix pack</span>') +
+      (m.total_revenue > 0 ? '<span style="font-size:0.75rem;font-weight:700;color:var(--green);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-coins"></i> ' + fmt(m.total_revenue) + ' AR</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function openTrainerModuleModal(id) {
+  _editingTrainerModuleId = id || null;
+  var m = id ? _trainerModules.find(function(x) { return x.id === id; }) : null;
+  var title = document.getElementById('trainerModuleModalTitle');
+  if (title) title.innerHTML = m
+    ? '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier le module'
+    : '<i class="fas fa-layer-group" style="color:var(--accent)"></i> Créer un module';
+  var tmTitle = document.getElementById('tmTitle');
+  var tmDesc  = document.getElementById('tmDescription');
+  var tmPrice = document.getElementById('tmPrice');
+  var tmMsg   = document.getElementById('trainerModuleModalMsg');
+  if (tmTitle) tmTitle.value = m ? m.title : '';
+  if (tmDesc)  tmDesc.value  = m ? (m.description || '') : '';
+  if (tmPrice) tmPrice.value = (m && m.module_price) ? m.module_price : '';
+  if (tmMsg)   tmMsg.textContent = '';
+  var overlay = document.getElementById('trainerModuleModalOverlay');
+  if (overlay) overlay.style.display = 'flex';
+  setTimeout(function() { if (tmTitle) tmTitle.focus(); }, 50);
+}
+
+function closeTrainerModuleModal() {
+  var overlay = document.getElementById('trainerModuleModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function saveTrainerModule() {
+  var title = (document.getElementById('tmTitle')?.value || '').trim();
+  var desc  = (document.getElementById('tmDescription')?.value || '').trim();
+  var price = parseInt(document.getElementById('tmPrice')?.value) || null;
+  var msg   = document.getElementById('trainerModuleModalMsg');
+  if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
+  msg.style.color = 'var(--text2)'; msg.textContent = 'Enregistrement...';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var url    = _editingTrainerModuleId ? API + '/trainer/modules/' + _editingTrainerModuleId : API + '/trainer/modules';
+    var method = _editingTrainerModuleId ? 'PUT' : 'POST';
+    var r = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ title: title, description: desc, modulePrice: price })
+    });
+    var d = await r.json();
+    if (!r.ok) { msg.style.color = 'var(--red)'; msg.textContent = d.error || 'Erreur serveur'; return; }
+    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Module enregistré !';
+    setTimeout(function() {
+      closeTrainerModuleModal();
+      _renderTrainerModules();
+      _populateTsModuleSelect();
+    }, 1000);
+  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
+}
+
 // ===== FOOTER SOCIAL LINKS =====
 async function loadFooterSocialLinks() {
   try {
