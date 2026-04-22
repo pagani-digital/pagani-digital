@@ -9679,24 +9679,7 @@ async function openModuleBuyModal(moduleId) {
 
 
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      const user = await refreshCurrentUser();
-      updateNavbar(user);
-      if (window.PaganiNotif) PaganiNotif.startPolling();
 
-      if (window.PaganiAPI) {
-        try {
-          const vids = await PaganiAPI.getVideos();
-          if (vids && vids.length) _adminVideosCache = vids;
-        } catch(e) {}
-      }
-
-      await _loadModuleFilters();
-      updateFormationsStats();
-      _applyFiltersAndSearch();
-      loadFooterSocialLinks();
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
-    });
 
 // ===== ADMIN FINANCE =====
 async function loadAdminFinance() {
