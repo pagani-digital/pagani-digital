@@ -2798,8 +2798,11 @@ async function loadTrainerTab() {
     if (submitEl)   submitEl.style.display   = 'block';
     if (earningsEl) earningsEl.style.display = 'block';
     if (subListEl)  subListEl.style.display  = 'block';
+    var modulesEl = document.getElementById('trainerModulesSection');
+    if (modulesEl) modulesEl.style.display = 'block';
     await _loadTrainerEarnings(API, token);
     await _loadTrainerSubmissions(API, token);
+    await _renderTrainerModules();
     return;
   }
   try {
@@ -2900,6 +2903,43 @@ async function _loadTrainerSubmissions(API, token) {
     }).join('');
   } catch(e) { if (listEl) listEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
 }
+function _tsPreview() {
+  var videoId = (document.getElementById('tsVideoId')?.value || '').trim();
+  var source  = document.getElementById('tsVideoSource')?.value || 'youtube';
+  var wrap    = document.getElementById('tsPreviewWrap');
+  var frame   = document.getElementById('tsPreviewFrame');
+  if (!videoId || !wrap || !frame) return;
+  var src = '';
+  if (source === 'youtube') {
+    // Extraire l'ID si l'utilisateur colle une URL complète
+    var match = videoId.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
+    var ytId = match ? match[1] : videoId;
+    src = 'https://www.youtube.com/embed/' + ytId + '?autoplay=0';
+  } else {
+    // Drive : extraire l'ID si URL complète
+    var dmatch = videoId.match(/\/d\/([^/]+)\//);
+    var driveId = dmatch ? dmatch[1] : videoId;
+    src = 'https://drive.google.com/file/d/' + driveId + '/preview';
+  }
+  frame.src = src;
+  wrap.style.display = 'block';
+}
+
+function _tsAutoThumb(value) {
+  var source = document.getElementById('tsVideoSource')?.value || 'youtube';
+  if (source !== 'youtube') return;
+  var match = value.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
+  var ytId = match ? match[1] : (value.length === 11 ? value : null);
+  if (!ytId) return;
+  var thumbUrl = 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg';
+  // Pré-remplir le champ miniature si vide
+  var thumbInput = document.getElementById('tsThumbnail');
+  if (thumbInput && !thumbInput.value) thumbInput.value = thumbUrl;
+  // Afficher l'aperçu miniature
+  var preview = document.getElementById('tsThumbnailPreview');
+  var img     = document.getElementById('tsThumbnailImg');
+  if (preview && img) { img.src = thumbUrl; preview.style.display = 'block'; }
+}
 function openTrainerSubmitModal() {
   var overlay = document.getElementById('trainerSubmitOverlay');
   if (!overlay) return;
@@ -2908,6 +2948,15 @@ function openTrainerSubmitModal() {
   fields.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
   var pages = document.getElementById('tsPages'); if (pages) pages.value = '';
   var msg = document.getElementById('trainerSubmitMsg'); if (msg) msg.textContent = '';
+  // Reset prévisualisation
+  var pw = document.getElementById('tsPreviewWrap'); if (pw) pw.style.display = 'none';
+  var pf = document.getElementById('tsPreviewFrame'); if (pf) pf.src = '';
+  var tp = document.getElementById('tsThumbnailPreview'); if (tp) tp.style.display = 'none';
+  // Reset module + prix unitaire
+  var tup = document.getElementById('tsUnitPrice'); if (tup) tup.value = '';
+  var hint = document.getElementById('tsModuleHint'); if (hint) hint.textContent = '';
+  // Peupler le select des modules
+  _populateTsModuleSelect();
   // Type vidéo par défaut
   var radioVideo = document.querySelector('input[name="trainerContentType"][value="video"]');
   if (radioVideo) { radioVideo.checked = true; toggleTrainerContentType('video'); }
@@ -2937,7 +2986,9 @@ async function submitTrainerContent() {
   var msg         = document.getElementById('trainerSubmitMsg');
   if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
   if (!price) { msg.style.color = 'var(--red)'; msg.textContent = 'Le prix est obligatoire.'; return; }
-  var payload = { contentType, title, description, category, level, price };
+  var moduleId  = document.getElementById('tsModuleId')?.value || null;
+  var unitPrice = parseInt(document.getElementById('tsUnitPrice')?.value) || 0;
+  var payload = { contentType, title, description, category, level, price, moduleId: moduleId || null, unitPrice };
   if (contentType === 'video') {
     payload.duration    = (document.getElementById('tsDuration')?.value || '').trim();
     payload.videoSource = document.getElementById('tsVideoSource')?.value || 'youtube';
@@ -2968,6 +3019,161 @@ async function submitTrainerContent() {
     msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Contenu soumis ! L\'admin va l\'examiner.';
     setTimeout(function() { closeTrainerSubmitModal(); loadTrainerTab(); }, 2000);
   } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
+}
+// ===== MODULES FORMATEUR =====
+var _trainerModules = [];
+var _editingTrainerModuleId = null;
+
+async function _loadTrainerModules() {
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/trainer/my-modules', { headers: { 'Authorization': 'Bearer ' + token } });
+    _trainerModules = await r.json();
+  } catch(e) { _trainerModules = []; }
+}
+
+async function _renderTrainerModules() {
+  var list = document.getElementById('trainerModulesList');
+  if (!list) return;
+  await _loadTrainerModules();
+  if (!_trainerModules.length) {
+    list.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun module créé. Cliquez sur <strong>Créer un module</strong> pour commencer.</p>';
+    return;
+  }
+  var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
+  list.innerHTML = _trainerModules.map(function(m) {
+    var hasPrice = m.module_price && m.module_price > 0;
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:0.8rem">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.6rem">' +
+      '<div><strong style="font-size:0.95rem">' + m.title + '</strong>' +
+      (m.description ? '<span style="display:block;font-size:0.78rem;color:var(--text2);margin-top:0.2rem">' + m.description + '</span>' : '') + '</div>' +
+      '<div style="display:flex;gap:0.4rem">' +
+      '<button onclick="openTrainerModuleModal(' + m.id + ')" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-edit"></i></button>' +
+      '<button onclick="_deleteTrainerModule(' + m.id + ')" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);color:var(--red);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-trash"></i></button>' +
+      '</div></div>' +
+      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
+      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-play-circle"></i> ' + (m.video_count || 0) + ' vidéo(s)</span>' +
+      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-shopping-cart"></i> ' + (m.sales_count || 0) + ' vente(s)</span>' +
+      (hasPrice ? '<span style="font-size:0.75rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-tag"></i> Pack : ' + fmt(m.module_price) + ' AR</span>' : '<span style="font-size:0.75rem;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px">Pas de prix pack</span>') +
+      (m.total_revenue > 0 ? '<span style="font-size:0.75rem;font-weight:700;color:var(--green);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-coins"></i> ' + fmt(m.total_revenue) + ' AR</span>' : '') +
+      '</div></div>';
+  }).join('');
+}
+
+function openTrainerModuleModal(id) {
+  _editingTrainerModuleId = id || null;
+  var m = id ? _trainerModules.find(function(x) { return x.id === id; }) : null;
+  var title = document.getElementById('trainerModuleModalTitle');
+  if (title) title.innerHTML = m
+    ? '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier le module'
+    : '<i class="fas fa-layer-group" style="color:var(--accent)"></i> Créer un module';
+  var tmTitle = document.getElementById('tmTitle');
+  var tmDesc  = document.getElementById('tmDescription');
+  var tmPrice = document.getElementById('tmPrice');
+  var tmMsg   = document.getElementById('trainerModuleModalMsg');
+  if (tmTitle) tmTitle.value = m ? m.title : '';
+  if (tmDesc)  tmDesc.value  = m ? (m.description || '') : '';
+  if (tmPrice) tmPrice.value = (m && m.module_price) ? m.module_price : '';
+  if (tmMsg)   tmMsg.textContent = '';
+  var overlay = document.getElementById('trainerModuleModalOverlay');
+  if (overlay) overlay.style.display = 'flex';
+  setTimeout(function() { if (tmTitle) tmTitle.focus(); }, 50);
+}
+
+function closeTrainerModuleModal() {
+  var overlay = document.getElementById('trainerModuleModalOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+async function saveTrainerModule() {
+  var title = (document.getElementById('tmTitle')?.value || '').trim();
+  var desc  = (document.getElementById('tmDescription')?.value || '').trim();
+  var price = parseInt(document.getElementById('tmPrice')?.value) || null;
+  var msg   = document.getElementById('trainerModuleModalMsg');
+  if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
+  msg.style.color = 'var(--text2)'; msg.textContent = 'Enregistrement...';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var url    = _editingTrainerModuleId ? API + '/trainer/modules/' + _editingTrainerModuleId : API + '/trainer/modules';
+    var method = _editingTrainerModuleId ? 'PUT' : 'POST';
+    var r = await fetch(url, {
+      method: method,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ title: title, description: desc, modulePrice: price })
+    });
+    var d = await r.json();
+    if (!r.ok) { msg.style.color = 'var(--red)'; msg.textContent = d.error || 'Erreur serveur'; return; }
+    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Module enregistré !';
+    setTimeout(function() {
+      closeTrainerModuleModal();
+      _renderTrainerModules();
+      _populateTsModuleSelect();
+    }, 1000);
+  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
+}
+
+async function _deleteTrainerModule(id) {
+  if (!confirm('Supprimer ce module ? Les vidéos ne seront pas supprimées.')) return;
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/trainer/modules/' + id, {
+      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      var errs = { MODULE_AVEC_VENTES: 'Ce module a des ventes — impossible de le supprimer.', NON_AUTORISE: 'Non autorisé.' };
+      alert(errs[d.error] || d.error); return;
+    }
+    _renderTrainerModules();
+    _populateTsModuleSelect();
+  } catch(e) { alert('Erreur serveur.'); }
+}
+
+async function _populateTsModuleSelect() {
+  var sel = document.getElementById('tsModuleId');
+  if (!sel) return;
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  var myMods = [], pubMods = [];
+  try {
+    var r1 = await fetch(API + '/trainer/my-modules', { headers: { 'Authorization': 'Bearer ' + token } });
+    myMods = await r1.json();
+  } catch(e) {}
+  try {
+    var r2 = await fetch(API + '/trainer/available-modules', { headers: { 'Authorization': 'Bearer ' + token } });
+    pubMods = await r2.json();
+  } catch(e) {}
+  var html = '<option value="">-- Aucun module --</option>';
+  if (myMods.length) {
+    html += '<optgroup label="Mes modules privés">';
+    html += myMods.map(function(m) { return '<option value="' + m.id + '">' + m.title + (m.module_price ? ' (' + Number(m.module_price).toLocaleString('fr-FR') + ' AR pack)' : '') + '</option>'; }).join('');
+    html += '</optgroup>';
+  }
+  if (pubMods.length) {
+    html += '<optgroup label="Modules publics (Pagani Digital)">';
+    html += pubMods.map(function(m) { return '<option value="' + m.id + '">' + m.title + '</option>'; }).join('');
+    html += '</optgroup>';
+  }
+  sel.innerHTML = html;
+  _onTsModuleChange();
+}
+
+function _onTsModuleChange() {
+  var sel  = document.getElementById('tsModuleId');
+  var hint = document.getElementById('tsModuleHint');
+  if (!sel || !hint) return;
+  var val = sel.value;
+  if (!val) { hint.textContent = ''; return; }
+  // Chercher dans mes modules
+  var myMod = _trainerModules.find(function(m) { return String(m.id) === String(val); });
+  if (myMod && myMod.module_price) {
+    hint.innerHTML = '<i class="fas fa-info-circle" style="color:var(--accent)"></i> Module pack à ' + Number(myMod.module_price).toLocaleString('fr-FR') + ' AR. Vous pouvez aussi définir un prix unitaire ci-dessous.';
+  } else {
+    hint.textContent = '';
+  }
 }
 // ===== TABS DASHBOARD =====
 function switchTab(tab, btn) {
@@ -8459,28 +8665,41 @@ async function renderAdminModules() {
     return;
   }
   if (!_modulesCache.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module cree. Cliquez sur <strong>Nouveau module</strong> pour commencer.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module créé. Cliquez sur <strong>Nouveau module</strong> pour commencer.</p></div>';
     return;
   }
-  container.innerHTML = _modulesCache.map(m => {
-    const color = m.color || '#6c63ff';
-    const icon  = m.icon  || 'fas fa-layer-group';
-    return `<div style="display:flex;align-items:center;gap:1rem;padding:0.9rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem">
-      <span style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:${color}22;color:${color}">
-        <i class="${icon}"></i>
-      </span>
-      <div style="flex:1;min-width:0">
-        <strong style="display:block;font-size:0.95rem">${m.title}</strong>
-        ${m.description ? `<span style="font-size:0.78rem;color:var(--text2)">${m.description}</span>` : ''}
-        <span style="font-size:0.72rem;color:var(--text2);display:block;margin-top:0.2rem">Position : ${m.position || 0}</span>
-      </div>
-      <div style="display:flex;gap:0.4rem;flex-shrink:0">
-        <button class="admin-action-btn edit" onclick="openModuleModal(${m.id})" title="Modifier"><i class="fas fa-edit"></i></button>
-        <button class="admin-action-btn del"  onclick="deleteModule(${m.id})"    title="Supprimer"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>`;
+  var typeBadges = {
+    public: { label: 'Public', color: 'var(--green)', icon: 'fa-users' },
+    admin_private: { label: 'Privé Admin', color: 'var(--red)', icon: 'fa-lock' },
+    trainer_private: { label: 'Privé Formateur', color: 'var(--accent)', icon: 'fa-chalkboard-teacher' }
+  };
+  container.innerHTML = _modulesCache.map(function(m) {
+    var color = m.color || '#6c63ff';
+    var icon  = m.icon  || 'fas fa-layer-group';
+    var type  = m.type  || 'public';
+    var badge = typeBadges[type] || typeBadges.public;
+    var isTrainer = type === 'trainer_private';
+    var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
+    return '<div style="display:flex;align-items:center;gap:1rem;padding:0.9rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem">' +
+      '<span style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:' + color + '22;color:' + color + '">' +
+      '<i class="' + icon + '"></i></span>' +
+      '<div style="flex:1;min-width:0">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.2rem">' +
+      '<strong style="font-size:0.95rem">' + m.title + '</strong>' +
+      '<span style="font-size:0.72rem;font-weight:700;color:' + badge.color + ';background:' + badge.color + '18;border:1px solid ' + badge.color + '44;padding:0.15rem 0.5rem;border-radius:50px;white-space:nowrap">' +
+      '<i class="fas ' + badge.icon + '"></i> ' + badge.label + '</span>' +
+      (m.modulePrice ? '<span style="font-size:0.72rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px"><i class="fas fa-tag"></i> ' + fmt(m.modulePrice) + ' AR</span>' : '') +
+      '</div>' +
+      (m.description ? '<span style="font-size:0.78rem;color:var(--text2)">' + m.description + '</span>' : '') +
+      '<span style="font-size:0.72rem;color:var(--text2);display:block;margin-top:0.2rem">Position : ' + (m.position || 0) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:0.4rem;flex-shrink:0">' +
+      (isTrainer ? '<span style="font-size:0.72rem;color:var(--text2);padding:0.3rem 0.6rem" title="Module formateur - lecture seule"><i class="fas fa-eye"></i></span>' : '<button class="admin-action-btn edit" onclick="openModuleModal(' + m.id + ')" title="Modifier"><i class="fas fa-edit"></i></button>') +
+      (isTrainer ? '' : '<button class="admin-action-btn del" onclick="deleteModule(' + m.id + ')" title="Supprimer"><i class="fas fa-trash"></i></button>') +
+      '</div></div>';
   }).join('');
 }
+
 async function _populateModuleSelect(selectedId) {
   const sel = document.getElementById('vModuleId');
   if (!sel) return;
@@ -8488,8 +8707,10 @@ async function _populateModuleSelect(selectedId) {
   if (!modules.length) {
     try { modules = await PaganiAPI.admin.getVideoModules(); _modulesCache = modules; } catch(e) {}
   }
+  // Admin ne voit que ses propres modules (public + admin_private), pas les modules formateur
+  const filtered = modules.filter(m => !m.type || m.type === 'public' || m.type === 'admin_private');
   sel.innerHTML = '<option value="">-- Aucun module --</option>' +
-    modules.map(m => `<option value="${m.id}" ${m.id == selectedId ? 'selected' : ''}>${m.title}</option>`).join('');
+    filtered.map(m => `<option value="${m.id}" ${m.id == selectedId ? 'selected' : ''}>${m.title}${m.type === 'admin_private' ? ' (Privé)' : ''}</option>`).join('');
 }
 function openModuleModal(id) {
   _moduleModalFromVideo = false;
@@ -8503,6 +8724,10 @@ function openModuleModal(id) {
   document.getElementById('mIcon').value     = m ? m.icon        : 'fas fa-layer-group';
   document.getElementById('mColor').value    = m ? m.color       : '#6c63ff';
   document.getElementById('mPosition').value = m ? m.position    : 0;
+  document.getElementById('mModulePrice').value = (m && m.modulePrice) ? m.modulePrice : '';
+  var mtype = (m && m.type) || 'public';
+  document.querySelectorAll('input[name="mType"]').forEach(function(r) { r.checked = r.value === mtype; });
+  _onModuleTypeChange();
   document.getElementById('moduleModalMsg').textContent = '';
   document.getElementById('moduleModalOverlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mTitle').focus(), 50);
@@ -8511,6 +8736,15 @@ function openModuleModalFromVideo() {
   _moduleModalFromVideo = true;
   openModuleModal(null);
 }
+function _onModuleTypeChange() {
+  var sel = document.querySelector('input[name="mType"]:checked');
+  var type = sel ? sel.value : 'public';
+  var lblPub = document.getElementById('mTypeLabelPublic');
+  var lblPrv = document.getElementById('mTypeLabelPrivate');
+  if (lblPub) lblPub.style.borderColor = type === 'public' ? 'var(--green)' : 'var(--border)';
+  if (lblPrv) lblPrv.style.borderColor = type === 'admin_private' ? 'var(--red)' : 'var(--border)';
+}
+
 function closeModuleModal() {
   document.getElementById('moduleModalOverlay').style.display = 'none';
   _editingModuleId = null;
@@ -8522,21 +8756,24 @@ async function saveModule() {
   const icon     = document.getElementById('mIcon').value.trim() || 'fas fa-layer-group';
   const color    = document.getElementById('mColor').value || '#6c63ff';
   const position = parseInt(document.getElementById('mPosition').value) || 0;
+  const mPrice   = parseInt(document.getElementById('mModulePrice')?.value) || null;
+  const mTypeEl  = document.querySelector('input[name="mType"]:checked');
+  const mType    = mTypeEl ? mTypeEl.value : 'public';
   const msg      = document.getElementById('moduleModalMsg');
   if (!title) { msg.textContent = 'Le titre est obligatoire.'; return; }
   msg.textContent = '';
   try {
     let saved;
     if (_editingModuleId) {
-      saved = await PaganiAPI.admin.updateVideoModule(_editingModuleId, { title, description: desc, icon, color, position });
+      saved = await PaganiAPI.admin.updateVideoModule(_editingModuleId, { title, description: desc, icon, color, position, modulePrice: mPrice, type: mType });
     } else {
-      saved = await PaganiAPI.admin.createVideoModule({ title, description: desc, icon, color, position });
+      saved = await PaganiAPI.admin.createVideoModule({ title, description: desc, icon, color, position, modulePrice: mPrice, type: mType });
     }
     if (_editingModuleId) {
-      const idx = _modulesCache.findIndex(m => m.id === _editingModuleId);
-      if (idx !== -1) _modulesCache[idx] = saved;
+      const idx = _modulesCache.findIndex(function(m) { return m.id === _editingModuleId; });
+      if (idx !== -1) _modulesCache[idx] = Object.assign({}, saved, { type: mType, modulePrice: mPrice });
     } else {
-      _modulesCache.push(saved);
+      _modulesCache.push(Object.assign({}, saved, { type: mType, modulePrice: mPrice }));
     }
     closeModuleModal();
     if (_moduleModalFromVideo) {

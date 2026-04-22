@@ -211,6 +211,107 @@ async function runMigrations(pool) {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_ucp_user ON user_category_prefs(user_id)');
     console.log('[migrations] user_category_prefs OK');
   } catch(e) { console.error('[migrations] user_category_prefs:', e.message); }
+
+  // Formateurs partenaires
+  await run('trainer_requests', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS trainer_requests (
+      id               SERIAL PRIMARY KEY,
+      user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_name        TEXT    DEFAULT '',
+      expertise        TEXT    DEFAULT '',
+      description      TEXT    DEFAULT '',
+      demo_url         TEXT    DEFAULT '',
+      commission_rate  NUMERIC DEFAULT 50,
+      statut           TEXT    DEFAULT 'En attente',
+      reject_reason    TEXT    DEFAULT '',
+      admin_note       TEXT    DEFAULT '',
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      treated_at       TIMESTAMPTZ
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trainer_requests_user ON trainer_requests(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trainer_requests_statut ON trainer_requests(statut)`);
+  });
+
+  await run('trainer_submissions', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS trainer_submissions (
+      id               SERIAL PRIMARY KEY,
+      trainer_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      trainer_name     TEXT    DEFAULT '',
+      content_type     TEXT    NOT NULL DEFAULT 'video',
+      title            TEXT    NOT NULL,
+      description      TEXT    DEFAULT '',
+      category         TEXT    DEFAULT 'debutant',
+      level            TEXT    DEFAULT 'Débutant',
+      duration         TEXT    DEFAULT '',
+      price            NUMERIC DEFAULT 0,
+      access_type      TEXT    DEFAULT 'unit',
+      video_source     TEXT    DEFAULT 'youtube',
+      video_id         TEXT    DEFAULT '',
+      drive_id         TEXT    DEFAULT '',
+      thumbnail        TEXT    DEFAULT '',
+      cover            TEXT    DEFAULT '',
+      file_url         TEXT    DEFAULT '',
+      pages            INTEGER DEFAULT NULL,
+      author_name      TEXT    DEFAULT '',
+      statut           TEXT    DEFAULT 'En attente',
+      reject_reason    TEXT    DEFAULT '',
+      published_id     INTEGER DEFAULT NULL,
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      treated_at       TIMESTAMPTZ
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trainer_submissions_trainer ON trainer_submissions(trainer_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trainer_submissions_statut ON trainer_submissions(statut)`);
+  });
+
+  await run('trainer_earnings', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS trainer_earnings (
+      id                SERIAL PRIMARY KEY,
+      trainer_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      buyer_id          INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      buyer_name        TEXT    DEFAULT '',
+      content_type      TEXT    DEFAULT 'video',
+      content_id        INTEGER DEFAULT NULL,
+      content_title     TEXT    DEFAULT '',
+      sale_amount       NUMERIC DEFAULT 0,
+      commission_rate   NUMERIC DEFAULT 50,
+      commission_amount NUMERIC DEFAULT 0,
+      statut            TEXT    DEFAULT 'En attente',
+      paid_at           TIMESTAMPTZ,
+      created_at        TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_trainer_earnings_trainer ON trainer_earnings(trainer_id)`);
+  });
+
+  await run('users.trainer_fields', async () => {
+    await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trainer_commission_rate NUMERIC DEFAULT 50`);
+  });
+
+  await run('videos.trainer_fields', async () => {
+    await pool.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS trainer_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS trainer_commission NUMERIC DEFAULT 0`);
+  });
+
+  await run('ebooks.trainer_fields', async () => {
+    await pool.query(`ALTER TABLE ebooks ADD COLUMN IF NOT EXISTS trainer_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE ebooks ADD COLUMN IF NOT EXISTS trainer_commission NUMERIC DEFAULT 0`);
+  });
+
+// Système modules formateur partenaire
+  await run('video_modules.type', async () => {
+    await pool.query(`ALTER TABLE video_modules ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'public'`);
+    await pool.query(`ALTER TABLE video_modules ADD COLUMN IF NOT EXISTS owner_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    // Tous les modules existants sont publics par défaut
+    await pool.query(`UPDATE video_modules SET type='public' WHERE type IS NULL`);
+  });
+
+  await run('module_purchases.trainer_commission', async () => {
+    await pool.query(`ALTER TABLE module_purchases ADD COLUMN IF NOT EXISTS trainer_commission_paid BOOLEAN DEFAULT false`);
+  });
+
+  await run('trainer_submissions.module_id', async () => {
+    await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS module_id INTEGER REFERENCES video_modules(id) ON DELETE SET NULL`);
+    await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS unit_price NUMERIC DEFAULT 0`);
+  });
 }
 
 module.exports = { runMigrations };

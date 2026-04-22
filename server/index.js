@@ -726,18 +726,31 @@ app.put('/api/admin/upgrade-requests/:id', requireAuth, requireAdmin, async (req
 //  MODULES VIDÉO
 // ══════════════════════════════════════════════════════════
 app.get('/api/video-modules', async (req, res) => {
-  try { res.json(await db.getVideoModules()); }
+  try {
+    const modules = await db.getVideoModules();
+    const r = await _migPool.query('SELECT id, type, owner_id FROM video_modules');
+    const meta = {};
+    r.rows.forEach(function(row) { meta[row.id] = { type: row.type || 'public', ownerId: row.owner_id }; });
+    res.json(modules.map(function(m) { return Object.assign({}, m, { type: (meta[m.id] && meta[m.id].type) || 'public', ownerId: (meta[m.id] && meta[m.id].ownerId) || null }); }));
+  }
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 app.post('/api/admin/video-modules', requireAuth, requireAdmin, async (req, res) => {
-  try { res.json(await db.createVideoModule(req.body)); }
+  try {
+    const mod = await db.createVideoModule(req.body);
+    const type = req.body.type || 'public';
+    await _migPool.query('UPDATE video_modules SET type=$1 WHERE id=$2', [type, mod.id]);
+    res.json({ ...mod, type });
+  }
   catch(e) { res.status(400).json({ error: e.message }); }
 });
 app.put('/api/admin/video-modules/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    res.json(await db.updateVideoModule(id, req.body));
+    const mod = await db.updateVideoModule(id, req.body);
+    if (req.body.type) await _migPool.query('UPDATE video_modules SET type=$1 WHERE id=$2', [req.body.type, id]);
+    res.json({ ...mod, type: req.body.type || mod.type });
   }
   catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -747,6 +760,82 @@ app.delete('/api/admin/video-modules/:id', requireAuth, requireAdmin, async (req
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     await db.deleteVideoModule(id);
     res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+// ══════════════════════════════════════════════════════════
+//  MODULES FORMATEUR PARTENAIRE
+// ══════════════════════════════════════════════════════════
+
+app.post('/api/trainer/modules', requireAuth, async (req, res) => {
+  if (req.user.role !== 'formateur' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
+  const { title, description, modulePrice } = req.body;
+  if (!title) return res.status(400).json({ error: 'TITRE_REQUIS' });
+  try {
+    const mod = await db.createVideoModule({
+      title, description: description || '',
+      icon: 'fas fa-layer-group', color: '#6c63ff', position: 0,
+      modulePrice: modulePrice || null
+    });
+    await _migPool.query(
+      'UPDATE video_modules SET type=$1, owner_id=$2 WHERE id=$3',
+      ['trainer_private', req.user.id, mod.id]
+    );
+    res.json({ ...mod, type: 'trainer_private', ownerId: req.user.id });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.get('/api/trainer/my-modules', requireAuth, async (req, res) => {
+  if (req.user.role !== 'formateur' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
+  try {
+    const r = await _migPool.query(
+      'SELECT vm.*, COUNT(DISTINCT v.id) AS video_count, COUNT(DISTINCT mp.id) FILTER (WHERE mp.statut=$1) AS sales_count, COALESCE(SUM(mp.amount) FILTER (WHERE mp.statut=$1), 0) AS total_revenue FROM video_modules vm LEFT JOIN videos v ON v.module_id = vm.id LEFT JOIN module_purchases mp ON mp.module_id = vm.id WHERE vm.owner_id = $2 GROUP BY vm.id ORDER BY vm.created_at DESC',
+      ['Approuvé', req.user.id]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.put('/api/trainer/modules/:id', requireAuth, async (req, res) => {
+  if (req.user.role !== 'formateur' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+  try {
+    const check = await _migPool.query('SELECT owner_id FROM video_modules WHERE id=$1', [id]);
+    if (!check.rows[0] || check.rows[0].owner_id !== req.user.id)
+      return res.status(403).json({ error: 'NON_AUTORISE' });
+    const { title, description, modulePrice } = req.body;
+    const r = await _migPool.query(
+      'UPDATE video_modules SET title=$1, description=$2, module_price=$3 WHERE id=$4 RETURNING *',
+      [title, description || '', modulePrice || null, id]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.delete('/api/trainer/modules/:id', requireAuth, async (req, res) => {
+  if (req.user.role !== 'formateur' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+  try {
+    const check = await _migPool.query('SELECT owner_id FROM video_modules WHERE id=$1', [id]);
+    if (!check.rows[0] || check.rows[0].owner_id !== req.user.id)
+      return res.status(403).json({ error: 'NON_AUTORISE' });
+    const sales = await _migPool.query("SELECT COUNT(*) FROM module_purchases WHERE module_id=$1 AND statut='Approuvé'", [id]);
+    if (parseInt(sales.rows[0].count) > 0)
+      return res.status(400).json({ error: 'MODULE_AVEC_VENTES' });
+    await db.deleteVideoModule(id);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.get('/api/trainer/available-modules', requireAuth, async (req, res) => {
+  try {
+    const r = await _migPool.query("SELECT * FROM video_modules WHERE type='public' ORDER BY position ASC, created_at ASC");
+    res.json(r.rows);
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
@@ -1540,20 +1629,32 @@ app.post('/api/trainer/submit', requireAuth, async (req, res) => {
   if (req.user.role !== 'formateur' && req.user.role !== 'admin')
     return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
   const { contentType, title, description, category, level, duration, price,
-          accessType, videoSource, videoId, driveId, thumbnail, cover, fileUrl, pages, authorName } = req.body;
+          accessType, videoSource, videoId, driveId, thumbnail, cover, fileUrl, pages, authorName,
+          moduleId, unitPrice } = req.body;
+  // Vérifier que le formateur est propriétaire du module s'il en choisit un privé
+  if (moduleId) {
+    const modCheck = await _migPool.query('SELECT type, owner_id FROM video_modules WHERE id=$1', [parseInt(moduleId)]);
+    const mod = modCheck.rows[0];
+    if (mod && mod.type === 'trainer_private' && mod.owner_id !== req.user.id)
+      return res.status(403).json({ error: 'MODULE_NON_AUTORISE' });
+    if (mod && mod.type === 'admin_private')
+      return res.status(403).json({ error: 'MODULE_PRIVE_ADMIN' });
+  }
   if (!title) return res.status(400).json({ error: 'TITRE_REQUIS' });
   try {
     const user = await db.getUserById(req.user.id);
     const r = await _migPool.query(
       `INSERT INTO trainer_submissions
        (trainer_id, trainer_name, content_type, title, description, category, level, duration,
-        price, access_type, video_source, video_id, drive_id, thumbnail, cover, file_url, pages, author_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+        price, access_type, video_source, video_id, drive_id, thumbnail, cover, file_url, pages, author_name,
+        module_id, unit_price)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20) RETURNING *`,
       [req.user.id, user.name, contentType || 'video', title, description || '',
        category || 'debutant', level || 'Débutant', duration || '',
        price || 0, accessType || 'unit', videoSource || 'youtube',
        videoId || '', driveId || '', thumbnail || '', cover || '',
-       fileUrl || '', pages || null, authorName || user.name]
+       fileUrl || '', pages || null, authorName || user.name,
+       moduleId ? parseInt(moduleId) : null, unitPrice || 0]
     );
     await db.createNotification({ userId: 0, type: 'TRAINER_SUBMISSION',
       message: `${user.name} a soumis un contenu : "${title}"`,
@@ -1667,9 +1768,9 @@ app.put('/api/admin/trainer-submissions/:id', requireAuth, requireAdmin, async (
         const v = await db.createVideo({
           title: sub.title, desc: sub.description, category: sub.category,
           level: sub.level, duration: sub.duration, free: false,
-          accessType: sub.access_type, price: sub.price, unitPrice: sub.price,
+          accessType: sub.access_type, price: sub.price, unitPrice: sub.unit_price || sub.price,
           videoSource: sub.video_source, videoId: sub.video_id, driveId: sub.drive_id,
-          thumbnail: sub.thumbnail, icon: 'fas fa-play-circle', moduleId: null,
+          thumbnail: sub.thumbnail, icon: 'fas fa-play-circle', moduleId: sub.module_id || null,
           videoDescription: sub.description
         });
         await _migPool.query(

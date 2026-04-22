@@ -112,7 +112,7 @@ async function updateUser(id, fields) {
 
 async function adminUpdateUser(id, fields) {
   const VALID_PLANS = ['Starter', 'Pro', 'Elite'];
-  const VALID_ROLES = ['user', 'admin'];
+  const VALID_ROLES = ['user', 'admin', 'formateur'];
 
   // Validation et cast des types avant toute ecriture
   const sanitized = {};
@@ -523,6 +523,19 @@ async function updateVideoPurchase(id, { statut, rejectReason }) {
       message: `Votre achat de "${purchase.videoTitle}" a été approuvé ! La formation est maintenant accessible.`,
       link: 'formations.html'
     });
+    // Commission formateur automatique
+    try {
+      const vRes = await query('SELECT trainer_id, trainer_commission FROM videos WHERE id=$1', [purchase.videoId]);
+      const v = vRes.rows[0];
+      if (v && v.trainer_id && v.trainer_commission > 0) {
+        const commAmount = Math.round(purchase.amount * v.trainer_commission / 100);
+        await query(
+          `INSERT INTO trainer_earnings (trainer_id, buyer_id, buyer_name, content_type, content_id, content_title, sale_amount, commission_rate, commission_amount)
+           VALUES ($1,$2,$3,'video',$4,$5,$6,$7,$8)`,
+          [v.trainer_id, purchase.userId, purchase.userName, purchase.videoId, purchase.videoTitle, purchase.amount, v.trainer_commission, commAmount]
+        );
+      }
+    } catch(e) {}
   } else if (statut === 'Rejeté') {
     await query(
       `UPDATE users SET unlocked_courses = (
@@ -632,6 +645,21 @@ async function updateModulePurchase(id, { statut, rejectReason }) {
       message: `Votre achat du module "${purchase.moduleTitle}" a été approuvé ! Toutes les vidéos sont accessibles.`,
       link: 'formations.html'
     });
+    // Commission formateur si module trainer_private
+    try {
+      const modRes = await query('SELECT type, owner_id FROM video_modules WHERE id=$1', [purchase.moduleId]);
+      const mod = modRes.rows[0];
+      if (mod && mod.type === 'trainer_private' && mod.owner_id) {
+        const trainerRes = await query('SELECT trainer_commission_rate FROM users WHERE id=$1', [mod.owner_id]);
+        const commRate = parseFloat(trainerRes.rows[0] && trainerRes.rows[0].trainer_commission_rate) || 50;
+        const commAmount = Math.round(purchase.amount * commRate / 100);
+        const buyerRes = await query('SELECT name FROM users WHERE id=$1', [purchase.userId]);
+        await query(
+          'INSERT INTO trainer_earnings (trainer_id, buyer_id, buyer_name, content_type, content_id, content_title, sale_amount, commission_rate, commission_amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+          [mod.owner_id, purchase.userId, (buyerRes.rows[0] && buyerRes.rows[0].name) || '', 'module', purchase.moduleId, purchase.moduleTitle, purchase.amount, commRate, commAmount]
+        );
+      }
+    } catch(e) { console.error('commission module formateur:', e.message); }
   } else if (statut === 'Rejeté') {
     const videos = await query('SELECT id FROM videos WHERE module_id = $1', [purchase.moduleId]);
     const videoIds = videos.rows.map(v => v.id);
@@ -1283,6 +1311,19 @@ async function updateEbookPurchase(id, { statut, rejectReason }) {
       message: `Votre achat de l'ebook "${purchase.ebookTitle}" a été approuvé ! Vous pouvez maintenant le télécharger.`,
       link: 'ebooks.html'
     });
+    // Commission formateur automatique
+    try {
+      const eRes = await query('SELECT trainer_id, trainer_commission FROM ebooks WHERE id=$1', [purchase.ebookId]);
+      const e = eRes.rows[0];
+      if (e && e.trainer_id && e.trainer_commission > 0) {
+        const commAmount = Math.round(purchase.amount * e.trainer_commission / 100);
+        await query(
+          `INSERT INTO trainer_earnings (trainer_id, buyer_id, buyer_name, content_type, content_id, content_title, sale_amount, commission_rate, commission_amount)
+           VALUES ($1,$2,$3,'ebook',$4,$5,$6,$7,$8)`,
+          [e.trainer_id, purchase.userId, purchase.userName, purchase.ebookId, purchase.ebookTitle, purchase.amount, e.trainer_commission, commAmount]
+        );
+      }
+    } catch(e) {}
   } else if (statut === 'Rejeté') {
     const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
     await createNotification({
