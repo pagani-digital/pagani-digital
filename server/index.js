@@ -1935,6 +1935,78 @@ async function runMigrations() {
   } catch(e) { console.error('migrate story_reactions:', e.message); }
 }
 
+// Route admin : forcer migration tables trainer
+app.post('/api/admin/run-trainer-migrations', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS trainer_requests (
+      id               SERIAL PRIMARY KEY,
+      user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      user_name        TEXT    DEFAULT '',
+      expertise        TEXT    DEFAULT '',
+      description      TEXT    DEFAULT '',
+      demo_url         TEXT    DEFAULT '',
+      commission_rate  NUMERIC DEFAULT 50,
+      statut           TEXT    DEFAULT 'En attente',
+      reject_reason    TEXT    DEFAULT '',
+      admin_note       TEXT    DEFAULT '',
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      treated_at       TIMESTAMPTZ
+    )`);
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS trainer_submissions (
+      id               SERIAL PRIMARY KEY,
+      trainer_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      trainer_name     TEXT    DEFAULT '',
+      content_type     TEXT    NOT NULL DEFAULT 'video',
+      title            TEXT    NOT NULL,
+      description      TEXT    DEFAULT '',
+      category         TEXT    DEFAULT 'debutant',
+      level            TEXT    DEFAULT 'Débutant',
+      duration         TEXT    DEFAULT '',
+      price            NUMERIC DEFAULT 0,
+      access_type      TEXT    DEFAULT 'unit',
+      video_source     TEXT    DEFAULT 'youtube',
+      video_id         TEXT    DEFAULT '',
+      drive_id         TEXT    DEFAULT '',
+      thumbnail        TEXT    DEFAULT '',
+      cover            TEXT    DEFAULT '',
+      file_url         TEXT    DEFAULT '',
+      pages            INTEGER DEFAULT NULL,
+      author_name      TEXT    DEFAULT '',
+      statut           TEXT    DEFAULT 'En attente',
+      reject_reason    TEXT    DEFAULT '',
+      published_id     INTEGER DEFAULT NULL,
+      created_at       TIMESTAMPTZ DEFAULT NOW(),
+      treated_at       TIMESTAMPTZ
+    )`);
+    await _migPool.query(`CREATE TABLE IF NOT EXISTS trainer_earnings (
+      id                SERIAL PRIMARY KEY,
+      trainer_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      buyer_id          INTEGER,
+      buyer_name        TEXT    DEFAULT '',
+      content_type      TEXT    DEFAULT 'video',
+      content_id        INTEGER,
+      content_title     TEXT    DEFAULT '',
+      sale_amount       NUMERIC DEFAULT 0,
+      commission_rate   NUMERIC DEFAULT 50,
+      commission_amount NUMERIC DEFAULT 0,
+      statut            TEXT    DEFAULT 'En attente',
+      created_at        TIMESTAMPTZ DEFAULT NOW(),
+      paid_at           TIMESTAMPTZ
+    )`);
+    // Ajouter colonnes trainer sur videos et ebooks si absentes
+    await _migPool.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS trainer_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await _migPool.query(`ALTER TABLE videos ADD COLUMN IF NOT EXISTS trainer_commission NUMERIC DEFAULT 0`);
+    await _migPool.query(`ALTER TABLE ebooks ADD COLUMN IF NOT EXISTS trainer_id INTEGER REFERENCES users(id) ON DELETE SET NULL`);
+    await _migPool.query(`ALTER TABLE ebooks ADD COLUMN IF NOT EXISTS trainer_commission NUMERIC DEFAULT 0`);
+    // Ajouter colonne role formateur et commission sur users si absentes
+    await _migPool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS trainer_commission_rate NUMERIC DEFAULT 50`);
+    res.json({ ok: true, message: 'Tables trainer créées avec succès' });
+  } catch(e) {
+    console.error('run-trainer-migrations error:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();
   console.log('');
