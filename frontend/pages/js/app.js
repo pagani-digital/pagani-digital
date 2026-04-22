@@ -1,458 +1,31 @@
-// ===== STORIES =====
-const STORY_COLORS = ['#6c63ff','#00d4aa','#ff4d6d','#f59e0b','#8b5cf6','#1877f2','#25d366','#e91e8c'];
-const STORY_DURATION = 5000;
-let _storiesData = [];
-let _storyViewerGroup = null;
-let _storyViewerIdx = 0;
-let _storyTimer = null;
-
-async function loadStories() {
-  const bar = document.getElementById('storiesBar');
-  if (!bar) return;
-  const user = getUser();
-  if (!user) { bar.style.display = 'none'; return; }
-  try {
-    const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-    const token = localStorage.getItem('pd_jwt');
-    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-    _storiesData = await fetch(API + '/stories', { headers }).then(r => r.json());
-  } catch(e) { _storiesData = []; }
-  let html = '';
-
-  // Bouton ajouter story (si connecté)
-  if (user) {
-    html += `<div class="story-bubble" onclick="openCreateStory()">
-      <div class="story-add-wrap"><div class="story-add-icon">+</div></div>
-      <span class="story-name">Ma story</span>
-    </div>`;
-  }
-
-  // Stories (toutes, y compris les siennes)
-  _storiesData.forEach((group, gi) => {
-    const isOwn = user && group.userId === user.id;
-    const av = group.avatarPhoto
-      ? `<img src="${group.avatarPhoto}" />`
-      : `<div class="avatar-circle" style="background:${group.avatarColor||'#6c63ff'}">${group.userName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>`;
-    const viewCount = group.viewCount || 0;
-    html += `<div class="story-bubble" onclick="openStoryViewer(${gi})">
-      <div class="story-ring${group.allViewed?' viewed':''}">
-        <div class="story-ring-inner">${av}</div>
-      </div>
-      <span class="story-name">${isOwn ? 'Ma story' : group.userName.split(' ')[0]}</span>
-      ${isOwn && viewCount > 0 ? `<span class="story-view-count"><i class="fas fa-eye"></i> ${viewCount}</span>` : ''}
-    </div>`;
-  });
-
-  bar.innerHTML = html;
-  bar.style.display = (_storiesData.length > 0 || user) ? 'flex' : 'none';
-}
-
-function openStoryViewer(groupIdx) {
-  _storyViewerGroup = groupIdx;
-  _storyViewerIdx = 0;
-  _renderStoryViewer();
-}
-
-function _renderStoryViewer() {
-  document.getElementById('storyViewerOverlay')?.remove();
-  const group = _storiesData[_storyViewerGroup];
-  if (!group) return;
-  const story = group.stories[_storyViewerIdx];
-  const user = getUser();
-  const isOwn = user && group.userId === user.id;
-  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-
-  // Marquer comme vue (seulement si pas le créateur et pas déjà vue)
-  if (user && !isOwn && !story.viewed) {
-    fetch(API + '/stories/' + story.id + '/view', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt')
-      }
-    }).then(r => r.json()).then(d => {
-      if (d.ok) {
-        story.viewed = true;
-        group.allViewed = group.stories.every(s => s.viewed);
-      }
-    }).catch(() => {});
-  }
-
-  const avInner = group.avatarPhoto
-    ? `<img src="${group.avatarPhoto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
-    : `<span style="font-size:0.85rem;font-weight:700;color:#fff">${group.userName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</span>`;
-
-  const timeAgoStr = _storyTimeAgo(story.createdAt);
-  const content = story.image
-    ? `<img src="${story.image}" />`
-    : `<div class="story-viewer-text">${story.content}</div>`;
-
-  const segs = group.stories.map((s, i) => {
-    const fill = i < _storyViewerIdx ? 'width:100%' : (i === _storyViewerIdx ? 'width:0%;transition:width '+STORY_DURATION+'ms linear' : 'width:0%');
-    return `<div class="story-progress-seg"><div class="story-progress-fill" id="spf-${i}" style="${fill}"></div></div>`;
-  }).join('');
-
-  const viewCount = story.viewCount || 0;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'storyViewerOverlay';
-  overlay.className = 'story-viewer-overlay';
-  overlay.innerHTML = `
-    <div class="story-viewer" style="background:${story.image ? '#000' : story.bgColor}">
-      <div class="story-progress-bar">${segs}</div>
-      <div class="story-viewer-header">
-        ${isOwn ? `<div class="story-viewer-avatar">${avInner}</div><span class="story-viewer-name">${group.userName}</span>` : `<a href="profil.html?id=${group.userId}" class="story-viewer-profile-link" onclick="closeStoryViewer()"><div class="story-viewer-avatar">${avInner}</div><span class="story-viewer-name">${group.userName}</span></a>`}
-        <span class="story-viewer-time">${timeAgoStr}</span>
-        <button class="story-viewer-close" onclick="closeStoryViewer()"><i class="fas fa-times"></i></button>
-      </div>
-      <div class="story-viewer-content">${content}</div>
-      ${_storyViewerIdx > 0 ? '<button class="story-nav-btn story-nav-prev" onclick="_storyNav(-1)"><i class="fas fa-chevron-left"></i></button>' : ''}
-      ${_storyViewerIdx < group.stories.length - 1 ? '<button class="story-nav-btn story-nav-next" onclick="_storyNav(1)"><i class="fas fa-chevron-right"></i></button>' : ''}
-      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><span id="storyReactCountLabel"></span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : `<div class="story-react-bar" id="storyReactBar"></div>`}
-    </div>`;
-  overlay.addEventListener('click', e => { if (e.target === overlay) closeStoryViewer(); });
-  document.body.appendChild(overlay);
-
-  // Polling du compteur de vues pour le créateur
-  if (isOwn) _pollStoryViewCount(story.id);
-
-  // Charger les reactions
-  _loadStoryReactions(story.id);
-
-  // Barre de progression
-  clearTimeout(_storyTimer);
-  setTimeout(() => {
-    const fill = document.getElementById('spf-' + _storyViewerIdx);
-    if (fill) fill.style.width = '100%';
-  }, 50);
-  _storyTimer = setTimeout(() => _storyNav(1), STORY_DURATION);
-}
-
-function _storyNav(dir) {
-  clearTimeout(_storyTimer);
-  const group = _storiesData[_storyViewerGroup];
-  if (!group) return;
-  const next = _storyViewerIdx + dir;
-  if (next >= 0 && next < group.stories.length) {
-    _storyViewerIdx = next;
-    _renderStoryViewer();
-  } else if (dir > 0 && _storyViewerGroup < _storiesData.length - 1) {
-    _storyViewerGroup++;
-    _storyViewerIdx = 0;
-    _renderStoryViewer();
-  } else {
-    closeStoryViewer();
-  }
-}
-
-let _storyViewCountTimer = null;
-function _pauseStoryTimer() {
-  clearTimeout(_storyTimer);
-  _storyTimer = null;
-  // Figer la barre de progression en cours
-  var fill = document.getElementById('spf-' + _storyViewerIdx);
-  if (fill) {
-    var computed = window.getComputedStyle(fill).width;
-    fill.style.transition = 'none';
-    fill.style.width = computed;
-  }
-}
-
-function _resumeStoryTimer() {
-  // Ne reprendre que si le viewer est ouvert et aucun picker actif
-  if (!document.getElementById('storyViewerOverlay')) return;
-  if (document.getElementById('storyEmojiPicker')) return;
-  clearTimeout(_storyTimer);
-  // Relancer la progression depuis 0 pour la story courante
-  var fill = document.getElementById('spf-' + _storyViewerIdx);
-  if (fill) {
-    fill.style.transition = 'width ' + STORY_DURATION + 'ms linear';
-    fill.style.width = '100%';
-  }
-  _storyTimer = setTimeout(function() { _storyNav(1); }, STORY_DURATION);
-}
-
-function closeStoryViewer() {
-  clearTimeout(_storyTimer);
-  clearInterval(_storyViewCountTimer);
-  _storyViewCountTimer = null;
-  document.getElementById('storyViewerOverlay')?.remove();
-}
-
-function _pollStoryViewCount(storyId) {
-  clearInterval(_storyViewCountTimer);
-  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  const token = localStorage.getItem('pd_jwt');
-  const update = () => {
-    const label = document.getElementById('storyViewCountLabel');
-    if (!label) { clearInterval(_storyViewCountTimer); return; }
-    fetch(API + '/stories/' + storyId + '/views-count', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    }).then(r => r.json()).then(d => {
-      const n = d.count || 0;
-      _storyViewers = d.viewers || [];
-      label.innerHTML = '<i class="fas fa-eye"></i> ' + n + ' vue' + (n > 1 ? 's' : '');
-    }).catch(() => {});
-  };
-  update();
-  _storyViewCountTimer = setInterval(update, 5000);
-}
-
-let _storyViewers = [];
-function closeStoryViewers() {
-  const modal = document.getElementById('storyViewersModal');
-  if (modal) modal.remove();
-  _resumeStoryTimer();
-}
-
-function openStoryViewers() {
-  _pauseStoryTimer();
-  document.getElementById('storyViewersModal')?.remove();
-  const modal = document.createElement('div');
-  modal.id = 'storyViewersModal';
-  modal.className = 'story-viewers-modal';
-  const total = _storyViewers.length;
-  const followers = _storyViewers.filter(v => v.name);
-  const anonCount = total - followers.length;
-
-  const followerItems = followers.map(v => {
-    const initials = v.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-    const av = v.avatar_photo
-      ? `<img src="${v.avatar_photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
-      : `<span style="font-size:0.75rem;font-weight:700;color:#fff">${initials}</span>`;
-    const reactionBadge = v.emoji ? `<span class="story-viewer-reaction">${v.emoji}</span>` : '';
-    return `<a href="profil.html?id=${v.user_id}" class="story-viewer-item" onclick="closeStoryViewers()"><div class="story-viewer-av" style="background:${v.avatar_color||'#6c63ff'}">${av}</div><span class="story-viewer-name">${v.name}</span>${reactionBadge}</a>`;
-  }).join('');
-
-  const emptyMsg = total === 0
-    ? '<p style="color:var(--text2);text-align:center;padding:1.5rem;font-size:0.85rem">Aucune vue pour l\'instant.</p>'
-    : '';
-
-  const anonFooter = anonCount > 0
-    ? `<div class="story-viewers-anon"><i class="fas fa-eye-slash"></i> ${anonCount} autre${anonCount>1?'s':''} personne${anonCount>1?'s':''} ${anonCount>1?'ont':'a'} vu cette story</div>`
-    : '';
-
-  modal.innerHTML = `<div class="story-viewers-box"><div class="story-viewers-header"><span><i class="fas fa-eye"></i> ${total} vue${total>1?'s':''}</span><button onclick="closeStoryViewers()" style="background:none;border:none;color:var(--text2);font-size:1.1rem;cursor:pointer">&times;</button></div><div class="story-viewers-list">${followerItems}${emptyMsg}</div>${anonFooter}</div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) closeStoryViewers(); });
-  document.body.appendChild(modal);
-}
-function openCreateStory() {
-  document.getElementById('storyCreateModal')?.remove();
-  const modal = document.createElement('div');
-  modal.id = 'storyCreateModal';
-  modal.className = 'story-create-modal';
-  let selectedColor = STORY_COLORS[0];
-  let imageBase64 = '';
-
-  modal.innerHTML = `
-    <div class="story-create-box">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-        <h3 style="margin:0;font-size:1rem"><i class="fas fa-plus-circle" style="color:var(--accent)"></i> Nouvelle story</h3>
-        <button onclick="document.getElementById('storyCreateModal').remove()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer">&times;</button>
-      </div>
-      <div class="story-create-preview" id="storyPreview" style="background:${selectedColor}">
-        <span id="storyPreviewText" style="color:#fff;font-size:1rem;opacity:0.5">Aperçu...</span>
-      </div>
-      <div class="story-colors" id="storyColors">
-        ${STORY_COLORS.map((c,i) => `<button class="story-color-btn${i===0?' active':''}" style="background:${c}" onclick="_selectStoryColor('${c}',this)"></button>`).join('')}
-      </div>
-      <textarea id="storyText" placeholder="Écrivez votre statut..." rows="3"
-        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:0.7rem;font-size:0.9rem;font-family:inherit;resize:none;margin-bottom:0.8rem"
-        oninput="_updateStoryPreview()"></textarea>
-      <div style="display:flex;gap:0.6rem;margin-bottom:0.8rem">
-        <label class="admin-media-btn" for="storyImageInput" style="flex:1;justify-content:center">
-          <i class="fas fa-image"></i> Photo
-        </label>
-        <input type="file" id="storyImageInput" accept="image/*" style="display:none" onchange="_previewStoryImage(this)" />
-      </div>
-      <div style="display:flex;gap:0.6rem">
-        <button onclick="document.getElementById('storyCreateModal').remove()" class="btn-outline" style="flex:1;padding:0.6rem">Annuler</button>
-        <button onclick="submitStory()" class="btn-primary" style="flex:1;padding:0.6rem"><i class="fas fa-paper-plane"></i> Publier</button>
-      </div>
-      <p id="storyCreateMsg" style="font-size:0.8rem;min-height:1rem;margin-top:0.5rem;text-align:center"></p>
-    </div>`;
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  document.body.appendChild(modal);
-}
-
-function _selectStoryColor(color, btn) {
-  document.querySelectorAll('.story-color-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  const preview = document.getElementById('storyPreview');
-  if (preview && !preview.querySelector('img')) preview.style.background = color;
-  window._storySelectedColor = color;
-}
-
-function _updateStoryPreview() {
-  const text = document.getElementById('storyText')?.value || '';
-  const preview = document.getElementById('storyPreview');
-  if (!preview) return;
-  const img = preview.querySelector('img');
-  if (!img) {
-    const span = document.getElementById('storyPreviewText');
-    if (span) { span.textContent = text || 'Aperçu...'; span.style.opacity = text ? '1' : '0.5'; }
-  }
-}
-
-function _previewStoryImage(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    window._storyImageBase64 = e.target.result;
-    const preview = document.getElementById('storyPreview');
-    if (preview) preview.innerHTML = `<img src="${e.target.result}" />`;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function submitStory() {
-  const content = document.getElementById('storyText')?.value.trim() || '';
-  const image = window._storyImageBase64 || '';
-  const bgColor = window._storySelectedColor || STORY_COLORS[0];
-  const msg = document.getElementById('storyCreateMsg');
-  if (!content && !image) { msg.style.color='var(--red)'; msg.textContent='Ajoutez du texte ou une image.'; return; }
-  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  try {
-    await fetch(API + '/stories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
-      body: JSON.stringify({ content, image, bgColor })
-    });
-    window._storyImageBase64 = '';
-    document.getElementById('storyCreateModal')?.remove();
-    await loadStories();
-  } catch(e) { msg.style.color='var(--red)'; msg.textContent='Erreur lors de la publication.'; }
-}
-
-function _storyTimeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 3600) return Math.floor(diff/60) + ' min';
-  return Math.floor(diff/3600) + 'h';
-}
-
-// ===== STORY REACTIONS =====
-var STORY_EMOJIS = ['\u2764\uFE0F','\uD83D\uDD25','\uD83D\uDE0D','\uD83D\uDC4F','\uD83D\uDE2E','\uD83D\uDE02'];
-var _myStoryReaction = null;
-
-async function _loadStoryReactions(storyId) {
-  var bar = document.getElementById('storyReactBar');
-  var ownerLabel = document.getElementById('storyReactCountLabel');
-  var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  var counts = [];
-  try { var r = await fetch(API + '/stories/' + storyId + '/reactions'); counts = await r.json(); } catch(e) {}
-  if (ownerLabel) {
-    var total = counts.reduce(function(s,r){return s+parseInt(r.count);},0);
-    var top = counts.slice(0,3).map(function(r){return r.emoji+' '+r.count;}).join('  ');
-    ownerLabel.innerHTML = total > 0 ? '<i class="fas fa-heart" style="color:#ff4d6d"></i> ' + top : '';
-    return;
-  }
-  if (!bar) return;
-  _myStoryReaction = null;
-  if (token) {
-    try {
-      var mr = await fetch(API + '/stories/' + storyId + '/my-reaction', { headers: { 'Authorization': 'Bearer ' + token } });
-      var md = await mr.json();
-      _myStoryReaction = md.emoji || null;
-    } catch(e) {}
-  }
-  _renderStoryReactBar(bar, storyId);
-}
-
-function _renderStoryReactBar(bar, storyId) {
-  bar.innerHTML = '<button class="story-react-btn' + (_myStoryReaction ? ' reacted' : '') + '" onclick="toggleStoryEmojiPicker(' + storyId + ', this)">' + (_myStoryReaction || '\u2764\uFE0F') + '</button>';
-}
-
-function toggleStoryEmojiPicker(storyId, btn) {
-  var existing = document.getElementById('storyEmojiPicker');
-  if (existing) { existing.remove(); _resumeStoryTimer(); return; }
-  if (!getUser()) { window.location.href = 'dashboard.html'; return; }
-  var picker = document.createElement('div');
-  picker.id = 'storyEmojiPicker';
-  picker.className = 'story-emoji-picker';
-  picker.innerHTML = STORY_EMOJIS.map(function(e) {
-    return '<button class="story-emoji-opt' + (_myStoryReaction === e ? ' active' : '') + '" onclick="reactToStory(' + storyId + ', \'' + e + '\', this)">' + e + '</button>';
-  }).join('');
-  btn.parentElement.appendChild(picker);
-  _pauseStoryTimer();
-  setTimeout(function() {
-    document.addEventListener('click', function _close(ev) {
-      if (!picker.contains(ev.target) && ev.target !== btn) {
-        picker.remove();
-        _resumeStoryTimer();
-        document.removeEventListener('click', _close);
-      }
-    });
-  }, 50);
-}
-
-async function reactToStory(storyId, emoji, btn) {
-  var ep = document.getElementById('storyEmojiPicker'); if (ep) ep.remove();
-  _resumeStoryTimer();
-  var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  if (!token) { window.location.href = 'dashboard.html'; return; }
-  try {
-    var r = await fetch(API + '/stories/' + storyId + '/react', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ emoji: emoji })
-    });
-    var d = await r.json();
-    _myStoryReaction = d.action === 'removed' ? null : emoji;
-    if (d.action !== 'removed') _launchStoryEmojiAnim(emoji);
-    await _loadStoryReactions(storyId);
-    var bar = document.getElementById('storyReactBar');
-    if (bar) _renderStoryReactBar(bar, storyId);
-  } catch(e) {}
-}
-
-function _launchStoryEmojiAnim(emoji) {
-  var viewer = document.querySelector('.story-viewer');
-  if (!viewer) return;
-  for (var i = 0; i < 8; i++) {
-    (function(idx) {
-      setTimeout(function() {
-        var el = document.createElement('div');
-        el.className = 'story-emoji-fly';
-        el.textContent = emoji;
-        el.style.left = (20 + Math.random() * 60) + '%';
-        el.style.animationDuration = (0.8 + Math.random() * 0.6) + 's';
-        el.style.fontSize = (1.2 + Math.random() * 1) + 'rem';
-        viewer.appendChild(el);
-        el.addEventListener('animationend', function() { el.remove(); });
-      }, idx * 80);
-    })(i);
-  }
-}
-
-// ===== BADGES =====
-function _buildBadgesHTML(badges) {
-  if (!badges || !badges.length) return '';
-  return '<div class="user-badges">' + badges.map(b =>
-    `<span class="user-badge" style="background:${b.color}18;color:${b.color};border-color:${b.color}44" title="${b.label}">${b.icon} ${b.label}</span>`
-  ).join('') + '</div>';
-}
-function _buildBadgesInline(badges) {
-  if (!badges || !badges.length) return '';
-  return '<span class="post-author-badges">' + badges.slice(0,2).map(b =>
-    `<span class="user-badge" style="background:${b.color}18;color:${b.color};border-color:${b.color}44" title="${b.label}">${b.icon}</span>`
-  ).join('') + '</span>';
-}
-
-// ===== DONNES COURS =====
-// IMPORTANT : videoId est volontairement absent ici pour les videos payantes.
-// Les IDs sont stockes separment dans _getSecureVideoId() et ne sont jamais
-// injectes dans le DOM. Seules les videos gratuites ont leur videoId ici.
-const COURSES = [];
-// ===== CHIFFREMENT LGER DES IDS PRIVS =====
+﻿// ===== DONNÉES COURS =====
+// IMPORTANT : videoId est volontairement absent ici pour les vidéos payantes.
+// Les IDs sont stockés séparément dans _getSecureVideoId() et ne sont jamais
+// injectés dans le DOM. Seules les vidéos gratuites ont leur videoId ici.
+const COURSES = [
+  { id: 1,  title: "Introduction à la Blockchain",          desc: "Comprendre les bases de la technologie blockchain.",                          category: "debutant",  duration: "45 min",   level: "Débutant",      icon: "fas fa-cube",         free: true,  videoId: "SSo_EIwHSd4" },
+  { id: 2,  title: "Acheter ses premiers Bitcoins",          desc: "Guide complet pour acheter du BTC en toute sécurité.",                        category: "debutant",  duration: "30 min",   level: "Débutant",      icon: "fab fa-bitcoin",      free: true,  videoId: "Gc2en3nHxA4" },
+  { id: 3,  title: "Analyse Technique Crypto",               desc: "Maîtrisez les graphiques et indicateurs de trading.",                         category: "trading",   duration: "1h 20 min", level: "Intermédiaire",  icon: "fas fa-chart-line",   free: false, videoId: "", unitPrice: 8000 },
+  { id: 4,  title: "Stratégies de Trading Avancées",         desc: "Scalping, swing trading et gestion du risque.",                             category: "trading",   duration: "2h 10 min", level: "Avancée",         icon: "fas fa-chart-bar",    free: false, videoId: "", unitPrice: 15000 },
+  { id: 5,  title: "Introduction à la DeFi",                 desc: "Découvrez la finance décentralisée et ses opportunités.",                     category: "defi",      duration: "55 min",   level: "Intermédiaire",  icon: "fas fa-coins",        free: false, videoId: "", unitPrice: 10000 },
+  { id: 6,  title: "Yield Farming & Staking",                desc: "Générez des revenus passifs avec vos cryptos.",                               category: "defi",      duration: "1h 30 min", level: "Avancée",         icon: "fas fa-seedling",     free: false, videoId: "", unitPrice: 12000 },
+  { id: 7,  title: "Comprendre les NFTs",                    desc: "Tout savoir sur les tokens non-fongibles.",                                  category: "nft",       duration: "40 min",   level: "Débutant",      icon: "fas fa-image",        free: true,  videoId: "" },
+  { id: 8,  title: "Créer et Vendre des NFTs",               desc: "Lancez votre collection NFT sur OpenSea.",                                  category: "nft",       duration: "1h 15 min", level: "Intermédiaire",  icon: "fas fa-palette",      free: false, videoId: "", unitPrice: 10000 },
+  { id: 9,  title: "Les bases de la création de contenu",    desc: "Comprendre les fondamentaux pour créer du contenu engageant.",              category: "contenu",   duration: "50 min",   level: "Débutant",      icon: "fas fa-video",        free: true,  videoId: "" },
+  { id: 10, title: "Créer des Reels & Shorts viraux",        desc: "Techniques pour produire des vidéos courtes qui font le buzz.",             category: "contenu",   duration: "1h 10 min", level: "Intermédiaire",  icon: "fas fa-film",         free: false, videoId: "", unitPrice: 8000 },
+  { id: 11, title: "Monétiser son contenu",                   desc: "Transformez votre audience en revenus durables.",                           category: "contenu",   duration: "1h 25 min", level: "Avancée",         icon: "fas fa-dollar-sign",  free: false, videoId: "", unitPrice: 12000 },
+  { id: 12, title: "Outils de création gratuits",            desc: "Canva, CapCut, DaVinci Resolve : maîtrisez les meilleurs outils.",          category: "contenu",   duration: "45 min",   level: "Débutant",      icon: "fas fa-tools",        free: true,  videoId: "" },
+  { id: 13, title: "Créer une page Facebook professionnelle", desc: "Configurez et optimisez votre page Facebook de A à Z.",                   category: "facebook",  duration: "35 min",   level: "Débutant",      icon: "fab fa-facebook",     free: true,  videoId: "" },
+  { id: 14, title: "Stratégie de contenu Facebook",           desc: "Planifiez et publiez du contenu qui génère de l'engagement.",               category: "facebook",  duration: "1h 05 min", level: "Intermédiaire",  icon: "fas fa-calendar-alt", free: false, videoId: "", unitPrice: 8000 },
+  { id: 15, title: "Facebook Ads pour débutants",             desc: "Créez vos premières publicités Facebook avec un petit budget.",             category: "facebook",  duration: "1h 40 min", level: "Intermédiaire",  icon: "fas fa-bullhorn",     free: false, videoId: "", unitPrice: 15000 },
+  { id: 16, title: "Gérer une communauté Facebook",           desc: "Animez votre groupe et fidélisez votre audience.",                         category: "facebook",  duration: "55 min",   level: "Avancée",         icon: "fas fa-users-cog",    free: false, videoId: "", unitPrice: 10000 },
+];
+// ===== CHIFFREMENT LÉGER DES IDS PRIVÉS =====
 const _ENC_KEY = 'pagani2025secure';
 function _encode(str) {
   if (!str) return '';
   try {
-    // Prefixe pour detecter un ID deja chiffre
+    // Préfixe pour détecter un ID déjé chiffré
     const prefixed = 'ENC:' + str;
     return btoa(prefixed.split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
@@ -465,35 +38,35 @@ function _decode(str) {
     const decoded = atob(str).split('').map((c, i) =>
       String.fromCharCode(c.charCodeAt(0) ^ _ENC_KEY.charCodeAt(i % _ENC_KEY.length))
     ).join('');
-    // Verifier le prefixe
+    // Vérifier le préfixe
     if (decoded.startsWith('ENC:')) return decoded.slice(4);
-    // Pas de prefixe = ID en clair (ancien format), retourner tel quel
+    // Pas de préfixe = ID en clair (ancien format), retourner tel quel
     return str;
   } catch {
-    // echec du dechiffrement = ID en clair (ancien format)
+    // échec du déchiffrement = ID en clair (ancien format)
     return str;
   }
 }
 /**
- * Verifie l'acces et retourne { source, id } pour lire la video.
+ * Vérifie l'accès et retourne { source, id } pour lire la vidéo.
  * source : 'youtube' | 'drive'
- * id     : l'identifiant dechiffre en memoire — JAMAIS expose dans le DOM.
- * Retourne null si acces refus.
+ * id     : l'identifiant déchiffré en mémoire â€” JAMAIS exposé dans le DOM.
+ * Retourne null si accès refusé.
  */
 function _getSecureVideo(course, user) {
   const stored = getVideos().find(v => v.id === course.id) || course;
-  // Video gratuite : accessible a tous
+  // Vidéo gratuite : accessible à tous
   if (course.free) {
     const src = stored.videoSource || 'youtube';
     const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
     return id ? { source: src, id } : null;
   }
-  // Video payante : Pro, Elite, ou achat unitaire valide
+  // Vidéo payante : Pro, Elite, ou achat unitaire validé
   if (!user) return null;
   const hasPlan     = user.plan === 'Pro' || user.plan === 'Elite';
   const hasUnlocked = (user.unlockedCourses || []).includes(course.id);
   if (!hasPlan && !hasUnlocked) return null;
-  // Acces valide : dechiffrer l\'ID en memoire uniquement
+  // Accès validé : déchiffrer l\'ID en mémoire uniquement
   const src = stored.videoSource || 'youtube';
   const id  = src === 'drive' ? _decode(stored.driveId) : stored.videoId;
   return id ? { source: src, id } : null;
@@ -504,30 +77,18 @@ const COMMISSION_RATES = {
   Pro:     { abonnement: 0.35, formation: 0.25 },
   Elite:   { abonnement: 0.50, formation: 0.40 },
 };
-// Prix de reference en AR
+// Prix de référence en AR
 const PRICES_AR = {
   pro:       30000,
   elite:     90000,
   formation: 10000,
 };
-// Donnes de dmo supprimes — credentials grs via config.js
+// Données de démo supprimées â€” credentials gérés via config.js
 
 // ===== UTILITAIRES =====
 function getUser() {
-  // Compatibilit sync pour les fonctions non-async (feed, etc.)
+  // Compatibilité sync pour les fonctions non-async (feed, etc.)
   return window._currentUser || null;
-}
-// ===== PRESENCE PING =====
-var _presencePingTimer = null;
-function _startPresencePing() {
-  if (_presencePingTimer) return;
-  if (window.PaganiAPI) PaganiAPI.presencePing().catch(function(){});
-  _presencePingTimer = setInterval(function() {
-    if (window.PaganiAPI) PaganiAPI.presencePing().catch(function(){});
-  }, 30000);
-}
-function _stopPresencePing() {
-  if (_presencePingTimer) { clearInterval(_presencePingTimer); _presencePingTimer = null; }
 }
 async function refreshCurrentUser() {
   let user = null;
@@ -536,9 +97,8 @@ async function refreshCurrentUser() {
     try { user = await PaganiAPI.getMe(); } catch(e) { user = null; }
   }
   window._currentUser = user;
-  // Mettre a jour le badge messages navbar si l'utilisateur est connect
+  // Mettre à jour le badge messages navbar si l'utilisateur est connecté
   if (user) setTimeout(_updateMsgBadge, 500);
-  if (user) _startPresencePing(); else _stopPresencePing();
   return user;
 }
 function getInitials(name) {
@@ -551,7 +111,7 @@ function esc(str) {
 function getAvatarColor(user) {
   return (user && user.avatarColor) ? user.avatarColor : "#6c63ff";
 }
-// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respects
+// Convertit le texte brut en HTML avec paragraphes et sauts de ligne respectés
 function formatPostContent(text) {
   if (!text) return "";
   const markdownLink = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
@@ -574,16 +134,14 @@ function formatPostContent(text) {
       // 2. Gras et italique
       line = line.replace(markdownBold, (_, t) => `<strong>${t}</strong>`);
       line = line.replace(markdownItal, (_, t) => `<em>${t}</em>`);
-      // 3. URLs brutes — uniquement celles PAS deja dans un attribut href
-      // On dcoupe la ligne en segments texte/balise et on ne traite que le texte
+      // 3. URLs brutes â€” uniquement celles PAS déjé dans un attribut href
+      // On découpe la ligne en segments texte/balise et on ne traite que le texte
       line = line.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, txt) => {
         if (tag) return tag; // laisser les balises intactes
         return txt.replace(urlRegex, url => {
           const display = url.length > 50 ? url.slice(0, 47) + '...' : url;
           return `<a href="${url}" target="_blank" rel="noopener" class="post-auto-link">${display}</a>`;
-        }).replace(/#([\w\u00C0-\u024F]+)/g, (_, tag) =>
-          `<a href="javascript:void(0)" class="post-hashtag" onclick="filterByHashtag('${tag}')">#${tag}</a>`
-        );
+        });
       });
       return `<p>${line}</p>`;
     })
@@ -591,35 +149,25 @@ function formatPostContent(text) {
 }
 function timeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
-  if (diff < 60) return "a l'instant";
+  if (diff < 60) return "à l'instant";
   if (diff < 3600) return `Il y a ${Math.floor(diff / 60)} min`;
   if (diff < 86400) return `Il y a ${Math.floor(diff / 3600)}h`;
   return new Date(dateStr).toLocaleDateString("fr-FR");
 }
-function _presenceTimeAgo(ts) {
-  if (!ts) return '';
-  var t = Number(ts);
-  if (!t || isNaN(t)) return '';
-  var diff = Math.floor((Date.now() - t) / 1000);
-  if (diff < 0) diff = 0;
-  if (diff < 60)    return 'Vu à l\'instant';
-  if (diff < 3600)  return 'Il y a ' + Math.floor(diff / 60) + ' min';
-  if (diff < 86400) return 'Il y a ' + Math.floor(diff / 3600) + 'h';
-  var days = Math.floor(diff / 86400);
-  if (days < 7)     return 'Il y a ' + days + 'j';
-  if (days < 30)    return 'Il y a ' + Math.floor(days / 7) + ' sem';
-  return 'Il y a ' + Math.floor(days / 30) + ' mois';
-}
-// Met a jour le compteur de stats d'un post dans le DOM
+// Met à jour le compteur de stats d'un post dans le DOM
 function _updatePostStats(postId, post) {
   const el = document.getElementById('post-' + postId);
   if (!el) return;
-  _updateReactionCount(postId, _reactionsCache[postId] || {});
+  const totalComments = (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0);
+  const statsEl = el.querySelector('.post-stats');
+  if (statsEl) statsEl.innerHTML = `
+    <span><i class="fas fa-heart" style="color:var(--red)"></i> ${post.likes.length} j'adore</span>
+    <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments!==1?'s':''}</span>`;
 }
 // ===== EMOJI PICKER COMMENTAIRES =====
-const COMMENT_EMOJIS = ['😂','❤️','😍','👍','🔥','😊','🎉','😭','🙏','💪','😎','🤔','😅','👏','🥰','✅','⭐','🚀','💡','🎯'];
+const COMMENT_EMOJIS = ['😀','😂','😍','🔥','👍','❤️','😎','🎉','💪','🙏','😊','🤔','👏','🚀','💰','✅','⚡','🎯','💡','😅'];
 function toggleCommentEmoji(inputId, btn) {
-  // Fermer tout picker deja ouvert
+  // Fermer tout picker déjé ouvert
   document.querySelectorAll('.comment-emoji-picker').forEach(p => {
     if (p.dataset.for !== inputId) p.remove();
   });
@@ -659,7 +207,7 @@ let _feedPage = 0;
 let _feedLoading = false;
 let _feedObserver = null;
 const DEFAULT_NEWS = [];
-// Cache local des posts (mis a jour depuis le serveur)
+// Cache local des posts (mis à jour depuis le serveur)
 let _postsCache = [];
 let _feedRendering = false; // verrou anti-race condition
 let _pendingComments = new Map(); // postId -> [commentaires en attente de confirmation serveur]
@@ -669,10 +217,10 @@ function getNews() {
 function saveNews(news) {
   _postsCache = news;
 }
-// Rafraechissement silencieux du feed (sans reset du scroll)
+// Rafraîchissement silencieux du feed (sans reset du scroll)
 async function _silentRefreshFeed() {
   if (!window.PaganiAPI) return;
-  // Fonctionne pour tous (connects ou non)
+  // Fonctionne pour tous (connectés ou non)
   try {
     const fresh = await PaganiAPI.getPosts();
     if (!fresh || !fresh.length) return;
@@ -683,11 +231,11 @@ async function _silentRefreshFeed() {
     // Ne JAMAIS retirer un post du cache ici.
     const freshMap = new Map(fresh.map(p => [p.id, p]));
     // 1. Mettre a jour les posts existants dans le cache
-    // Ne pas ecraser un post qui a des commentaires en attente de confirmation
+    // Ne pas écraser un post qui a des commentaires en attente de confirmation
     _postsCache = _postsCache.map(p => {
       if (!freshMap.has(p.id)) return p;
       if (_pendingComments.has(p.id)) {
-        // Garder les commentaires locaux, mettre a jour le reste
+        // Garder les commentaires locaux, mettre à jour le reste
         const fresh = freshMap.get(p.id);
         return { ...fresh, comments: p.comments };
       }
@@ -713,17 +261,24 @@ async function _silentRefreshFeed() {
       const totalComments = (post.comments||[]).reduce((a,c)=>a+1+(c.replies||[]).length,0);
       const statsEl = el.querySelector('.post-stats');
       if (statsEl) {
-        _updateReactionCount(post.id, _reactionsCache[post.id] || {});
+        const lk = post.likes.length;
+        statsEl.innerHTML =
+          '<span><i class="fas fa-heart" style="color:var(--red)"></i> ' + lk + ' j\'adore</span>' +
+          '<span><i class="fas fa-comment" style="color:var(--accent)"></i> ' + totalComments + ' commentaire' + (totalComments!==1?'s':'') + '</span>';
       }
       if (user) {
-        // Mettre à jour le bouton réaction depuis le cache
-        const myEmoji = Object.entries(_reactionsCache[post.id] || {}).find(([,ids]) => ids.includes(user.id))?.[0] || null;
-        _updateReactionUI(post.id, _reactionsCache[post.id] || {}, myEmoji);
+        const likeBtn = el.querySelector('.reaction-btn');
+        if (likeBtn) {
+          const liked = post.likes.includes(user.email);
+          likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
+          const label = likeBtn.querySelector('.reaction-label');
+          if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
+        }
       }
       const commSection = el.querySelector('.comments-section');
       const commList    = el.querySelector('#comments-list-' + post.id);
       if (commSection && commSection.style.display !== 'none' && commList) {
-        // Ne pas ecraser si des commentaires sont en attente de confirmation serveur
+        // Ne pas écraser si des commentaires sont en attente de confirmation serveur
         if (_pendingComments.has(post.id)) return;
         const isGuest = !user;
         commList.innerHTML = (post.comments||[]).length === 0
@@ -736,7 +291,7 @@ async function _silentRefreshFeed() {
 async function _loadPosts() {
   try {
     const remote = await PaganiAPI.getPosts();
-    // Ne remplacer le cache que si le serveur retourne des donnes valides
+    // Ne remplacer le cache que si le serveur retourne des données valides
     if (remote && remote.length) _postsCache = remote;
     else if (!_postsCache.length) _postsCache = DEFAULT_NEWS;
   } catch(e) {
@@ -744,9 +299,9 @@ async function _loadPosts() {
   }
   return _postsCache;
 }
-// Rendu initial du feed (reset + 1re page)
+// Rendu initial du feed (reset + 1ére page)
 async function renderFeed() {
-  if (_feedRendering) return; // ignorer les appels simultans
+  if (_feedRendering) return; // ignorer les appels simultanés
   _feedRendering = true;
   const container = document.getElementById('feedPosts');
   if (!container) { _feedRendering = false; return; }
@@ -792,15 +347,7 @@ async function renderFeed() {
   container.innerHTML = renderSkeletons(3);
   // Charger les posts depuis le serveur
   try { await _loadPosts(); } catch(e) {}
-  // Charger les réactions en batch
-  try {
-    if (window.PaganiAPI && _postsCache.length) {
-      const ids = _postsCache.map(p => p.id);
-      const batchRes = await Promise.allSettled(ids.slice(0,20).map(id => PaganiAPI.getPostReactions(id)));
-      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
-    }
-  } catch(e) {}
-  // Pas de setTimeout : on remplace les skeletons immdiatement
+  // Pas de setTimeout : on remplace les skeletons immédiatement
   container.innerHTML = '';
   if (_postsCache.length === 0) {
     container.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication pour le moment.</p></div>';
@@ -813,10 +360,10 @@ async function renderFeed() {
   scrollToTargetPost();
   _feedRendering = false;
 }
-// Charge la prochaine tranche de posts — lit toujours _postsCache en direct
+// Charge la prochaine tranche de posts â€” lit toujours _postsCache en direct
 function _loadMorePosts(container, user, isAdmin) {
   if (_feedLoading) return;
-  const news  = _postsCache; // reference directe, jamais de snapshot
+  const news  = _postsCache; // référence directe, jamais de snapshot
   const start = _feedPage * POSTS_PER_PAGE;
   const slice = news.slice(start, start + POSTS_PER_PAGE);
   if (slice.length === 0) return;
@@ -824,7 +371,7 @@ function _loadMorePosts(container, user, isAdmin) {
   const oldLoader = document.getElementById("feedLoader");
   if (oldLoader) oldLoader.remove();
   slice.forEach((post, i) => {
-    // Ne pas re-rendre un post deja prsent dans le DOM (ex: injecte par publishNews)
+    // Ne pas re-rendre un post déjà présent dans le DOM (ex: injecté par publishNews)
     if (document.getElementById('post-' + post.id)) return;
     const el = buildPostCard(post, user, isAdmin);
     el.style.animationDelay = `${i * 60}ms`;
@@ -853,14 +400,14 @@ function _loadMorePosts(container, user, isAdmin) {
     container.appendChild(end);
   }
 }
-// IntersectionObserver pour detecter quand la sentinelle est visible
+// IntersectionObserver pour détecter quand la sentinelle est visible
 function _setupInfiniteScroll(container, user, isAdmin) {
   _feedObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
       if (entry.isIntersecting && !_feedLoading) {
         const sentinel = document.getElementById("feedSentinel");
         if (sentinel) sentinel.remove();
-        // Charger immdiatement si deja visible (pas de dlai artificiel)
+        // Charger immédiatement si déjà visible (pas de délai artificiel)
         _loadMorePosts(container, user, isAdmin);
       }
     });
@@ -904,7 +451,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
       </div>
       <div class="comment-input-wrap">
         <button class="comment-emoji-btn" type="button" onclick="toggleCommentEmoji('reply-input-${cid}', this)" title="Emoji"><i class="fas fa-smile"></i></button>
-        <input type="text" id="reply-input-${cid}" placeholder="Repondre  ${esc(c.author)}..."
+        <input type="text" id="reply-input-${cid}" placeholder="Répondre à ${esc(c.author)}..."
           onkeydown="if(event.key==='Enter') submitReply(${postId}, '${cid}')" />
         <button onclick="submitReply(${postId}, '${cid}')"><i class="fas fa-paper-plane"></i></button>
       </div>
@@ -920,7 +467,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
           <p>${esc(c.text)}</p>
           <div class="comment-footer">
             <span class="comment-time">${timeAgo(c.date)}</span>
-            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> Repondre</button>` : ""}
+            ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> Répondre</button>` : ""}
           </div>
         </div>
         ${replies ? `<div class="replies-list">${replies}</div>` : ""}
@@ -951,32 +498,11 @@ function buildPostCard(post, user, isAdmin) {
       </div>
       <div class="post-header-right">
         <span class="news-tag tag-${post.category.toLowerCase()}">${post.category}</span>
-        ${isAdmin && post.authorId === user.id ? `
-          <div class="post-owner-menu" style="position:relative">
-            <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
-            <div class="post-menu-dropdown" id="post-menu-${post.id}" style="display:none">
-              <button onclick="openEditPostModal(${post.id})"><i class="fas fa-edit"></i> Modifier</button>
-              <button onclick="toggleBoostPost(${post.id}, ${post.boostScore || 0}, null)" style="color:var(--gold)"><i class="fas fa-rocket"></i> ${post.boostScore > 0 ? 'Retirer le boost' : 'Booster'}</button>
-              <button onclick="deletePost(${post.id})" style="color:var(--red)"><i class="fas fa-trash"></i> Supprimer</button>
-            </div>
-          </div>` : ""}
-        ${isAdmin && post.authorId !== user.id ? `
-          <div style="display:flex;gap:0.4rem;align-items:center">
-            <button class="news-delete" onclick="toggleBoostPost(${post.id}, ${post.boostScore || 0}, this)" title="${post.boostScore > 0 ? 'Boosté (' + post.boostScore + 'pts) — cliquer pour retirer' : 'Booster ce post'}" style="background:${post.boostScore > 0 ? 'rgba(245,158,11,0.15)' : 'transparent'};color:${post.boostScore > 0 ? 'var(--gold)' : 'var(--text2)'};border:1px solid ${post.boostScore > 0 ? 'rgba(245,158,11,0.4)' : 'var(--border)'};border-radius:8px;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.8rem"><i class="fas fa-rocket"></i></button>
-            <button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
-          </div>` : ""}
-        ${(!isAdmin && user && post.authorId === user.id) ? `
-          <div class="post-owner-menu" style="position:relative">
-            <button class="post-menu-btn" onclick="togglePostMenu(${post.id})" title="Options"><i class="fas fa-ellipsis-h"></i></button>
-            <div class="post-menu-dropdown" id="post-menu-${post.id}" style="display:none">
-              <button onclick="openEditPostModal(${post.id})"><i class="fas fa-edit"></i> Modifier</button>
-              <button onclick="deleteUserPost(${post.id})" style="color:var(--red)"><i class="fas fa-trash"></i> Supprimer</button>
-            </div>
-          </div>` : ""}
+        ${isAdmin ? `<button class="news-delete" onclick="deletePost(${post.id})" title="Supprimer"><i class="fas fa-trash"></i></button>` : ""}
       </div>
     </div>
     <div class="post-body">
-      <h3 class="post-title">${post.title}${post.boostScore > 0 && isAdmin ? ' <span style="font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle">🚀 Boosté</span>' : ''}</h3>
+      <h3 class="post-title">${post.title}</h3>
       <div class="post-content">${formatPostContent(post.content)}</div>
       ${post.image === '__HAS_IMAGE__'
         ? `<div class="post-image-wrap"><img data-postid="${post.id}" data-lazy="1" src="" class="post-image post-image-lazy" alt="" style="min-height:180px;background:var(--bg2)" /></div>`
@@ -984,12 +510,12 @@ function buildPostCard(post, user, isAdmin) {
       ${post.link ? `<a href="${post.link}" target="_blank" rel="noopener" class="post-link-btn"><i class="fas fa-external-link-alt"></i> ${post.linkLabel || 'En savoir plus'}</a>` : ""}
     </div>
     <div class="post-stats">
-      ${(() => { const r=_reactionsCache[post.id]||{}; const tot=Object.values(r).reduce((s,ids)=>s+ids.length,0); const top=Object.entries(r).sort((a,b)=>b[1].length-a[1].length)[0]; return tot>0 ? `<span style="cursor:pointer" onclick="showReactionDetails(${post.id})">${top[0]} ${tot} réaction${tot!==1?'s':''}</span>` : `<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 réaction</span>`; })()}
+      <span><i class="fas fa-heart" style="color:var(--red)"></i> ${post.likes.length} j'adore</span>
       <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? "s" : ""}</span>
     </div>
     <div class="post-actions">
       ${isGuest ? `
-        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour reagir">
+        <a href="dashboard.html" class="reaction-btn guest-action" title="Connectez-vous pour réagir">
           <i class="fas fa-heart"></i>
           <span class="reaction-label">J'adore</span>
         </a>
@@ -1002,7 +528,10 @@ function buildPostCard(post, user, isAdmin) {
           <span class="reaction-label">Partager</span>
         </button>
       ` : `
-        ${_buildReactionBar(post.id, _reactionsCache[post.id] || {}, (() => { const r = _reactionsCache[post.id] || {}; return Object.entries(r).find(([,ids]) => ids.includes(user.id))?.[0] || null; })())}
+        <button class="reaction-btn ${liked ? "liked" : ""}" onclick="toggleLike(${post.id})">
+          <i class="fas fa-heart"></i>
+          <span class="reaction-label">${liked ? "J'adore ❤️" : "J'adore"}</span>
+        </button>
         <button class="comment-toggle-btn" onclick="toggleComments(${post.id})">
           <i class="fas fa-comment"></i>
           <span class="reaction-label">Commenter</span>
@@ -1038,24 +567,28 @@ function buildPostCard(post, user, isAdmin) {
            </div>`
       }
     </div>`;
-  // Attacher les listeners touch pour le hold-press (picker réactions)
-  if (!isGuest) {
-    setTimeout(() => {
-      const reactionBtn = article.querySelector('.reaction-btn[data-postid]');
-      if (reactionBtn) _attachReactionTouchListeners(post.id, reactionBtn);
-    }, 0);
-  }
   return article;
 }
 async function toggleLike(postId) {
   const user = getUser();
   if (!user) { window.location.href = 'dashboard.html'; return; }
-  // Mise a jour optimiste locale
+  // Mise à jour optimiste locale
   const post = _postsCache.find(p => p.id === postId) || _profilePostsCache.find(p => p.id === postId);
   if (post) {
     const idx = post.likes.indexOf(user.email);
     if (idx === -1) post.likes.push(user.email); else post.likes.splice(idx, 1);
     _updatePostStats(postId, post);
+    // Mettre à jour le bouton like
+    const el = document.getElementById('post-' + postId);
+    if (el) {
+      const liked = post.likes.includes(user.email);
+      const likeBtn = el.querySelector('.reaction-btn');
+      if (likeBtn) {
+        likeBtn.className = 'reaction-btn' + (liked ? ' liked' : '');
+        const label = likeBtn.querySelector('.reaction-label');
+        if (label) label.textContent = liked ? "J'adore ❤️" : "J'adore";
+      }
+    }
   }
   if (window.PaganiAPI) {
     try { await PaganiAPI.toggleLike(postId); } catch(e) {}
@@ -1068,7 +601,7 @@ function shareOnFacebook(postId) {
   const url  = base + '?post=' + postId + (ref ? '&ref=' + encodeURIComponent(ref) : '') + '#post-' + postId;
   const fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
   window.open(fbUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
-  // Tracker le partage si connect
+  // Tracker le partage si connecté
   if (user && window.PaganiAPI) {
     PaganiAPI.recordShare(postId).catch(() => {});
   }
@@ -1108,7 +641,7 @@ async function submitComment(postId) {
   if (section) section.style.display = 'block';
   const post = _postsCache.find(p => p.id === pid);
   if (post) { post.comments.push(newComment); _updatePostStats(pid, post); }
-  // Marquer ce commentaire comme "en attente" pour bloquer l'ecrasement par _silentRefreshFeed
+  // Marquer ce commentaire comme "en attente" pour bloquer l'écrasement par _silentRefreshFeed
   if (!_pendingComments.has(pid)) _pendingComments.set(pid, []);
   _pendingComments.get(pid).push(newComment.id);
   if (window.PaganiAPI) {
@@ -1120,14 +653,14 @@ async function submitComment(postId) {
         if (idx !== -1) post.comments[idx] = { ...newComment, ...saved };
       }
     } catch(e) {
-      // echec serveur : retirer le commentaire temporaire du cache et du DOM
+      // Échec serveur : retirer le commentaire temporaire du cache et du DOM
       if (post) post.comments = post.comments.filter(c => c.id !== newComment.id);
       const cid = String(newComment.id).replace(/[^a-zA-Z0-9_-]/g, '_');
       document.getElementById('comment-' + cid)?.remove();
       _updatePostStats(pid, post);
 
     } finally {
-      // Retirer le verrou aprs un court dlai pour laisser le DOM se stabiliser
+      // Retirer le verrou après un court délai pour laisser le DOM se stabiliser
       setTimeout(() => {
         const pending = _pendingComments.get(pid);
         if (pending) {
@@ -1175,7 +708,7 @@ async function submitReply(postId, commentId) {
   if (window.PaganiAPI) {
     try { await PaganiAPI.addReply(pid, commentId, text, replyTo); }
     catch(e) {
-      // echec serveur : retirer la rponse temporaire du cache et re-render
+      // Échec serveur : retirer la réponse temporaire du cache et re-render
       if (comment) comment.replies = comment.replies.filter(r => r.id !== newReply.id);
       if (listEl && post) listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
       if (post) _updatePostStats(pid, post);
@@ -1183,7 +716,7 @@ async function submitReply(postId, commentId) {
     }
   }
 }
-// ===== DITEUR ADMIN =====
+// ===== ÉDITEUR ADMIN =====
 function switchEditorTab(tab, btn) {
   document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -1194,7 +727,7 @@ function switchEditorTab(tab, btn) {
 function updateEditorPreview(force) {
   const ta    = document.getElementById('newsContent');
   const count = document.getElementById('editorCharCount');
-  if (ta && count) count.textContent = ta.value.length + ' caracteres';
+  if (ta && count) count.textContent = ta.value.length + ' caractéres';
   if (!force) return;
   const box   = document.getElementById('editorPreviewContent');
   const title = document.getElementById('newsTitle')?.value.trim();
@@ -1202,7 +735,7 @@ function updateEditorPreview(force) {
   if (!box) return;
   box.innerHTML =
     (title ? `<h3 style="margin:0 0 0.6rem;font-size:1rem">${title}</h3>` : '') +
-    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">Apercu vide.</p>');
+    (text  ? formatPostContent(text) : '<p style="color:var(--text2);font-style:italic">Aperçu vide.</p>');
 }
 function editorFormat(type) {
   const ta = document.getElementById('newsContent');
@@ -1295,7 +828,7 @@ document.addEventListener('keydown', e => {
     if (lm && lm.style.display !== 'none') { e.preventDefault(); confirmInsertLink(); }
   }
 });
-// ===== GESTION THUMBNAIL VIDEO =====
+// ===== GESTION THUMBNAIL VIDÉO =====
 let _thumbnailBase64 = '';
 function uploadThumbnail(input) {
   const file = input.files[0];
@@ -1391,7 +924,7 @@ async function publishNews(e) {
           el.classList.add('post-animate');
           container.insertBefore(el, container.firstChild);
         }
-        // Mettre a jour la sentinelle/fin selon le nouvel etat du cache
+        // Mettre à jour la sentinelle/fin selon le nouvel état du cache
         const oldEnd = container.querySelector('.feed-end');
         if (oldEnd) oldEnd.remove();
         const renderedCount = container.querySelectorAll('.post-card:not(.skeleton-card)').length;
@@ -1414,218 +947,13 @@ async function publishNews(e) {
     }
   } catch(e) { alert('Erreur serveur : ' + e.message); }
 }
-async function toggleBoostPost(postId, currentBoost, btn) {
-  const isBoosted = currentBoost > 0;
-  const newScore  = isBoosted ? 0 : 50;
-  try {
-    const API = (window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api');
-    const token = localStorage.getItem('pd_jwt');
-    await fetch(`${API}/admin/posts/${postId}/boost`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ boostScore: newScore })
-    });
-    // Mettre à jour le cache
-    const post = _postsCache.find(p => p.id === postId);
-    if (post) post.boostScore = newScore;
-    // Fermer le menu dropdown si ouvert
-    document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
-    if (btn) {
-      // Bouton inline (posts des membres)
-      btn.title = newScore > 0 ? `Boosté (${newScore}pts) — cliquer pour retirer` : 'Booster ce post';
-      btn.style.background  = newScore > 0 ? 'rgba(245,158,11,0.15)' : 'transparent';
-      btn.style.color       = newScore > 0 ? 'var(--gold)' : 'var(--text2)';
-      btn.style.borderColor = newScore > 0 ? 'rgba(245,158,11,0.4)' : 'var(--border)';
-      btn.setAttribute('onclick', `toggleBoostPost(${postId}, ${newScore}, this)`);
-    } else {
-      // Appelé depuis le menu dropdown — reconstruire le menu
-      const menuBtn = document.querySelector(`#post-menu-${postId} button[onclick*="toggleBoostPost"]`);
-      if (menuBtn) {
-        menuBtn.innerHTML = `<i class="fas fa-rocket"></i> ${newScore > 0 ? 'Retirer le boost' : 'Booster'}`;
-        menuBtn.setAttribute('onclick', `toggleBoostPost(${postId}, ${newScore}, null)`);
-      }
-    }
-    // Indicateur visuel sur la carte du post
-    const card = document.getElementById('post-' + postId);
-    if (card) {
-      let badge = card.querySelector('.boost-badge');
-      if (newScore > 0) {
-        if (!badge) {
-          badge = document.createElement('span');
-          badge.className = 'boost-badge';
-          badge.style.cssText = 'font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle';
-          const titleEl = card.querySelector('.post-title');
-          if (titleEl) titleEl.appendChild(badge);
-        }
-        badge.innerHTML = '🚀 Boosté';
-      } else if (badge) {
-        badge.remove();
-      }
-    }
-    // Recharger le feed depuis le serveur pour appliquer le nouvel ordre
-    _postsCache = [];
-    await renderFeed();
-  } catch(e) { alert('Erreur boost : ' + e.message); }
-}
-
 async function deletePost(id) {
   if (!confirm('Supprimer ce post ?')) return;
   try {
     await PaganiAPI.deletePost(id);
-    _postsCache = _postsCache.filter(p => p.id !== id);
-    document.getElementById('post-' + id)?.remove();
+    await _loadPosts();
+    renderFeed();
   } catch(e) { alert('Erreur serveur : ' + e.message); }
-}
-
-function togglePostMenu(postId) {
-  const menu = document.getElementById('post-menu-' + postId);
-  if (!menu) return;
-  const isOpen = menu.style.display !== 'none';
-  document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
-  if (isOpen) return;
-  menu.style.display = 'block';
-  setTimeout(() => {
-    document.addEventListener('click', function close(e) {
-      if (!menu.closest('.post-owner-menu').contains(e.target)) {
-        menu.style.display = 'none';
-        document.removeEventListener('click', close);
-      }
-    });
-  }, 10);
-}
-
-let _editPostImageBase64 = null; // null = pas de changement, '' = supprime, 'data:...' = nouvelle
-
-function openEditPostModal(postId) {
-  document.querySelectorAll('.post-menu-dropdown').forEach(m => m.style.display = 'none');
-  const pid = Number(postId);
-  const post = _postsCache.find(p => Number(p.id) === pid);
-  if (!post) return;
-  _editPostImageBase64 = null;
-  document.getElementById('editPostId').value      = pid;
-  document.getElementById('editPostContent').value = post.content || '';
-  document.getElementById('editPostMsg').textContent = '';
-  // Afficher la photo actuelle si elle existe
-  const photoWrap = document.getElementById('editPostCurrentPhoto');
-  const photoImg  = document.getElementById('editPostCurrentImg');
-  const photoLabel = document.getElementById('editPostPhotoLabel');
-  const fileInput  = document.getElementById('editPostImageInput');
-  if (fileInput) fileInput.value = '';
-  if (post.image && post.image !== '__HAS_IMAGE__') {
-    if (photoImg)  photoImg.src = post.image;
-    if (photoWrap) photoWrap.style.display = 'block';
-    if (photoLabel) photoLabel.textContent = 'Changer la photo';
-  } else if (post.image === '__HAS_IMAGE__') {
-    // Charger l'image depuis le serveur
-    const url = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3001/api') + '/posts/' + pid + '/image';
-    fetch(url).then(r => r.json()).then(d => {
-      if (d.image) {
-        if (photoImg)  photoImg.src = d.image;
-        if (photoWrap) photoWrap.style.display = 'block';
-        if (photoLabel) photoLabel.textContent = 'Changer la photo';
-        const p = _postsCache.find(x => Number(x.id) === pid);
-        if (p) p.image = d.image;
-      }
-    }).catch(() => {});
-  } else {
-    if (photoWrap) photoWrap.style.display = 'none';
-    if (photoLabel) photoLabel.textContent = 'Ajouter une photo';
-  }
-  document.getElementById('editPostModal').style.display = 'flex';
-  setTimeout(() => document.getElementById('editPostContent').focus(), 50);
-}
-
-function previewEditPostImage(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); input.value = ''; return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    _editPostImageBase64 = e.target.result;
-    const photoWrap = document.getElementById('editPostCurrentPhoto');
-    const photoImg  = document.getElementById('editPostCurrentImg');
-    const photoLabel = document.getElementById('editPostPhotoLabel');
-    if (photoImg)  photoImg.src = _editPostImageBase64;
-    if (photoWrap) photoWrap.style.display = 'block';
-    if (photoLabel) photoLabel.textContent = 'Changer la photo';
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeEditPostImage() {
-  _editPostImageBase64 = '';
-  const photoWrap  = document.getElementById('editPostCurrentPhoto');
-  const photoImg   = document.getElementById('editPostCurrentImg');
-  const photoLabel = document.getElementById('editPostPhotoLabel');
-  const fileInput  = document.getElementById('editPostImageInput');
-  if (photoWrap) photoWrap.style.display = 'none';
-  if (photoImg)  photoImg.src = '';
-  if (photoLabel) photoLabel.textContent = 'Ajouter une photo';
-  if (fileInput) fileInput.value = '';
-}
-
-function closeEditPostModal() {
-  document.getElementById('editPostModal').style.display = 'none';
-  _editPostImageBase64 = null;
-}
-
-async function submitEditPost() {
-  const id      = Number(document.getElementById('editPostId').value);
-  const content = document.getElementById('editPostContent').value.trim();
-  const msg     = document.getElementById('editPostMsg');
-  if (!content) { msg.textContent = 'Le contenu ne peut pas etre vide.'; return; }
-  msg.textContent = '';
-  const user = getUser();
-  const isAdmin = user && user.role === 'admin';
-  // Construire le payload : image seulement si modifiee
-  const payload = { content };
-  if (_editPostImageBase64 !== null) payload.image = _editPostImageBase64;
-  try {
-    if (isAdmin) {
-      await PaganiAPI.editPost(id, payload);
-    } else {
-      await PaganiAPI.editUserPost(id, payload);
-    }
-    const post = _postsCache.find(p => Number(p.id) === id);
-    if (post) {
-      post.content = content;
-      if (_editPostImageBase64 !== null) post.image = _editPostImageBase64;
-    }
-    const el = document.getElementById('post-' + id);
-    if (el) {
-      const contentEl = el.querySelector('.post-content');
-      if (contentEl) contentEl.innerHTML = formatPostContent(content);
-      // Mettre a jour l'image dans le DOM
-      if (_editPostImageBase64 !== null) {
-        const wrap = el.querySelector('.post-image-wrap');
-        if (_editPostImageBase64 === '') {
-          if (wrap) wrap.remove();
-        } else {
-          if (wrap) {
-            const img = wrap.querySelector('img');
-            if (img) img.src = _editPostImageBase64;
-          } else {
-            const body = el.querySelector('.post-body');
-            if (body) body.insertAdjacentHTML('beforeend',
-              `<div class="post-image-wrap"><img src="${_editPostImageBase64}" class="post-image" alt="" /></div>`);
-          }
-        }
-      }
-    }
-    closeEditPostModal();
-    if (document.getElementById('myPostsList')) loadMyPosts();
-  } catch(e) { msg.textContent = 'Erreur : ' + e.message; }
-}
-
-async function deleteUserPost(postId) {
-  if (!confirm('Supprimer cette publication ?')) return;
-  try {
-    await PaganiAPI.deleteUserPost(postId);
-    _postsCache = _postsCache.filter(p => p.id !== postId);
-    document.getElementById('post-' + postId)?.remove();
-    // Rafraechir la liste dashboard si on y est
-    if (document.getElementById('myPostsList')) loadMyPosts();
-  } catch(e) { alert('Erreur : ' + e.message); }
 }
 async function _loadPostImage(postId, imgEl) {
   try {
@@ -1670,7 +998,7 @@ function openPostImage(postId) {
       <i class="fas fa-times"></i>
     </button>
     <img src="${post.image}" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.6)" />
-    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe ou ou appuyez sur Echap pour fermer</p>
+    <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe où ou appuyez sur Echap pour fermer</p>
   `;
   // Fermer au clic sur l'overlay (pas sur l\'image)
   overlay.addEventListener("click", (e) => {
@@ -1696,23 +1024,24 @@ async function loadUserPostsForProfile(userId) {
       list.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
       return;
     }
-    // Charger les réactions en batch
-    try {
-      const ids = posts.map(p => p.id);
-      const batchRes = await Promise.allSettled(ids.slice(0, 20).map(id => PaganiAPI.getPostReactions(id)));
-      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
-    } catch(e) {}
-    const user = getUser();
-    list.innerHTML = '';
-    posts.forEach((post, i) => {
-      post.likes    = post.likes    || [];
-      post.comments = post.comments || [];
-      const el = buildPostCard(post, user, false);
-      el.style.animationDelay = (i * 40) + 'ms';
-      el.classList.add('post-animate');
-      list.appendChild(el);
-    });
-    _observeLazyImages(list);
+    list.innerHTML = posts.map(post => {
+      const totalComments = (post.comments || []).reduce((a, c) => a + 1 + (c.replies || []).length, 0);
+      return `
+        <div class="post-card" style="cursor:default">
+          <div class="post-header">
+            <div class="post-time" style="font-size:0.8rem;color:var(--text2)">${timeAgo(post.date || post.createdAt)}</div>
+            <span class="news-tag tag-${(post.category||'').toLowerCase()}">${post.category || ''}</span>
+          </div>
+          <div class="post-body">
+            <h3 class="post-title">${post.title}</h3>
+            <div class="post-content">${formatPostContent(post.content)}</div>
+          </div>
+          <div class="post-stats">
+            <span><i class="fas fa-heart" style="color:var(--red)"></i> ${(post.likes||[]).length} j'adore</span>
+            <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? 's' : ''}</span>
+          </div>
+        </div>`;
+    }).join('');
   } catch(e) {
     if (statEl) statEl.textContent = '0';
     list.innerHTML = '<div class="feed-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
@@ -1729,7 +1058,7 @@ async function openPublicProfileByName(name) {
     if (found) window.location.href = `profil.html?id=${found.id}`;
   } catch(e) {}
 }
-// Dfilement vers un post cible depuis une notification (ancre #post-ID)
+// Défilement vers un post cible depuis une notification (ancre #post-ID)
 function scrollToTargetPost(retries) {
   if (retries === undefined) retries = 10;
   const hash = window.location.hash;
@@ -1751,480 +1080,6 @@ function scrollToTargetPost(retries) {
   }, 100);
 }
 function renderNews() { renderFeed(); }
-
-// ── HASHTAGS ──────────────────────────────────────────────────────────────────
-function filterByHashtag(tag) {
-  // Mettre à jour l'URL sans recharger
-  history.pushState({}, '', '?tag=' + encodeURIComponent(tag));
-  _activeHashtag = tag;
-  _renderHashtagBanner(tag);
-  _filterFeedByHashtag(tag);
-  // Mettre en surbrillance le tag actif dans la sidebar
-  document.querySelectorAll('.hashtag-pill').forEach(p => {
-    p.classList.toggle('active', p.dataset.tag === tag);
-  });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function clearHashtagFilter() {
-  history.pushState({}, '', window.location.pathname);
-  _activeHashtag = null;
-  const banner = document.getElementById('hashtagBanner');
-  if (banner) banner.style.display = 'none';
-  document.querySelectorAll('.hashtag-pill').forEach(p => p.classList.remove('active'));
-  // Réafficher tous les posts
-  document.querySelectorAll('.post-card').forEach(p => p.style.display = '');
-  const empty = document.getElementById('hashtagEmpty');
-  if (empty) empty.remove();
-}
-
-function _renderHashtagBanner(tag) {
-  let banner = document.getElementById('hashtagBanner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'hashtagBanner';
-    banner.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.6rem 1rem;background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);border-radius:10px;margin-bottom:1rem;font-size:0.88rem';
-    const feed = document.getElementById('feedPosts');
-    if (feed) feed.parentNode.insertBefore(banner, feed);
-  }
-  banner.style.display = 'flex';
-  banner.innerHTML = `<i class="fas fa-hashtag" style="color:var(--accent)"></i>
-    <strong style="color:var(--accent)">#${tag}</strong>
-    <span style="color:var(--text2);flex:1">Posts avec ce hashtag</span>
-    <button onclick="clearHashtagFilter()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem" title="Effacer le filtre"><i class="fas fa-times"></i></button>`;
-}
-
-function _filterFeedByHashtag(tag) {
-  const lower = tag.toLowerCase();
-  let visible = 0;
-  document.querySelectorAll('.post-card').forEach(card => {
-    const text = (card.querySelector('.post-content')?.textContent || '') +
-                 (card.querySelector('.post-title')?.textContent || '');
-    const hasTag = text.toLowerCase().includes('#' + lower);
-    card.style.display = hasTag ? '' : 'none';
-    if (hasTag) visible++;
-  });
-  // Message si aucun résultat
-  const old = document.getElementById('hashtagEmpty');
-  if (old) old.remove();
-  if (visible === 0) {
-    const div = document.createElement('div');
-    div.id = 'hashtagEmpty';
-    div.className = 'feed-empty';
-    div.innerHTML = `<i class="fas fa-hashtag"></i><p>Aucun post avec <strong>#${tag}</strong> pour le moment.</p>`;
-    const feed = document.getElementById('feedPosts');
-    if (feed) feed.appendChild(div);
-  }
-}
-
-function extractTopHashtags(posts, limit) {
-  const counts = {};
-  posts.forEach(p => {
-    const text = (p.title || '') + ' ' + (p.content || '');
-    const tags = text.match(/#([wÀ-ɏ]+)/g) || [];
-    tags.forEach(t => {
-      const k = t.slice(1).toLowerCase();
-      counts[k] = (counts[k] || 0) + 1;
-    });
-  });
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, limit || 8)
-    .map(([tag, count]) => ({ tag, count }));
-}
-
-function renderTrendingHashtags(posts) {
-  const wrap = document.getElementById('trendingHashtags');
-  if (!wrap) return;
-  const top = extractTopHashtags(posts, 8);
-  if (!top.length) { wrap.closest('.sidebar-card')?.style && (wrap.closest('.sidebar-card').style.display = 'none'); return; }
-  wrap.innerHTML = top.map(({ tag, count }) =>
-    `<button class="hashtag-pill" data-tag="${tag}" onclick="filterByHashtag('${tag}')">#${tag} <span>${count}</span></button>`
-  ).join('');
-}
-
-let _activeHashtag = null;
-
-// ── RÉACTIONS POSTS ───────────────────────────────────────────────────────────
-const POST_REACTIONS = ['❤️','😂','😮','😢','😡','👍'];
-const REACTION_LABELS = { '❤️':'J\'adore','😂':'Haha','😮':'Wow','😢':'Triste','😡':'Grrr','👍':'Super' };
-// Cache local : postId -> { emoji: [userId, ...] }
-const _reactionsCache = {};
-
-function _getMyReaction(postId, userEmail) {
-  // On stocke par userId dans le cache serveur, mais on compare par email côté like legacy
-  // Pour les réactions, on stocke userId
-  return null; // sera résolu depuis le DOM
-}
-
-function _buildReactionBar(postId, reactions, myReaction) {
-  // Compter le total et trouver la réaction dominante
-  const counts = {};
-  let total = 0;
-  for (const [emoji, users] of Object.entries(reactions || {})) {
-    counts[emoji] = users.length;
-    total += users.length;
-  }
-  // Top 3 emojis
-  const top = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([e]) => e);
-
-  const myEmoji = myReaction || null;
-  const label = myEmoji ? REACTION_LABELS[myEmoji] : 'Réagir';
-  const btnClass = myEmoji ? 'reaction-btn reacted' : 'reaction-btn';
-  const btnStyle = myEmoji ? `color:var(--reaction-${_reactionColor(myEmoji)})` : '';
-
-  return `<div class="reaction-btn-wrap" style="position:relative;flex:1">
-    <button class="${btnClass}" style="${btnStyle}"
-      onclick="_onReactionBtnClick(${postId}, this)"
-      onmouseenter="_showReactionPicker(${postId}, this)"
-      data-postid="${postId}" data-myreaction="${myEmoji || ''}">
-      <span class="reaction-main-emoji">${myEmoji || '👍'}</span>
-      <span class="reaction-label">${label}</span>
-    </button>
-    <div class="reaction-picker" id="rpicker-${postId}" style="display:none">
-      ${POST_REACTIONS.map(e => `<button class="rp-btn ${e === myEmoji ? 'rp-active' : ''}"
-        onclick="selectReaction(${postId}, '${e}', this)"
-        title="${REACTION_LABELS[e]}">${e}</button>`).join('')}
-    </div>
-  </div>`;
-}
-
-// Clic simple = réagir avec ❤️ (ou retirer si déjà réagi)
-// Maintien (desktop: hover déjà géré) = ouvrir le picker
-function _onReactionBtnClick(postId, btn) {
-  // Sur mobile, tout est géré par _attachReactionTouchListeners
-  // Ce handler ne s'exécute que sur desktop (pas de touch)
-  if (window.matchMedia('(hover: none)').matches) return;
-
-  const picker = document.getElementById('rpicker-' + postId);
-  const prevEmoji = btn.dataset.myreaction || '';
-  if (prevEmoji) {
-    if (picker) picker.style.display = 'none';
-    selectReaction(postId, prevEmoji, btn);
-  } else {
-    toggleReactionPicker(postId, btn);
-  }
-}
-
-// Touch : détecter maintien (500ms) pour ouvrir le picker
-// Géré via addEventListener (passive:false) pour pouvoir preventDefault
-let _reactionLastHoldTime = 0;
-
-function _attachReactionTouchListeners(postId, btn) {
-  let timer = null;
-  let moved = false;
-  let startX = 0;
-  let startY = 0;
-  let holdFired = false;
-
-  // Bloquer le click natif — tout est géré via touch
-  btn.addEventListener('click', function(e) {
-    e.stopPropagation();
-    if (holdFired) { holdFired = false; return; } // ignorer le click post-hold
-    // Clic simple
-    const prevEmoji = btn.dataset.myreaction || '';
-    if (prevEmoji) {
-      selectReaction(postId, prevEmoji, btn);
-    } else {
-      toggleReactionPicker(postId, btn);
-    }
-  });
-
-  btn.addEventListener('touchstart', function(e) {
-    moved = false;
-    holdFired = false;
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    if (timer) { clearTimeout(timer); timer = null; }
-    timer = setTimeout(() => {
-      if (!moved) {
-        holdFired = true;
-        toggleReactionPicker(postId, btn);
-      }
-      timer = null;
-    }, 500);
-  }, { passive: true });
-
-  btn.addEventListener('touchmove', function(e) {
-    if (!moved) {
-      const dx = Math.abs(e.touches[0].clientX - startX);
-      const dy = Math.abs(e.touches[0].clientY - startY);
-      if (dx > 8 || dy > 8) {
-        moved = true;
-        if (timer) { clearTimeout(timer); timer = null; }
-      }
-    }
-  }, { passive: true });
-
-  btn.addEventListener('touchend', function() {
-    if (timer) { clearTimeout(timer); timer = null; }
-  }, { passive: true });
-}
-
-function _reactionColor(emoji) {
-  const map = { '❤️':'red','😂':'gold','😮':'gold','😢':'blue','😡':'red','👍':'accent' };
-  return map[emoji] || 'accent';
-}
-
-function _showReactionPicker(postId, btn) {
-  const picker = document.getElementById('rpicker-' + postId);
-  if (!picker) return;
-
-  // Annuler le timer de fermeture
-  clearTimeout(btn._hideTimer);
-  clearTimeout(btn._showTimer);
-
-  // Ouvrir après 600ms (comme Facebook)
-  btn._showTimer = setTimeout(() => {
-    // Fermer tous les autres pickers
-    document.querySelectorAll('.reaction-picker').forEach(p => {
-      if (p !== picker) p.style.display = 'none';
-    });
-    picker.style.display = 'flex';
-  }, 600);
-
-  // Initialiser les listeners mouseleave une seule fois par wrap
-  const wrap = btn.closest('.reaction-btn-wrap');
-  if (wrap && !wrap._pickerInit) {
-    wrap._pickerInit = true;
-    wrap.addEventListener('mouseleave', () => {
-      clearTimeout(btn._showTimer);
-      btn._hideTimer = setTimeout(() => { picker.style.display = 'none'; }, 300);
-    });
-    picker.addEventListener('mouseenter', () => {
-      clearTimeout(btn._hideTimer);
-      clearTimeout(btn._showTimer);
-    });
-    picker.addEventListener('mouseleave', () => {
-      btn._hideTimer = setTimeout(() => { picker.style.display = 'none'; }, 300);
-    });
-  }
-}
-
-function toggleReactionPicker(postId, btn) {
-  const picker = document.getElementById('rpicker-' + postId);
-  if (!picker) return;
-  const isOpen = picker.style.display !== 'none';
-  document.querySelectorAll('.reaction-picker').forEach(p => p.style.display = 'none');
-  if (!isOpen) {
-    picker.style.display = 'flex';
-    // Délai plus long après un hold pour laisser passer le click synthétique du touch
-    const delay = (Date.now() - _reactionLastHoldTime < 800) ? 400 : 10;
-    setTimeout(() => {
-      document.addEventListener('click', function close(e) {
-        if (!picker.contains(e.target) && e.target !== btn) {
-          picker.style.display = 'none';
-          document.removeEventListener('click', close);
-        }
-      });
-    }, delay);
-  }
-}
-
-async function selectReaction(postId, emoji, btn) {
-  const user = getUser();
-  if (!user) { window.location.href = 'dashboard.html'; return; }
-
-  // Fermer le picker
-  const picker = document.getElementById('rpicker-' + postId);
-  if (picker) picker.style.display = 'none';
-
-  // Lire la réaction actuelle
-  const mainBtn = document.querySelector('[data-postid="' + postId + '"].reaction-btn');
-  const prevEmoji = mainBtn ? mainBtn.dataset.myreaction : '';
-  const isSame = prevEmoji === emoji;
-  const newEmoji = isSame ? null : emoji;
-
-  // Mise à jour optimiste du cache local
-  if (!_reactionsCache[postId]) _reactionsCache[postId] = {};
-  const cache = _reactionsCache[postId];
-  // Retirer l'ancienne réaction de l'utilisateur du cache
-  if (prevEmoji && cache[prevEmoji]) {
-    cache[prevEmoji] = cache[prevEmoji].filter(id => id !== user.id);
-    if (!cache[prevEmoji].length) delete cache[prevEmoji];
-  }
-  // Ajouter la nouvelle réaction
-  if (newEmoji) {
-    if (!cache[newEmoji]) cache[newEmoji] = [];
-    if (!cache[newEmoji].includes(user.id)) cache[newEmoji].push(user.id);
-  }
-
-  // Mise à jour optimiste du bouton et du compteur
-  _updateReactionUI(postId, cache, newEmoji);
-  _updateReactionCount(postId, cache);
-
-  // Appel API
-  try {
-    if (window.PaganiAPI) {
-      await PaganiAPI.togglePostReaction(postId, emoji);
-      // Recharger les réactions réelles depuis le serveur pour rester en sync
-      const fresh = await PaganiAPI.getPostReactions(postId);
-      _reactionsCache[postId] = fresh;
-      // Recalculer ma réaction depuis les données serveur
-      const myFreshEmoji = Object.entries(fresh).find(([,ids]) => ids.includes(user.id))?.[0] || null;
-      _updateReactionUI(postId, fresh, myFreshEmoji);
-      _updateReactionCount(postId, fresh);
-    }
-  } catch(e) {
-    // Rollback
-    if (prevEmoji) {
-      if (!cache[prevEmoji]) cache[prevEmoji] = [];
-      if (!cache[prevEmoji].includes(user.id)) cache[prevEmoji].push(user.id);
-    }
-    if (newEmoji && cache[newEmoji]) {
-      cache[newEmoji] = cache[newEmoji].filter(id => id !== user.id);
-      if (!cache[newEmoji].length) delete cache[newEmoji];
-    }
-    _updateReactionUI(postId, cache, prevEmoji || null);
-    _updateReactionCount(postId, cache);
-  }
-}
-
-
-function _updateReactionCount(postId, reactions) {
-  const el = document.getElementById('post-' + postId);
-  if (!el) return;
-  const statsEl = el.querySelector('.post-stats');
-  if (!statsEl) return;
-  const total = Object.values(reactions || {}).reduce((s, ids) => s + ids.length, 0);
-  const post = _postsCache.find(p => p.id === postId);
-  const totalComments = post ? (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0) : 0;
-  // Top emoji pour affichage
-  const top = Object.entries(reactions || {}).sort((a,b) => b[1].length - a[1].length)[0];
-  const topEmoji = top ? top[0] : '❤️';
-  statsEl.innerHTML =
-    (total > 0
-      ? '<span style="cursor:pointer" onclick="showReactionDetails(' + postId + ')">' + topEmoji + ' ' + total + ' r\u00e9action' + (total !== 1 ? 's' : '') + '</span>'
-      : '<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 r\u00e9action</span>') +
-    '<span><i class="fas fa-comment" style="color:var(--accent)"></i> ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '') + '</span>';
-}
-
-function _updateReactionUI(postId, reactions, myEmoji) {
-  const mainBtn = document.querySelector('[data-postid="' + postId + '"].reaction-btn');
-  if (!mainBtn) return;
-  const emojiSpan = mainBtn.querySelector('.reaction-main-emoji');
-  const labelSpan = mainBtn.querySelector('.reaction-label');
-  if (emojiSpan) emojiSpan.textContent = myEmoji || '👍';
-  if (labelSpan) labelSpan.textContent = myEmoji ? (REACTION_LABELS[myEmoji] || myEmoji) : 'Réagir';
-  if (myEmoji) {
-    mainBtn.className = 'reaction-btn reacted';
-    mainBtn.style.color = 'var(--reaction-' + _reactionColor(myEmoji) + ')';
-  } else {
-    mainBtn.className = 'reaction-btn';
-    mainBtn.style.color = '';
-  }
-  mainBtn.dataset.myreaction = myEmoji || '';
-  const picker = document.getElementById('rpicker-' + postId);
-  if (picker) {
-    picker.querySelectorAll('.rp-btn').forEach(b => {
-      b.className = 'rp-btn' + (b.textContent.trim() === myEmoji ? ' rp-active' : '');
-    });
-  }
-}
-
-
-async function showReactionDetails(postId) {
-  document.getElementById('rxOverlay')?.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'rxOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem';
-
-  const box = document.createElement('div');
-  box.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:16px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;animation:fadeIn 0.2s ease;overflow:hidden';
-  box.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid var(--border);flex-shrink:0">
-      <strong style="font-size:1rem">Réactions</strong>
-      <button id="rxClose" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;line-height:1;padding:0.2rem 0.5rem">✕</button>
-    </div>
-    <div id="rxTabs" style="display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
-    <div id="rxList" style="overflow-y:auto;flex:1"><div style="text-align:center;padding:2rem;color:var(--text2);font-size:0.88rem">Chargement...</div></div>
-  `;
-
-  overlay.appendChild(box);
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  document.body.appendChild(overlay);
-  box.querySelector('#rxClose').addEventListener('click', () => overlay.remove());
-
-  // Charger les données avec la nouvelle route
-  let data = {};
-  try {
-    data = await PaganiAPI.getPostReactionsDetail(postId);
-  } catch(e) {
-    // Fallback : utiliser le cache local (userId seulement, sans noms)
-    const cache = _reactionsCache[postId] || {};
-    for (const [emoji, ids] of Object.entries(cache)) {
-      data[emoji] = ids.map(id => ({ id, name: 'Utilisateur #' + id, avatarPhoto: null, avatarColor: '#6c63ff' }));
-    }
-  }
-
-  const tabs = box.querySelector('#rxTabs');
-  const list = box.querySelector('#rxList');
-
-  const allUsers = Object.entries(data).flatMap(([emoji, users]) => users.map(u => ({ ...u, emoji })));
-
-  if (!allUsers.length) {
-    list.innerHTML = '<p style="text-align:center;color:var(--text2);padding:2rem;font-size:0.88rem">Aucune réaction.</p>';
-    return;
-  }
-
-  const emojiGroups = Object.entries(data).sort((a, b) => b[1].length - a[1].length);
-  const tabsData = [
-    { key: 'all', label: 'Tous', count: allUsers.length },
-    ...emojiGroups.map(([e, u]) => ({ key: e, label: e, count: u.length }))
-  ];
-
-  let activeKey = 'all';
-
-  function renderTabs() {
-    tabs.innerHTML = '';
-    tabsData.forEach(t => {
-      const btn = document.createElement('button');
-      const isActive = t.key === activeKey;
-      btn.style.cssText = `background:none;border:none;border-bottom:2px solid ${isActive ? 'var(--accent)' : 'transparent'};color:${isActive ? 'var(--accent)' : 'var(--text2)'};padding:0.65rem 1rem;cursor:pointer;font-size:${t.key === 'all' ? '0.85rem' : '1.3rem'};white-space:nowrap;font-family:inherit;font-weight:${isActive ? '700' : '400'};flex-shrink:0;transition:color 0.15s`;
-      btn.innerHTML = t.key === 'all' ? `Tous <span style="font-size:0.75rem;opacity:0.6">${t.count}</span>` : t.label;
-      btn.addEventListener('click', () => { activeKey = t.key; renderTabs(); renderList(); });
-      tabs.appendChild(btn);
-    });
-  }
-
-  function renderList() {
-    const users = activeKey === 'all' ? allUsers : (data[activeKey] || []).map(u => ({ ...u, emoji: activeKey }));
-    list.innerHTML = '';
-    users.forEach(u => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:0.9rem;padding:0.75rem 1.2rem;cursor:pointer;transition:background 0.15s';
-      row.onmouseover = () => row.style.background = 'rgba(108,99,255,0.07)';
-      row.onmouseout  = () => row.style.background = '';
-
-      const initials = (u.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-      const av = document.createElement('div');
-      if (u.avatarPhoto) {
-        av.innerHTML = `<img src="${u.avatarPhoto}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`;
-      } else {
-        av.style.cssText = `width:44px;height:44px;border-radius:50%;background:${u.avatarColor||'#6c63ff'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;color:#fff;flex-shrink:0`;
-        av.textContent = initials;
-      }
-
-      const name = document.createElement('span');
-      name.style.cssText = 'flex:1;font-size:0.92rem;font-weight:600';
-      name.textContent = u.name;
-
-      const emoji = document.createElement('span');
-      emoji.style.fontSize = '1.3rem';
-      emoji.textContent = u.emoji;
-
-      row.appendChild(av);
-      row.appendChild(name);
-      row.appendChild(emoji);
-      row.addEventListener('click', () => { overlay.remove(); openPublicProfile(u.id); });
-      list.appendChild(row);
-    });
-  }
-
-  renderTabs();
-  renderList();
-}
 // --- Skeleton loader ---
 function renderSkeletons(n) {
   return Array.from({length: n}, () => `
@@ -2254,11 +1109,11 @@ async function login(e) {
     showDashboard(user);
   } catch (ex) {
     const msgs = {
-      USER_NOT_FOUND:   "Aucun compte trouve avec cet email.",
+      USER_NOT_FOUND:   "Aucun compte trouvé avec cet email.",
       WRONG_PASSWORD:   "Mot de passe incorrect.",
-      ACCOUNT_DISABLED: "Ce compte a t desactive.",
+      ACCOUNT_DISABLED: "Ce compte a été désactivé.",
     };
-    err.textContent = msgs[ex.message] || "Erreur de connexion. Verifiez que le serveur est demarr.";
+    err.textContent = msgs[ex.message] || "Erreur de connexion. Vérifiez que le serveur est démarré.";
   }
 }
 async function register(e) {
@@ -2274,15 +1129,15 @@ async function register(e) {
   const err = document.getElementById("regError");
   if (err) err.textContent = "";
   if (pass.length < 6) {
-    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
+    if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractéres.";
     return;
   }
   if (!mmPhone) {
-    if (err) err.textContent = "Le numero Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le numéro Mobile Money est obligatoire.";
     return;
   }
   if (!mmName) {
-    if (err) err.textContent = "Le nom attach au compte Mobile Money est obligatoire.";
+    if (err) err.textContent = "Le nom attaché au compte Mobile Money est obligatoire.";
     return;
   }
   try {
@@ -2291,12 +1146,11 @@ async function register(e) {
     if (window.PaganiNotif) await PaganiNotif.newUser(name);
     window.location.href = 'index.html';
   } catch (ex) {
-    const msgs = { EMAIL_TAKEN: "Cet email est deja utilise.", MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire." };
-    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";
+    const msgs = { EMAIL_TAKEN: "Cet email est déjé utilisé.", MM_PHONE_REQUIS: "Le numéro Mobile Money est obligatoire." };
+    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Vérifiez que le serveur est démarré.";
   }
 }
 async function logout() {
-  _stopPresencePing();
   PaganiAPI.logout();
   window._currentUser = null;
   document.getElementById("dashboardSection").style.display = "none";
@@ -2316,21 +1170,11 @@ function showDashboard(user) {
   document.getElementById("dashboardSection").style.display = "block";
   document.getElementById("userName").textContent = user.name.split(" ")[0];
   document.getElementById("userPlan").textContent = "Plan " + user.plan;
-  // Streak badge
-  const _sb = document.getElementById('dashStreakBadge');
-  if (_sb) {
-    if (user.streak > 1) {
-      _sb.innerHTML = '<i class="fas fa-fire"></i> ' + user.streak + ' jours consécutifs';
-      _sb.style.display = 'inline-flex';
-    } else {
-      _sb.style.display = 'none';
-    }
-  }
   document.getElementById("dashRefs").textContent = user.refs || 0;
   document.getElementById("dashEarnings").textContent = formatAR(user.earningsAR || 0);
   document.getElementById("coursesWatched").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("dashLevel").textContent = _getUserLevel(user);
-  // Afficher les onglets selon le rle
+  // Afficher les onglets selon le réle
   const adminTabBtn  = document.getElementById("adminTabBtn");
   const videosTabBtn = document.getElementById("videosTabBtn");
   const subTabBtn    = document.getElementById("subTabBtn");
@@ -2344,23 +1188,15 @@ function showDashboard(user) {
     if (profileTab)  profileTab.style.display  = "flex";
     if (adminTabBtn)  adminTabBtn.style.display  = "flex";
     if (videosTabBtn) videosTabBtn.style.display = "flex";
-    const ebooksTabBtn2 = document.getElementById('ebooksTabBtn');
-    if (ebooksTabBtn2) ebooksTabBtn2.style.display = "flex";
     const myVideosTabBtn = document.getElementById('myVideosTabBtn');
     if (myVideosTabBtn) myVideosTabBtn.style.display = 'none';
     switchTab('admin', adminTabBtn);
-    setTimeout(() => {
-      const usersBtn = document.querySelector(".admin-subnav-btn[onclick*=\'users\']");
-      if (usersBtn) usersBtn.click();
-    }, 300);
   } else {
     if (overviewTab) overviewTab.style.display = "flex";
     if (walletTab)   walletTab.style.display   = "flex";
     if (subTabBtn)   subTabBtn.style.display   = "flex";
     if (adminTabBtn)  adminTabBtn.style.display  = "none";
     if (videosTabBtn) videosTabBtn.style.display = "none";
-    const ebooksTabBtn3 = document.getElementById('ebooksTabBtn');
-    if (ebooksTabBtn3) ebooksTabBtn3.style.display = "none";
     const myVideosTabBtn = document.getElementById('myVideosTabBtn');
     if (myVideosTabBtn) myVideosTabBtn.style.display = 'flex';
     const myPostsTabBtn = document.getElementById('myPostsTabBtn');
@@ -2374,19 +1210,17 @@ function showDashboard(user) {
     PaganiNotif.refreshBadge();
     PaganiNotif.startPolling();
   }
-  // Polling admin pour les badges en temps rel
+  // Polling admin pour les badges en temps réel
   if (user.role === 'admin') _startAdminPolling();
-  // Verifier si on doit ouvrir l'onglet messages depuis une notification
+  // Vérifier si on doit ouvrir l'onglet messages depuis une notification
   const urlParams = new URLSearchParams(window.location.search);
-  const tabParam  = urlParams.get('tab');
+  const tabParam  = urlParams.get('tab') || sessionStorage.getItem('pd_pending_tab');
+  sessionStorage.removeItem('pd_pending_tab');
   const withParam = urlParams.get('with');
   if (tabParam === 'messages') {
-    // Rediriger vers la page ddie
+    // Rediriger vers la page dédiée
     window.location.href = 'messages.html' + (withParam ? '?with=' + withParam : '');
     return;
-  }
-  if (tabParam === 'trainer' && user.role !== 'admin') {
-    switchTab('trainer', document.getElementById('trainerTabBtn'));
   }
   if (tabParam === 'admin' && user.role === 'admin') {
     const sectionParam = urlParams.get('section');
@@ -2398,10 +1232,19 @@ function showDashboard(user) {
       }, 300);
     }
   }
+  if (tabParam === 'trainer') {
+    const trainerBtn = document.getElementById('trainerTabBtn');
+    if (trainerBtn && trainerBtn.style.display !== 'none') {
+      switchTab('trainer', trainerBtn);
+    } else {
+      // Pas encore formateur : ouvrir le tab myposts mais scroller vers la section formateur
+      const myPostsBtn = document.getElementById('myPostsTabBtn');
+      switchTab('myposts', myPostsBtn);
+    }
+  }
   renderProgress();
   updateAffiliateStats(user);
   renderProfile(user);
-  loadStories();
 }
 // ===== COMPTES MOBILE MONEY =====
 function _renderWithdrawMmSelector(user) {
@@ -2457,10 +1300,10 @@ let _mmAddingOperator = null;
 function renderMmAccounts(user) {
   const list = document.getElementById('mmAccountsList');
   if (!list) return;
-  // Construire la liste complte des 3 operateurs
+  // Construire la liste complète des 3 opérateurs
   // en fusionnant avec les comptes existants dans mmAccounts
   let savedAccounts = user.mmAccounts || [];
-  // Migration : si mmAccounts est vide mais mmPhone existe, l'intgrer
+  // Migration : si mmAccounts est vide mais mmPhone existe, l'intégrer
   if (!savedAccounts.length && user.mmPhone) {
     savedAccounts = [{
       operator: user.mmOperator || 'MVola',
@@ -2469,7 +1312,7 @@ function renderMmAccounts(user) {
       locked: true
     }];
   }
-  // Toujours afficher les 3 operateurs, remplis ou non
+  // Toujours afficher les 3 opérateurs, remplis ou non
   const accounts = MM_OPERATORS.map(op => {
     const saved = savedAccounts.find(a => a.operator === op.key);
     return saved
@@ -2488,12 +1331,12 @@ function renderMmAccounts(user) {
           <strong>${acc.operator}</strong>
           ${filled
             ? `<span>${acc.phone}</span><span class="mm-account-name">${acc.name}</span>`
-            : `<span class="mm-account-empty">Non renseigne</span>`
+            : `<span class="mm-account-empty">Non renseigné</span>`
           }
         </div>
         <div class="mm-account-status">
           ${filled
-            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> Verrouille</span>`
+            ? `<span class="mm-locked-badge"><i class="fas fa-lock"></i> Verrouillé</span>`
             : `<button class="mm-add-btn" onclick="openAddMmModal('${acc.operator}')">
                  <i class="fas fa-plus"></i> Ajouter
                </button>`
@@ -2515,8 +1358,8 @@ async function confirmAddMmAccount() {
   const phone = document.getElementById('mmAddPhone').value.trim();
   const name  = document.getElementById('mmAddName').value.trim();
   const msg   = document.getElementById('mmAddMsg');
-  if (!phone) { msg.textContent = 'Entrez le numero.'; return; }
-  if (!name)  { msg.textContent = 'Entrez le nom attache au compte.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numéro.'; return; }
+  if (!name)  { msg.textContent = 'Entrez le nom attaché au compte.'; return; }
   msg.textContent = '';
   try {
     const updated = await PaganiAPI.addMmAccount(_mmAddingOperator, phone, name);
@@ -2526,9 +1369,9 @@ async function confirmAddMmAccount() {
     renderProfile(updated);
   } catch(e) {
     const msgs = {
-      COMPTE_VERROUILLE:  'Ce compte est deja verrouille.',
-      COMPTE_DEJA_AJOUTE: 'Ce compte a deja ete ajoute.',
-      OPERATEUR_INVALIDE: 'Operateur invalide.',
+      COMPTE_VERROUILLE:  'Ce compte est déjé verrouillé.',
+      COMPTE_DEJA_AJOUTE: 'Ce compte a déjé été ajouté.',
+      OPERATEUR_INVALIDE: 'Opérateur invalide.',
     };
     msg.textContent = msgs[e.message] || 'Erreur lors de l\'ajout.';
   }
@@ -2568,14 +1411,7 @@ function renderProfile(user) {
   const pubLink = document.getElementById("btnViewPublicProfile");
   if (pubLink) pubLink.href = "profil.html?id=" + user.id;
   document.getElementById("profilePlanBadge").textContent = "Plan " + user.plan;
-  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignee.";
-  // Charger les badges
-  const _apiUrl = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  fetch(_apiUrl + '/auth/me/badges', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') } })
-    .then(r => r.json()).then(badges => {
-      const wrap = document.getElementById('profileBadges');
-      if (wrap) { wrap.innerHTML = _buildBadgesHTML(badges); wrap.style.display = badges.length ? 'flex' : 'none'; }
-    }).catch(() => {});
+  document.getElementById("profileBio").textContent = user.bio || "Aucune bio renseignée.";
   document.getElementById("pStatCourses").textContent = (user.unlockedCourses || []).length || (user.plan === "Pro" || user.plan === "Elite" ? getVideos().filter(v => !v.free).length : 0);
   document.getElementById("pStatRefs").textContent = user.refs || 0;
   document.getElementById("pStatEarnings").textContent = formatAR(user.earningsAR || 0);
@@ -2635,7 +1471,7 @@ const _crop = {
 };
 function uploadAvatarPhoto(input) {
   const file = input.files[0];
-  input.value = ""; // reset pour permettre re-slection
+  input.value = ""; // reset pour permettre re-sélection
   if (!file) return;
   if (file.size > 5 * 1024 * 1024) { alert("Image trop grande (max 5 Mo)."); return; }
   const reader = new FileReader();
@@ -2679,7 +1515,7 @@ function updateCrop() {
   const s = baseScale * _crop.scale;
   const w = naturalW * s;
   const h = naturalH * s;
-  // Limiter le dplacement pour ne pas sortir du cadre
+  // Limiter le déplacement pour ne pas sortir du cadre
   const maxX = 0;
   const minX = wrapSize - w;
   const maxY = 0;
@@ -2761,7 +1597,7 @@ async function changePassword(e) {
   const newPass = document.getElementById("newPassword").value;
   const msg     = document.getElementById("passwordMsg");
   if (!user) return;
-  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractères."; msg.style.color="var(--red)"; return; }
+  if (newPass.length < 6) { msg.textContent = "Minimum 6 caractéres."; msg.style.color="var(--red)"; return; }
   try {
     await PaganiAPI.changePassword(oldPass, newPass);
     msg.textContent = "✅ Mot de passe modifié avec succès.";
@@ -2773,411 +1609,9 @@ async function changePassword(e) {
   }
   setTimeout(() => msg.textContent = "", 4000);
 }
-// ===== ESPACE FORMATEUR =====
-async function loadTrainerTab() {
-  const user = getUser();
-  if (!user) return;
-  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  const token = localStorage.getItem('pd_jwt');
-  const statusEl   = document.getElementById('trainerRequestStatus');
-  const formEl     = document.getElementById('trainerRequestForm');
-  const submitEl   = document.getElementById('trainerSubmitSection');
-  const earningsEl = document.getElementById('trainerEarningsSection');
-  const subListEl  = document.getElementById('trainerSubmissionsList');
-  if (statusEl)   statusEl.innerHTML = '';
-  if (formEl)     formEl.style.display     = 'none';
-  if (submitEl)   submitEl.style.display   = 'none';
-  if (earningsEl) earningsEl.style.display = 'none';
-  if (subListEl)  subListEl.style.display  = 'none';
-  // Rafraîchir le user pour avoir le rôle à jour (ex: après acceptation formateur)
-  try {
-    const fresh = await PaganiAPI.getMe();
-    if (fresh) { user = fresh; window._currentUser = fresh; }
-  } catch(e) {}
-  if (user.role === 'formateur') {
-    if (submitEl)   submitEl.style.display   = 'block';
-    if (earningsEl) earningsEl.style.display = 'block';
-    if (subListEl)  subListEl.style.display  = 'block';
-    var modulesEl = document.getElementById('trainerModulesSection');
-    if (modulesEl) modulesEl.style.display = 'block';
-    await _loadTrainerEarnings(API, token);
-    await _loadTrainerSubmissions(API, token);
-    await _renderTrainerModules();
-    return;
-  }
-  try {
-    const r = await fetch(API + '/trainer/my-request', { headers: { 'Authorization': 'Bearer ' + token } });
-    const req = await r.json();
-    if (!req) { if (formEl) formEl.style.display = 'block'; return; }
-    if (req.statut === 'En attente') {
-      if (statusEl) statusEl.innerHTML =
-        '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:0.8rem">' +
-        '<i class="fas fa-clock" style="color:var(--gold);font-size:1.4rem;flex-shrink:0"></i>' +
-        '<div><strong>Demande en cours d\'examen</strong>' +
-        '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Votre candidature a été reçue. L\'admin vous contactera prochainement.</p></div></div>';
-      return;
-    }
-    if (req.statut === 'Rejeté') {
-      if (statusEl) statusEl.innerHTML =
-        '<div style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem">' +
-        '<i class="fas fa-times-circle" style="color:var(--red);font-size:1.4rem;flex-shrink:0"></i>' +
-        '<div><strong>Demande refusée</strong>' +
-        (req.reject_reason ? '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Raison : ' + req.reject_reason + '</p>' : '') +
-        '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Vous pouvez soumettre une nouvelle candidature.</p></div></div>';
-      if (formEl) formEl.style.display = 'block';
-      return;
-    }
-    if (formEl) formEl.style.display = 'block';
-  } catch(e) { if (formEl) formEl.style.display = 'block'; }
-}
-
-async function submitTrainerRequest() {
-  const expertise   = document.getElementById('trainerExpertise')?.value.trim();
-  const description = document.getElementById('trainerDescription')?.value.trim();
-  const demoUrl     = document.getElementById('trainerDemoUrl')?.value.trim();
-  const msg         = document.getElementById('trainerRequestMsg');
-  if (!expertise)   { msg.style.color = 'var(--red)'; msg.textContent = 'Le domaine d\'expertise est obligatoire.'; return; }
-  if (!description) { msg.style.color = 'var(--red)'; msg.textContent = 'La description est obligatoire.'; return; }
-  msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
-  const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  const token = localStorage.getItem('pd_jwt');
-  try {
-    const r = await fetch(API + '/trainer/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ expertise, description, demoUrl })
-    });
-    const d = await r.json();
-    if (!r.ok) {
-      const errs = { DEMANDE_DEJA_EN_COURS: 'Vous avez déjà une demande en cours.', CHAMPS_MANQUANTS: 'Remplissez tous les champs obligatoires.' };
-      msg.style.color = 'var(--red)'; msg.textContent = errs[d.error] || 'Erreur : ' + d.error; return;
-    }
-    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Candidature envoyée ! L\'admin vous contactera prochainement.';
-    setTimeout(() => loadTrainerTab(), 2000);
-  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
-}
-
-async function _loadTrainerEarnings(API, token) {
-  const statsEl = document.getElementById('trainerEarningsStats');
-  const listEl  = document.getElementById('trainerEarningsList');
-  if (!statsEl || !listEl) return;
-  try {
-    const r = await fetch(API + '/trainer/my-earnings', { headers: { 'Authorization': 'Bearer ' + token } });
-    const d = await r.json();
-    const fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
-    statsEl.innerHTML =
-      '<div class="aff-stat"><i class="fas fa-coins" style="color:var(--gold)"></i><div><strong>' + fmt(d.total||0) + ' AR</strong><span>Total gagné</span></div></div>' +
-      '<div class="aff-stat"><i class="fas fa-clock" style="color:var(--accent2)"></i><div><strong>' + fmt(d.pending||0) + ' AR</strong><span>En attente</span></div></div>' +
-      '<div class="aff-stat"><i class="fas fa-check-circle" style="color:var(--green)"></i><div><strong>' + fmt(d.paid||0) + ' AR</strong><span>Versé</span></div></div>';
-    if (!d.earnings || !d.earnings.length) { listEl.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun gain pour le moment.</p>'; return; }
-    var statusColor = { 'En attente': 'var(--gold)', 'Payé': 'var(--green)' };
-    listEl.innerHTML = d.earnings.map(function(e) {
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--border);font-size:0.85rem">' +
-        '<div><strong>' + e.content_title + '</strong>' +
-        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + e.buyer_name + ' · ' + new Date(e.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
-        '<div style="text-align:right"><strong style="color:var(--accent2)">' + fmt(e.commission_amount) + ' AR</strong>' +
-        '<span style="display:block;font-size:0.72rem;color:' + (statusColor[e.statut]||'var(--gold)') + '">' + e.statut + '</span></div></div>';
-    }).join('');
-  } catch(e) { if (listEl) listEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
-}
-
-async function _loadTrainerSubmissions(API, token) {
-  const listEl = document.getElementById('trainerSubmissionsContent');
-  if (!listEl) return;
-  try {
-    const r = await fetch(API + '/trainer/my-submissions', { headers: { 'Authorization': 'Bearer ' + token } });
-    const subs = await r.json();
-    if (!subs.length) { listEl.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun contenu soumis.</p>'; return; }
-    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
-    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
-    listEl.innerHTML = subs.map(function(s) {
-      var c = sColor[s.statut] || 'var(--text2)';
-      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem">' +
-        '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap">' +
-        '<div><strong style="font-size:0.92rem">' + s.title + '</strong>' +
-        '<span style="display:block;font-size:0.75rem;color:var(--text2);margin-top:0.2rem">' + s.content_type + ' · ' + s.category + ' · ' + Number(s.price).toLocaleString('fr-FR') + ' AR</span></div>' +
-        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px;white-space:nowrap">' +
-        '<i class="fas ' + (sIcon[s.statut]||'fa-clock') + '"></i> ' + s.statut + '</span></div>' +
-        (s.reject_reason ? '<p style="font-size:0.78rem;color:var(--red);margin-top:0.5rem">' + s.reject_reason + '</p>' : '') +
-        '</div>';
-    }).join('');
-  } catch(e) { if (listEl) listEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
-}
-function _tsPreview() {
-  var videoId = (document.getElementById('tsVideoId')?.value || '').trim();
-  var source  = document.getElementById('tsVideoSource')?.value || 'youtube';
-  var wrap    = document.getElementById('tsPreviewWrap');
-  var frame   = document.getElementById('tsPreviewFrame');
-  if (!videoId || !wrap || !frame) return;
-  var src = '';
-  if (source === 'youtube') {
-    // Extraire l'ID si l'utilisateur colle une URL complète
-    var match = videoId.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
-    var ytId = match ? match[1] : videoId;
-    src = 'https://www.youtube.com/embed/' + ytId + '?autoplay=0';
-  } else {
-    // Drive : extraire l'ID si URL complète
-    var dmatch = videoId.match(/\/d\/([^/]+)\//);
-    var driveId = dmatch ? dmatch[1] : videoId;
-    src = 'https://drive.google.com/file/d/' + driveId + '/preview';
-  }
-  frame.src = src;
-  wrap.style.display = 'block';
-}
-
-function _tsAutoThumb(value) {
-  var source = document.getElementById('tsVideoSource')?.value || 'youtube';
-  if (source !== 'youtube') return;
-  var match = value.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/);
-  var ytId = match ? match[1] : (value.length === 11 ? value : null);
-  if (!ytId) return;
-  var thumbUrl = 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg';
-  // Pré-remplir le champ miniature si vide
-  var thumbInput = document.getElementById('tsThumbnail');
-  if (thumbInput && !thumbInput.value) thumbInput.value = thumbUrl;
-  // Afficher l'aperçu miniature
-  var preview = document.getElementById('tsThumbnailPreview');
-  var img     = document.getElementById('tsThumbnailImg');
-  if (preview && img) { img.src = thumbUrl; preview.style.display = 'block'; }
-}
-function openTrainerSubmitModal() {
-  var overlay = document.getElementById('trainerSubmitOverlay');
-  if (!overlay) return;
-  // Reset formulaire
-  var fields = ['tsTitle','tsDescription','tsPrice','tsDuration','tsVideoId','tsThumbnail','tsAuthorName','tsCover','tsFileUrl'];
-  fields.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
-  var pages = document.getElementById('tsPages'); if (pages) pages.value = '';
-  var msg = document.getElementById('trainerSubmitMsg'); if (msg) msg.textContent = '';
-  // Reset prévisualisation
-  var pw = document.getElementById('tsPreviewWrap'); if (pw) pw.style.display = 'none';
-  var pf = document.getElementById('tsPreviewFrame'); if (pf) pf.src = '';
-  var tp = document.getElementById('tsThumbnailPreview'); if (tp) tp.style.display = 'none';
-  // Reset module + prix unitaire
-  var tup = document.getElementById('tsUnitPrice'); if (tup) tup.value = '';
-  var hint = document.getElementById('tsModuleHint'); if (hint) hint.textContent = '';
-  // Peupler le select des modules
-  _populateTsModuleSelect();
-  // Type vidéo par défaut
-  var radioVideo = document.querySelector('input[name="trainerContentType"][value="video"]');
-  if (radioVideo) { radioVideo.checked = true; toggleTrainerContentType('video'); }
-  overlay.style.display = 'flex';
-}
-
-function closeTrainerSubmitModal() {
-  var overlay = document.getElementById('trainerSubmitOverlay');
-  if (overlay) overlay.style.display = 'none';
-}
-
-function toggleTrainerContentType(type) {
-  var videoFields = document.getElementById('tsVideoFields');
-  var ebookFields = document.getElementById('tsEbookFields');
-  if (videoFields) videoFields.style.display = type === 'video' ? 'block' : 'none';
-  if (ebookFields) ebookFields.style.display = type === 'ebook' ? 'block' : 'none';
-}
-
-async function submitTrainerContent() {
-  var typeEl = document.querySelector('input[name="trainerContentType"]:checked');
-  var contentType = typeEl ? typeEl.value : 'video';
-  var title       = (document.getElementById('tsTitle')?.value || '').trim();
-  var description = (document.getElementById('tsDescription')?.value || '').trim();
-  var category    = document.getElementById('tsCategory')?.value || 'debutant';
-  var level       = document.getElementById('tsLevel')?.value || 'Débutant';
-  var price       = parseInt(document.getElementById('tsPrice')?.value) || 0;
-  var msg         = document.getElementById('trainerSubmitMsg');
-  if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
-  if (!price) { msg.style.color = 'var(--red)'; msg.textContent = 'Le prix est obligatoire.'; return; }
-  var moduleId  = document.getElementById('tsModuleId')?.value || null;
-  var unitPrice = parseInt(document.getElementById('tsUnitPrice')?.value) || 0;
-  var payload = { contentType, title, description, category, level, price, moduleId: moduleId || null, unitPrice };
-  if (contentType === 'video') {
-    payload.duration    = (document.getElementById('tsDuration')?.value || '').trim();
-    payload.videoSource = document.getElementById('tsVideoSource')?.value || 'youtube';
-    payload.videoId     = (document.getElementById('tsVideoId')?.value || '').trim();
-    payload.thumbnail   = (document.getElementById('tsThumbnail')?.value || '').trim();
-    if (!payload.videoId) { msg.style.color = 'var(--red)'; msg.textContent = 'L\'ID vidéo est obligatoire.'; return; }
-  } else {
-    payload.authorName = (document.getElementById('tsAuthorName')?.value || '').trim();
-    payload.pages      = parseInt(document.getElementById('tsPages')?.value) || null;
-    payload.cover      = (document.getElementById('tsCover')?.value || '').trim();
-    payload.fileUrl    = (document.getElementById('tsFileUrl')?.value || '').trim();
-    if (!payload.fileUrl) { msg.style.color = 'var(--red)'; msg.textContent = 'L\'URL du fichier PDF est obligatoire.'; return; }
-  }
-  msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/trainer/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify(payload)
-    });
-    var d = await r.json();
-    if (!r.ok) {
-      var errs = { FORMATEUR_REQUIS: 'Accès réservé aux formateurs acceptés.', TITRE_REQUIS: 'Le titre est obligatoire.' };
-      msg.style.color = 'var(--red)'; msg.textContent = errs[d.error] || 'Erreur : ' + d.error; return;
-    }
-    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Contenu soumis ! L\'admin va l\'examiner.';
-    setTimeout(function() { closeTrainerSubmitModal(); loadTrainerTab(); }, 2000);
-  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
-}
-// ===== MODULES FORMATEUR =====
-var _trainerModules = [];
-var _editingTrainerModuleId = null;
-
-async function _loadTrainerModules() {
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/trainer/my-modules', { headers: { 'Authorization': 'Bearer ' + token } });
-    _trainerModules = await r.json();
-  } catch(e) { _trainerModules = []; }
-}
-
-async function _renderTrainerModules() {
-  var list = document.getElementById('trainerModulesList');
-  if (!list) return;
-  await _loadTrainerModules();
-  if (!_trainerModules.length) {
-    list.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun module créé. Cliquez sur <strong>Créer un module</strong> pour commencer.</p>';
-    return;
-  }
-  var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
-  list.innerHTML = _trainerModules.map(function(m) {
-    var hasPrice = m.module_price && m.module_price > 0;
-    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:0.8rem">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.6rem">' +
-      '<div><strong style="font-size:0.95rem">' + m.title + '</strong>' +
-      (m.description ? '<span style="display:block;font-size:0.78rem;color:var(--text2);margin-top:0.2rem">' + m.description + '</span>' : '') + '</div>' +
-      '<div style="display:flex;gap:0.4rem">' +
-      '<button onclick="openTrainerModuleModal(' + m.id + ')" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-edit"></i></button>' +
-      '<button onclick="_deleteTrainerModule(' + m.id + ')" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);color:var(--red);padding:0.3rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-trash"></i></button>' +
-      '</div></div>' +
-      '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
-      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-play-circle"></i> ' + (m.video_count || 0) + ' vidéo(s)</span>' +
-      '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-shopping-cart"></i> ' + (m.sales_count || 0) + ' vente(s)</span>' +
-      (hasPrice ? '<span style="font-size:0.75rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-tag"></i> Pack : ' + fmt(m.module_price) + ' AR</span>' : '<span style="font-size:0.75rem;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px">Pas de prix pack</span>') +
-      (m.total_revenue > 0 ? '<span style="font-size:0.75rem;font-weight:700;color:var(--green);background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-coins"></i> ' + fmt(m.total_revenue) + ' AR</span>' : '') +
-      '</div></div>';
-  }).join('');
-}
-
-function openTrainerModuleModal(id) {
-  _editingTrainerModuleId = id || null;
-  var m = id ? _trainerModules.find(function(x) { return x.id === id; }) : null;
-  var title = document.getElementById('trainerModuleModalTitle');
-  if (title) title.innerHTML = m
-    ? '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier le module'
-    : '<i class="fas fa-layer-group" style="color:var(--accent)"></i> Créer un module';
-  var tmTitle = document.getElementById('tmTitle');
-  var tmDesc  = document.getElementById('tmDescription');
-  var tmPrice = document.getElementById('tmPrice');
-  var tmMsg   = document.getElementById('trainerModuleModalMsg');
-  if (tmTitle) tmTitle.value = m ? m.title : '';
-  if (tmDesc)  tmDesc.value  = m ? (m.description || '') : '';
-  if (tmPrice) tmPrice.value = (m && m.module_price) ? m.module_price : '';
-  if (tmMsg)   tmMsg.textContent = '';
-  var overlay = document.getElementById('trainerModuleModalOverlay');
-  if (overlay) overlay.style.display = 'flex';
-  setTimeout(function() { if (tmTitle) tmTitle.focus(); }, 50);
-}
-
-function closeTrainerModuleModal() {
-  var overlay = document.getElementById('trainerModuleModalOverlay');
-  if (overlay) overlay.style.display = 'none';
-}
-
-async function saveTrainerModule() {
-  var title = (document.getElementById('tmTitle')?.value || '').trim();
-  var desc  = (document.getElementById('tmDescription')?.value || '').trim();
-  var price = parseInt(document.getElementById('tmPrice')?.value) || null;
-  var msg   = document.getElementById('trainerModuleModalMsg');
-  if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
-  msg.style.color = 'var(--text2)'; msg.textContent = 'Enregistrement...';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var url    = _editingTrainerModuleId ? API + '/trainer/modules/' + _editingTrainerModuleId : API + '/trainer/modules';
-    var method = _editingTrainerModuleId ? 'PUT' : 'POST';
-    var r = await fetch(url, {
-      method: method,
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ title: title, description: desc, modulePrice: price })
-    });
-    var d = await r.json();
-    if (!r.ok) { msg.style.color = 'var(--red)'; msg.textContent = d.error || 'Erreur serveur'; return; }
-    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Module enregistré !';
-    setTimeout(function() {
-      closeTrainerModuleModal();
-      _renderTrainerModules();
-      _populateTsModuleSelect();
-    }, 1000);
-  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
-}
-
-async function _deleteTrainerModule(id) {
-  if (!confirm('Supprimer ce module ? Les vidéos ne seront pas supprimées.')) return;
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/trainer/modules/' + id, {
-      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token }
-    });
-    var d = await r.json();
-    if (!r.ok) {
-      var errs = { MODULE_AVEC_VENTES: 'Ce module a des ventes — impossible de le supprimer.', NON_AUTORISE: 'Non autorisé.' };
-      alert(errs[d.error] || d.error); return;
-    }
-    _renderTrainerModules();
-    _populateTsModuleSelect();
-  } catch(e) { alert('Erreur serveur.'); }
-}
-
-async function _populateTsModuleSelect() {
-  var sel = document.getElementById('tsModuleId');
-  if (!sel) return;
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  var myMods = [], pubMods = [];
-  try {
-    var r1 = await fetch(API + '/trainer/my-modules', { headers: { 'Authorization': 'Bearer ' + token } });
-    myMods = await r1.json();
-  } catch(e) {}
-  try {
-    var r2 = await fetch(API + '/trainer/available-modules', { headers: { 'Authorization': 'Bearer ' + token } });
-    pubMods = await r2.json();
-  } catch(e) {}
-  var html = '<option value="">-- Aucun module --</option>';
-  if (myMods.length) {
-    html += '<optgroup label="Mes modules privés">';
-    html += myMods.map(function(m) { return '<option value="' + m.id + '">' + m.title + (m.module_price ? ' (' + Number(m.module_price).toLocaleString('fr-FR') + ' AR pack)' : '') + '</option>'; }).join('');
-    html += '</optgroup>';
-  }
-  if (pubMods.length) {
-    html += '<optgroup label="Modules publics (Pagani Digital)">';
-    html += pubMods.map(function(m) { return '<option value="' + m.id + '">' + m.title + '</option>'; }).join('');
-    html += '</optgroup>';
-  }
-  sel.innerHTML = html;
-  _onTsModuleChange();
-}
-
-function _onTsModuleChange() {
-  var sel  = document.getElementById('tsModuleId');
-  var hint = document.getElementById('tsModuleHint');
-  if (!sel || !hint) return;
-  var val = sel.value;
-  if (!val) { hint.textContent = ''; return; }
-  // Chercher dans mes modules
-  var myMod = _trainerModules.find(function(m) { return String(m.id) === String(val); });
-  if (myMod && myMod.module_price) {
-    hint.innerHTML = '<i class="fas fa-info-circle" style="color:var(--accent)"></i> Module pack à ' + Number(myMod.module_price).toLocaleString('fr-FR') + ' AR. Vous pouvez aussi définir un prix unitaire ci-dessous.';
-  } else {
-    hint.textContent = '';
-  }
-}
 // ===== TABS DASHBOARD =====
 function switchTab(tab, btn) {
-  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "myebooks", "trainer", "admin", "videos", "ebooks"].forEach(t => {
+  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "admin", "videos", "trainer"].forEach(t => {
     const el = document.getElementById("tab-" + t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
@@ -3191,12 +1625,9 @@ function switchTab(tab, btn) {
     }
   }
   if (tab === "myposts")      { loadMyPosts(); _initMyPostsPanel(); }
-  if (tab === "profile")      { updatePushNotifUI(); }
   if (tab === "subscription") renderUserSubscriptions();
   if (tab === "myvideos")     renderUserVideoPurchases();
-  if (tab === "myebooks")     loadMyEbooks();
   if (tab === "admin")  loadAdminStats();
-  if (tab === "ebooks") loadAdminEbooks();
   if (tab === "videos") renderAdminVideos();
   if (tab === "trainer") loadTrainerTab();
 }
@@ -3214,7 +1645,7 @@ async function loadAdminStats() {
   document.getElementById("kpiElite").textContent      = stats.eliteMembers;
   document.getElementById("kpiRevenue").textContent    = formatAR(stats.totalRevenueAR);
   document.getElementById("kpiPending").textContent    = formatAR(stats.pendingWithdraws);
-  // Barre de rpartition des plans
+  // Barre de répartition des plans
   const total = stats.totalMembers || 1;
   const plans = [
     { label: "Starter", count: stats.starterMembers,  color: "var(--text2)" },
@@ -3253,6 +1684,21 @@ async function loadAdminStats() {
   }).join("");
   // Charger les comptes de paiement
   await loadAdminPaymentAccounts();
+  // Charger les mini-KPI Finance
+  setTimeout(async () => {
+    try {
+      const token = localStorage.getItem('pd_jwt');
+      const fin = await fetch(API_URL + '/admin/finance-summary', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.json());
+      const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+      const el = id => document.getElementById(id);
+      if (el('kpiTotalSales'))      el('kpiTotalSales').textContent      = fmt(fin.totalSales);
+      if (el('kpiTrainerBrut'))     el('kpiTrainerBrut').textContent     = fmt(fin.trainerBrut);
+      if (el('kpiWithdrawPending')) el('kpiWithdrawPending').textContent = fmt(fin.withdrawPending);
+      if (el('kpiNetAdmin'))        el('kpiNetAdmin').textContent        = fmt(fin.netAdmin);
+    } catch(e) {}
+  }, 300);
   // Badge abonnements en attente
   try {
     if (window.PaganiAPI) {
@@ -3272,7 +1718,7 @@ function _getLocalPaymentAccounts() {
   return _PA_OPERATORS.map(op => ({ operator: op.key, phone: '', name: '' }));
 }
 function _saveLocalPaymentAccounts(accounts) {
-  // Stockage serveur uniquement — plus de localStorage
+  // Stockage serveur uniquement â€” plus de localStorage
 }
 async function loadAdminPaymentAccounts() {
   const container = document.getElementById('adminPaymentAccounts');
@@ -3294,7 +1740,7 @@ async function loadAdminPaymentAccounts() {
     const isOff   = !!acc.disabled;
     return `
     <div class="admin-payment-row" id="pay-row-${key}">
-      <!-- Operateur -->
+      <!-- Opérateur -->
       <div class="admin-payment-op">
         <span class="admin-payment-icon" style="background:${op.color}22;color:${op.color}">
           <i class="fas fa-mobile-alt"></i>
@@ -3309,30 +1755,30 @@ async function loadAdminPaymentAccounts() {
             <span class="admin-payment-name">${acc.name}</span>
           </span>
           ${isOff
-            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> Desactive${acc.disabledReason ? ' — ' + acc.disabledReason : ''}</span>`
+            ? `<span class="pay-disabled-badge"><i class="fas fa-ban"></i> Désactivé${acc.disabledReason ? ' â€” ' + acc.disabledReason : ''}</span>`
             : `<span class="admin-pay-saved"><i class="fas fa-check-circle"></i> Actif</span>`
           }
           <div class="admin-payment-actions">
-            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'Reactiver' : 'Desactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
+            <button class="admin-action-btn ${isOff ? 'toggle' : 'plan'}" title="${isOff ? 'Réactiver' : 'Désactiver'}" onclick="openTogglePayment('${acc.operator}', ${isOff})">
               <i class="fas fa-${isOff ? 'check-circle' : 'ban'}"></i>
             </button>
             <button class="admin-action-btn edit" title="Modifier" onclick="editPaymentAccount('${acc.operator}')">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="admin-action-btn del" title="Supprimer le numero" onclick="openClearPayment('${acc.operator}')">
+            <button class="admin-action-btn del" title="Supprimer le numéro" onclick="openClearPayment('${acc.operator}')">
               <i class="fas fa-trash"></i>
             </button>
           </div>` : `
-          <span class="admin-payment-empty">Non configure</span>
+          <span class="admin-payment-empty">Non configuré</span>
           <button class="admin-payment-edit-btn" onclick="editPaymentAccount('${acc.operator}')">
             <i class="fas fa-plus"></i> Ajouter
           </button>`
         }
       </div>
-      <!-- Formulaire inline dition -->
+      <!-- Formulaire inline édition -->
       <div class="admin-payment-edit-form" id="pay-edit-${key}" style="display:none">
         <div style="display:flex;gap:0.6rem;flex-wrap:wrap;width:100%">
-          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="Numero ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
+          <input type="tel"  id="pay-phone-${key}" class="upgrade-input" placeholder="Numéro ${acc.operator}" value="${acc.phone||''}" style="flex:1;min-width:140px" />
           <input type="text" id="pay-name-${key}"  class="upgrade-input" placeholder="Nom du compte" value="${acc.name||''}" style="flex:1;min-width:140px" />
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.4rem">
@@ -3361,7 +1807,7 @@ function cancelPaymentEdit(operator) {
   document.getElementById(`pay-fields-${key}`).style.display = 'flex';
   document.getElementById(`pay-edit-${key}`).style.display   = 'none';
 }
-// ===== TOGGLE DSACTIVER / RACTIVER COMPTE PAIEMENT =====
+// ===== TOGGLE DÉSACTIVER / RÉACTIVER COMPTE PAIEMENT =====
 let _togglePayTarget = null;
 function openTogglePayment(operator, isCurrentlyDisabled) {
   _togglePayTarget = { operator, isCurrentlyDisabled };
@@ -3371,18 +1817,18 @@ function openTogglePayment(operator, isCurrentlyDisabled) {
   const reasonInput = document.getElementById('togglePayReason');
   const confirmBtn  = document.getElementById('togglePayConfirmBtn');
   if (isCurrentlyDisabled) {
-    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> Reactiver ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-check-circle" style="color:var(--green)"></i> Réactiver ${operator} ?`;
     reasonWrap.style.display = 'none';
     confirmBtn.style.background = 'var(--green)';
-    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Reactiver';
+    confirmBtn.innerHTML = '<i class="fas fa-check-circle"></i> Réactiver';
   } else {
-    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> Desactiver ${operator} ?`;
+    title.innerHTML = `<i class="fas fa-ban" style="color:var(--red)"></i> Désactiver ${operator} ?`;
     reasonWrap.style.display = 'block';
     if (reasonInput) reasonInput.value = '';
     confirmBtn.style.background = '';
     confirmBtn.className = 'btn-primary';
     confirmBtn.style.cssText = 'width:100%;background:var(--red);border:none';
-    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Desactiver';
+    confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Désactiver';
   }
   modal.style.display = 'flex';
   if (!isCurrentlyDisabled) setTimeout(() => reasonInput?.focus(), 50);
@@ -3404,7 +1850,7 @@ async function confirmTogglePayment() {
   } catch(e) { alert('Erreur : ' + e.message); }
   _togglePayTarget = null;
 }
-// ===== SUPPRIMER NUMRO COMPTE PAIEMENT =====
+// ===== SUPPRIMER NUMÉRO COMPTE PAIEMENT =====
 let _clearPayTarget = null;
 function openClearPayment(operator) {
   _clearPayTarget = operator;
@@ -3430,7 +1876,7 @@ async function savePaymentAccount(operator) {
   const phone = document.getElementById(`pay-phone-${key}`).value.trim();
   const name  = document.getElementById(`pay-name-${key}`).value.trim();
   const msg   = document.getElementById(`pay-msg-${key}`);
-  if (!phone) { msg.textContent = 'Entrez le numero.'; return; }
+  if (!phone) { msg.textContent = 'Entrez le numéro.'; return; }
   if (!name)  { msg.textContent = 'Entrez le nom du compte.'; return; }
   msg.textContent = '';
   try {
@@ -3442,18 +1888,18 @@ async function savePaymentAccount(operator) {
   await loadAdminPaymentAccounts();
 }
 // ===== DASHBOARD =====
-// Calcule le niveau textuel d'un utilisateur selon ses cours debloqus et son plan
+// Calcule le niveau textuel d'un utilisateur selon ses cours débloqués et son plan
 function _getUserLevel(user) {
   const unlocked = (user.unlockedCourses || []).length;
   if (user.plan === 'Elite' || unlocked >= 8) return 'Expert';
-  if (user.plan === 'Pro'   || unlocked >= 3) return 'Intermediaire';
-  return 'Debutant';
+  if (user.plan === 'Pro'   || unlocked >= 3) return 'Intermédiaire';
+  return 'Débutant';
 }
 function renderProgress() {
   const list = document.getElementById("progressList");
   if (!list) return;
   const user = getUser();
-  const allVideos   = getVideos();
+  const allVideos   = getVideos().length ? getVideos() : COURSES;
   const freeCourses = allVideos.filter(v => v.free);
   const unlocked    = user ? (user.unlockedCourses || []) : [];
   const unlockedCourses = allVideos.filter(v => unlocked.includes(v.id));
@@ -3461,7 +1907,7 @@ function renderProgress() {
     .filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
     .slice(0, 5);
   if (!toShow.length) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commencee.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-play-circle"></i><p>Aucune formation commencée.</p></div>';
     return;
   }
   list.innerHTML = toShow.map(v => {
@@ -3475,19 +1921,19 @@ function renderProgress() {
 }
 
 function requestWithdraw() {
-  alert("Demande de retrait envoyee ! Vous recevrez vos fonds sous 24-72h.");
+  alert("Demande de retrait envoyée ! Vous recevrez vos fonds sous 24-72h.");
 }
 // ===== FORMATIONS =====
-// Table de correspondance cours -> index DOM (jamais l\'ID rel en attribut HTML)
+// Table de correspondance cours -> index DOM (jamais l\'ID réel en attribut HTML)
 let _courseIndexMap = [];
 function renderCourses(filter = "all") {
   const grid = document.getElementById("coursesGrid");
   if (!grid) return;
-  const videos   = getVideos(); // source de vrit (localStorage ou COURSES)
-  const all      = videos;
+  const videos   = getVideos(); // source de vérité (localStorage ou COURSES)
+  const all      = videos.length ? videos : COURSES;
   const filtered = filter === "all" ? all : all.filter(c => c.category === filter);
   const user     = getUser();
-  // Construire la map index -> id rel (jamais exposee dans le HTML)
+  // Construire la map index -> id réel (jamais exposée dans le HTML)
   _courseIndexMap = filtered.map(c => c.id);
   grid.innerHTML = filtered.map((c, idx) => {
     const hasAccess = c.free || (user && (user.plan === 'Pro' || user.plan === 'Elite')) || (user && (user.unlockedCourses||[]).includes(c.id));
@@ -3526,10 +1972,10 @@ function _applyFiltersAndSearch() {
   const empty = document.getElementById('coursesEmpty');
   const banner = document.getElementById('searchResultBanner');
   if (!grid) return;
-  const videos = getVideos();
+  const videos = getVideos().length ? getVideos() : COURSES;
   const activeBtn = document.querySelector('.filter-btn.active');
   const activeCat = activeBtn ? (activeBtn.onclick ? '' : '') : 'all';
-  // Lire la catgorie depuis le bouton actif
+  // Lire la catégorie depuis le bouton actif
   let cat = 'all';
   document.querySelectorAll('.filter-btn').forEach(b => {
     if (b.classList.contains('active')) {
@@ -3557,7 +2003,7 @@ function _applyFiltersAndSearch() {
   if (banner) {
     if (_searchQuery) {
       banner.style.display = 'block';
-      banner.textContent = filtered.length + ' resultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
+      banner.textContent = filtered.length + ' résultat' + (filtered.length > 1 ? 's' : '') + ' pour "' + _searchQuery + '"';
     } else {
       banner.style.display = 'none';
     }
@@ -3602,9 +2048,9 @@ function setView(view, btn) {
     grid.classList.add('courses-grid-view');
   }
 }
-// Met a jour les stats hero de la page formations
+// Met à jour les stats hero de la page formations
 function updateFormationsStats() {
-  const videos = getVideos();
+  const videos = getVideos().length ? getVideos() : COURSES;
   const total = videos.length;
   const free  = videos.filter(v => v.free).length;
   const paid  = videos.filter(v => !v.free).length;
@@ -3615,22 +2061,22 @@ function updateFormationsStats() {
   if (elFree)  elFree.textContent  = free;
   if (elPaid)  elPaid.textContent  = paid;
 }
-// ===== PLAYER VIDEO (YouTube IFrame API + Google Drive) =====
+// ===== PLAYER VIDÉO (YouTube IFrame API + Google Drive) =====
 let _ytPlayer     = null;
 let _ytApiReady   = false;
 let _ytPendingId  = null;
-// Callback appel automatiquement par l'API YouTube quand elle est charge
+// Callback appelé automatiquement par l'API YouTube quand elle est chargée
 function onYouTubeIframeAPIReady() {
   _ytApiReady = true;
   if (_ytPendingId) { _loadYT(_ytPendingId); _ytPendingId = null; }
 }
 function _loadYT(videoId) {
   _showVideoSlot('youtube');
-  // Dtruire l\'ancien player s'il existe pour repartir propre
+  // Détruire l\'ancien player s'il existe pour repartir propre
   if (_ytPlayer) {
     try { _ytPlayer.destroy(); } catch(e) {}
     _ytPlayer = null;
-    // Recreeer le div cible (destroy() le vide)
+    // Recréer le div cible (destroy() le vide)
     const container = document.getElementById('videoContainer');
     if (container && !document.getElementById('ytPlayer')) {
       const div = document.createElement('div');
@@ -3648,7 +2094,7 @@ function _loadYT(videoId) {
         const blocked = [101, 150].includes(e.data);
         _showVideoError(
           blocked
-            ? 'Intégration désactivée. Activez « Autoriser l\'intégration » dans YouTube Studio.'
+            ? 'Intgration dsactive. Activez Autoriser lintgration dans YouTube Studio.'
             : 'Impossible de lire cette vido (code ' + e.data + ').'
         );
       }
@@ -3660,10 +2106,10 @@ function _loadDrive(driveId) {
   const frame = document.getElementById('driveFrame');
   if (!frame) return;
   frame.src = `https://drive.google.com/file/d/${driveId}/preview`;
-  // Detecter si Drive ouvre un nouvel onglet et le fermer immdiatement
+  // Détecter si Drive ouvre un nouvel onglet et le fermer immédiatement
   const onBlur = () => {
     setTimeout(() => {
-      // Si la fenetre a perdu le focus  cause d'un nouvel onglet Drive
+      // Si la fenêtre a perdu le focus é cause d'un nouvel onglet Drive
       if (document.hidden) return;
       // Tenter de fermer le dernier onglet ouvert
       try {
@@ -3702,7 +2148,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
       <!-- Header -->
       <div class="upgrade-modal-header">
         <div class="upgrade-lock-icon">🔒</div>
-        <h2>${isGuest ? 'Connectez-vous pour acceder' : 'Passez a un plan superieur'}</h2>
+        <h2>${isGuest ? 'Connectez-vous pour accéder' : 'Passez à un plan supérieur'}</h2>
         <p>${isGuest
           ? (isFree
               ? 'Connectez-vous pour regarder cette formation gratuite.'
@@ -3755,7 +2201,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </button>
           </div>
         </div>
-        <!-- Formulaire paiement (masqu par defaut) -->
+        <!-- Formulaire paiement (masqué par défaut) -->
         <div class="upgrade-payment" id="upgradePayment" style="display:none">
           <div class="upgrade-payment-header">
             <button class="upgrade-back-btn" onclick="_backToPlans()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -3765,15 +2211,15 @@ async function _showUpgradeModal(user, courseName, isFree) {
             <div class="upgrade-step">
               <div class="upgrade-step-num">1</div>
               <div style="width:100%">
-                <strong>Choisissez votre methode de paiement</strong>
-                <p style="margin-bottom:0.8rem">Selectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
+                <strong>Choisissez votre méthode de paiement</strong>
+                <p style="margin-bottom:0.8rem">Sélectionnez le compte Mobile Money depuis lequel vous allez envoyer <strong id="upgradeAmount" style="color:var(--accent2)"></strong> :</p>
                 <div id="upgradeUserMmWrap"></div>
               </div>
             </div>
             <div class="upgrade-step" id="upgradeStep2">
               <div class="upgrade-step-num">2</div>
               <div style="width:100%">
-                <strong>Envoyez le montant a ce numero</strong>
+                <strong>Envoyez le montant à ce numéro</strong>
                 <p style="margin-bottom:0.6rem">Envoyez exactement <strong id="upgradeAmountRepeat" style="color:var(--accent2)"></strong> au compte ci-dessous :</p>
                 <div id="upgradeMmTargets" class="upgrade-mm-targets"></div>
               </div>
@@ -3782,9 +2228,9 @@ async function _showUpgradeModal(user, courseName, isFree) {
               <div class="upgrade-step-num">3</div>
               <div style="width:100%">
                 <strong>Confirmez votre envoi</strong>
-                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous apres avoir effectue le transfert :</p>
+                <p style="margin-bottom:0.8rem">Remplissez les informations ci-dessous après avoir effectué le transfert :</p>
                 <div class="upgrade-form">
-                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="Reference transaction (optionnel)" />
+                  <input type="text" id="upgradeTxRef" class="upgrade-input" placeholder="Référence transaction (optionnel)" />
                   <!-- PREUVE DE PAIEMENT -->
                   <div id="upgradeProofWrap" style="margin-top:0.6rem">
                     <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
@@ -3801,7 +2247,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     onmouseover="this.style.borderColor='var(--accent)'"
                     onmouseout="this.style.borderColor=document.getElementById('upgradeProofImg').src?'var(--accent2)':'var(--border)'">
                       <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'ecran</span>
+                      <span id="upgradeProofText">Cliquez pour ajouter une capture d\'écran</span>
                       <input type="file" id="upgradeProofInput" accept="image/*" style="display:none"
                         onchange="_previewUpgradeProof(this)" />
                     </label>
@@ -3820,7 +2266,7 @@ async function _showUpgradeModal(user, courseName, isFree) {
                     </div>
                   </div>
                   <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitUpgradeRequest()">
-                    <i class="fas fa-paper-plane"></i> J'ai envoye le paiement
+                    <i class="fas fa-paper-plane"></i> J'ai envoyé le paiement
                   </button>
                   <p id="upgradeMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
                 </div>
@@ -3828,11 +2274,11 @@ async function _showUpgradeModal(user, courseName, isFree) {
             </div>
           </div>
         </div>
-        <!-- Succs -->
+        <!-- Succès -->
         <div class="upgrade-success" id="upgradeSuccess" style="display:none">
           <div style="font-size:3rem">✅</div>
           <h3>Demande envoyée !</h3>
-          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a ete recue.<br>Votre compte sera active sous <strong>24h</strong> apres verification du paiement.</p>
+          <p>Votre demande de passage au plan <strong id="upgradeSuccessPlan"></strong> a été reçue.<br>Votre compte sera activé sous <strong>24h</strong> après vérification du paiement.</p>
           <button class="btn-outline" onclick="document.getElementById('upgradeModalOverlay').remove()" style="margin-top:0.5rem">Fermer</button>
         </div>
       `}
@@ -3854,11 +2300,11 @@ async function _showUpgradeModal(user, courseName, isFree) {
     if (btnElite) btnElite.onclick  = () => _selectUpgradePlan('Elite', elite);
   } catch(e) {}
 }
-// ===== MODALE UPGRADE — PAIEMENT INTELLIGENT =====
+// ===== MODALE UPGRADE â€” PAIEMENT INTELLIGENT =====
 let _selectedPlan     = null;
 let _selectedAmount   = 0;
 let _adminPayAccounts = [];
-// Charge les comptes admin UNE SEULE FOIS et met a jour le cache
+// Charge les comptes admin UNE SEULE FOIS et met à jour le cache
 async function _loadAdminPayAccounts() {
   try {
     const data = await PaganiAPI.getPaymentAccounts ? PaganiAPI.getPaymentAccounts() : fetch(API_URL + '/payment-accounts').then(r => r.json());
@@ -3894,17 +2340,17 @@ async function _selectUpgradePlan(plan, amount) {
   // Afficher un loader dans la zone cible pendant le chargement
   const targetsWrap = document.getElementById('upgradeMmTargets');
   if (targetsWrap) targetsWrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
-  // Charger les comptes admin PUIS construire la vue — une seule fois
+  // Charger les comptes admin PUIS construire la vue â€” une seule fois
   const adminAccounts = await _loadAdminPayAccounts();
   _buildPaymentView(user, adminAccounts);
 }
 /**
  * Construit toute la vue de paiement :
- * - Rcupre les comptes MM de l\'utilisateur
- * - Filtre les operateurs admin disponibles
- * - Si l\'utilisateur a plusieurs comptes ? slecteur de cartes
- * - Si un seul ? affichage direct
- * - Quand l\'utilisateur choisit un operateur ? affiche le numero admin correspondant
+ * - Récupére les comptes MM de l\'utilisateur
+ * - Filtre les opérateurs admin disponibles
+ * - Si l\'utilisateur a plusieurs comptes â†’ sélecteur de cartes
+ * - Si un seul â†’ affichage direct
+ * - Quand l\'utilisateur choisit un opérateur â†’ affiche le numéro admin correspondant
  */
 function _buildPaymentView(user, adminAccounts) {
   const adminConfigured = adminAccounts.filter(a => a.phone);
@@ -3917,18 +2363,18 @@ function _buildPaymentView(user, adminAccounts) {
       userAccounts = [{ operator: user.mmOperator || 'MVola', phone: user.mmPhone, name: user.mmName || user.name }];
     }
   }
-  // Trouver les operateurs en commun (user a le compte ET admin a le numero)
+  // Trouver les opérateurs en commun (user a le compte ET admin a le numéro)
   const commonOps = userAccounts.filter(ua =>
     adminConfigured.some(aa => aa.operator === ua.operator)
   );
-  // Construire le slecteur utilisateur
+  // Construire le sélecteur utilisateur
   _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured);
-  // Afficher le numero admin du premier operateur commun par defaut
+  // Afficher le numéro admin du premier opérateur commun par défaut
   if (commonOps.length) {
     _showAdminTargetFor(commonOps[0].operator, adminConfigured);
     _setUpgradeFields(commonOps[0].operator, commonOps[0].phone);
   } else if (userAccounts.length) {
-    // L'utilisateur a des comptes mais aucun operateur admin correspondant
+    // L'utilisateur a des comptes mais aucun opérateur admin correspondant
     _showAdminTargetFor(null, adminConfigured);
     _setUpgradeFields(userAccounts[0].operator, userAccounts[0].phone);
   } else {
@@ -3939,17 +2385,17 @@ function _showAdminTargetFor(operator, adminAccounts) {
   const wrap = document.getElementById('upgradeMmTargets');
   if (!wrap) return;
   const colors     = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Filtrer les comptes desactives — non visibles aux membres
+  // Filtrer les comptes désactivés â€” non visibles aux membres
   const configured = adminAccounts.filter(a => a.phone && !a.disabled);
   if (!configured.length) {
     wrap.innerHTML = `
       <div class="upgrade-mm-no-admin">
         <i class="fas fa-exclamation-circle"></i>
-        Aucun numero de paiement configure. Contactez l\'administrateur.
+        Aucun numéro de paiement configuré. Contactez l\'administrateur.
       </div>`;
     return;
   }
-  // Dterminer le compte slectionn par defaut
+  // Déterminer le compte sélectionné par défaut
   const defaultAcc = operator
     ? (configured.find(a => a.operator === operator) || configured[0])
     : configured[0];
@@ -4002,7 +2448,7 @@ function _showAdminTargetFor(operator, adminAccounts) {
         onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'"
         onclick="_toggleAdminMmAll()">
-        <i class="fas fa-exchange-alt"></i> Changer de methode
+        <i class="fas fa-exchange-alt"></i> Changer de méthode
       </button>` : ''}`;
 }
 function _toggleAdminMmAll() {
@@ -4012,15 +2458,15 @@ function _toggleAdminMmAll() {
   const btn  = document.getElementById('upgradeAdminMmChangeBtn');
   const allVisible = [...opts].every(o => o.style.display !== 'none');
   if (allVisible) {
-    // Recacher les non-slectionnes
+    // Recacher les non-sélectionnées
     opts.forEach(o => {
       const card = o.querySelector('div');
       const isSelected = card && card.style.borderColor.includes('accent2') || card && card.style.border.includes('accent2');
-      // Detecter via le badge "Envoyer ici"
+      // Détecter via le badge "Envoyer ici"
       const hasBadge = o.querySelector('[style*="Envoyer"]') || o.innerHTML.includes('Envoyer ici');
       if (!hasBadge) o.style.display = 'none';
     });
-    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de methode';
+    if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de méthode';
   } else {
     opts.forEach(o => o.style.display = 'block');
     if (btn) btn.innerHTML = '<i class="fas fa-times"></i> Annuler';
@@ -4057,41 +2503,41 @@ function _onAdminMmSelect(selectedIdx) {
     }
   });
   const btn = document.getElementById('upgradeAdminMmChangeBtn');
-  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de methode';
+  if (btn) btn.innerHTML = '<i class="fas fa-exchange-alt"></i> Changer de méthode';
 }
 /**
- * Construit le slecteur de compte MM utilisateur.
- * - Si pas connect ? champs manuels
- * - Si connect sans compte ? alerte + champs manuels
- * - Si 1 seul compte  affichage fixe (pas de choix)
- * - Si plusieurs comptes ? cartes radio cliquables
- *    seuls les operateurs avec numero admin sont mis en avant
+ * Construit le sélecteur de compte MM utilisateur.
+ * - Si pas connecté â†’ champs manuels
+ * - Si connecté sans compte â†’ alerte + champs manuels
+ * - Si 1 seul compte é affichage fixe (pas de choix)
+ * - Si plusieurs comptes â†’ cartes radio cliquables
+ *   é seuls les opérateurs avec numéro admin sont mis en avant
  */
 function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
   const wrap = document.getElementById('upgradeUserMmWrap');
   if (!wrap) return;
   const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
-  // Cas 1 : visiteur non connect
+  // Cas 1 : visiteur non connecté
   if (!user) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice">
         <i class="fas fa-info-circle"></i>
-        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistre.</span>
+        <span>Connectez-vous pour utiliser votre compte Mobile Money enregistré.</span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre operateur</label>
+        <label class="upgrade-form-label">Votre opérateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.map(a =>
             `<option value="${a.operator}">${a.operator}</option>`
           ).join('')}
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numero Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numéro Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 2 : connect sans aucun compte MM
+  // Cas 2 : connecté sans aucun compte MM
   if (!userAccounts.length) {
     wrap.innerHTML = `
       <div class="upgrade-mm-notice upgrade-mm-notice-warn">
@@ -4101,20 +2547,20 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
         </span>
       </div>
       <div class="upgrade-form-manual">
-        <label class="upgrade-form-label">Votre operateur</label>
+        <label class="upgrade-form-label">Votre opérateur</label>
         <select id="upgradeOperator" class="upgrade-input" onchange="_onManualOpChange(this.value)">
           ${adminConfigured.length
             ? adminConfigured.map(a => `<option value="${a.operator}">${a.operator}</option>`).join('')
             : `<option value="MVola">MVola</option><option value="Orange Money">Orange Money</option><option value="Airtel Money">Airtel Money</option>`
           }
         </select>
-        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numero Mobile Money</label>
+        <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numéro Mobile Money</label>
         <input type="tel" id="upgradePhone" class="upgrade-input" placeholder="Ex: 034 XX XXX XX" />
       </div>`;
     if (adminConfigured.length) _showAdminTargetFor(adminConfigured[0].operator, adminConfigured);
     return;
   }
-  // Cas 3 : 1 seul compte MM  affichage fixe, pas de slecteur
+  // Cas 3 : 1 seul compte MM é affichage fixe, pas de sélecteur
   if (userAccounts.length === 1) {
     const acc   = userAccounts[0];
     const color = colors[acc.operator] || 'var(--accent)';
@@ -4136,14 +2582,14 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
       ${!hasAdmin ? `
         <div class="upgrade-mm-notice upgrade-mm-notice-warn" style="margin-top:0.5rem">
           <i class="fas fa-exclamation-triangle"></i>
-          <span>L'operateur <strong>${acc.operator}</strong> n'est pas encore configure par l\'admin.
-            Choisissez un autre numero admin ci-dessus pour envoyer.</span>
+          <span>L'opérateur <strong>${acc.operator}</strong> n'est pas encore configuré par l\'admin.
+            Choisissez un autre numéro admin ci-dessus pour envoyer.</span>
         </div>` : ''}
       <input type="hidden" id="upgradeOperator" value="${acc.operator}" />
       <input type="hidden" id="upgradePhone"    value="${acc.phone}" />`;
     return;
   }
-  // Cas 4 : plusieurs comptes MM ? slecteur de cartes
+  // Cas 4 : plusieurs comptes MM â†’ sélecteur de cartes
   wrap.innerHTML = `
     <p class="upgrade-form-label" style="margin-bottom:0.5rem">
       <i class="fas fa-hand-pointer" style="color:var(--accent)"></i>
@@ -4170,7 +2616,7 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
               <span class="upgrade-user-mm-right">
                 ${hasAdmin
                   ? `<span class="upgrade-mm-match"><i class="fas fa-check-circle"></i></span>`
-                  : `<span class="upgrade-mm-nomatch" title="Pas de numero admin pour cet operateur"><i class="fas fa-exclamation-circle"></i></span>`
+                  : `<span class="upgrade-mm-nomatch" title="Pas de numéro admin pour cet opérateur"><i class="fas fa-exclamation-circle"></i></span>`
                 }
                 <span class="upgrade-user-mm-check"><i class="fas fa-check-circle"></i></span>
               </span>
@@ -4181,12 +2627,12 @@ function _renderUserMmSelector(user, userAccounts, commonOps, adminConfigured) {
     <input type="hidden" id="upgradeOperator" value="${(commonOps[0] || userAccounts[0]).operator}" />
     <input type="hidden" id="upgradePhone"    value="${(commonOps[0] || userAccounts[0]).phone}" />`;
 }
-// Appel quand l\'utilisateur change de compte MM (slecteur cartes)
+// Appelé quand l\'utilisateur change de compte MM (sélecteur cartes)
 function _onUserMmChange(operator, phone) {
   _setUpgradeFields(operator, phone);
   _showAdminTargetFor(operator, _adminPayAccounts);
 }
-// Appel quand l\'utilisateur change l'operateur dans le select manuel
+// Appelé quand l\'utilisateur change l'opérateur dans le select manuel
 function _onManualOpChange(operator) {
   const opEl = document.getElementById('upgradeOperator');
   if (opEl) opEl.value = operator;
@@ -4274,7 +2720,7 @@ function _removeUpgradeProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ecran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'écran";
 }
 function _backToPlans() {
   document.querySelector('.upgrade-plans').style.display = 'grid';
@@ -4286,11 +2732,11 @@ async function _submitUpgradeRequest() {
   const txRef    = document.getElementById('upgradeTxRef').value.trim();
   const proof    = _upgradeProofBase64;
   const msg      = document.getElementById('upgradeMsg');
-  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numero Mobile Money.'; return; }
+  if (!phone)  { msg.style.color = 'var(--red)'; msg.textContent = 'Entrez votre numéro Mobile Money.'; return; }
   if (!proof)  {
     msg.style.color = 'var(--red)';
-    msg.textContent = 'La preuve de paiement est obligatoire. Veuillez joindre une capture d\'ecran.';
-    // Mettre en vidence la zone de preuve
+    msg.textContent = '⚠️ La preuve de paiement est obligatoire. Veuillez joindre une capture d\'écran.';
+    // Mettre en évidence la zone de preuve
     const label = document.getElementById('upgradeProofLabel');
     if (label) {
       label.style.borderColor = 'var(--red)';
@@ -4323,29 +2769,29 @@ async function _submitUpgradeRequest() {
       }
       throw new Error(err.error || 'ERREUR_SERVEUR');
     }
-    // Succs rel — l'API a confirma la rception
+    // Succès réel â€” l'API a confirmé la réception
     _upgradeProofBase64 = '';
     document.getElementById('upgradePayment').style.display = 'none';
     document.getElementById('upgradeSuccess').style.display = 'flex';
     document.getElementById('upgradeSuccessPlan').textContent = _selectedPlan;
   } catch(e) {
-    // Erreur relle — on affiche le message, on ne cache PAS le formulaire
+    // Erreur réelle â€” on affiche le message, on ne cache PAS le formulaire
     const errMsgs = {
-      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. Verifiez votre connexion.',
-      NON_AUTHENTIFIE:      'Session expiree. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:       'Session expiree. Veuillez vous reconnecter.',
+      SERVEUR_INDISPONIBLE: 'Le serveur est inaccessible. Vérifiez votre connexion.',
+      NON_AUTHENTIFIE:      'Session expirée. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:       'Session expirée. Veuillez vous reconnecter.',
       PREUVE_REQUISE:       'La preuve de paiement est obligatoire.',
-      ERREUR_SERVEUR:       'Erreur serveur. Reessayez dans quelques instants.',
+      ERREUR_SERVEUR:       'Erreur serveur. Réessayez dans quelques instants.',
     };
     msg.style.color = 'var(--red)';
-    msg.textContent = '⚠️ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
+    msg.textContent = '❌ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
   }
 }
 async function openCourse(idx) {
   const realId = _courseIndexMap[idx];
   if (realId === undefined) return;
-  // Utiliser le cache deja charg, sinon COURSES hardcodes
-  const allVideos = getVideos();
+  // Utiliser le cache déjé chargé, sinon COURSES hardcodées
+  const allVideos = getVideos().length ? getVideos() : COURSES;
   let course = allVideos.find(c => c.id === realId || c.id === Number(realId));
   // Si pas dans le cache local, charger depuis le serveur
   if (!course && window.PaganiAPI) {
@@ -4361,9 +2807,9 @@ async function openCourse(idx) {
     try { user = await PaganiAPI.getMe(); window._currentUser = user; } catch(e) {}
   }
   if (!course.free && !user) { _showUpgradeModal(null, course.title); return; }
-  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'acces
+  // Utilisateur Starter : proposer achat unitaire ou upgrade selon le type d'accès
   if (!course.free && user && user.plan === 'Starter') {
-    // Rafraechir le user depuis le serveur pour avoir unlockedCourses a jour
+    // Rafraîchir le user depuis le serveur pour avoir unlockedCourses à jour
     if (window.PaganiAPI) {
       try {
         const fresh = await PaganiAPI.getMe();
@@ -4385,7 +2831,7 @@ async function openCourse(idx) {
   if (!modal) return;
   document.getElementById('modalTitle').textContent = course.title;
   document.getElementById('modalDesc').textContent  = course.desc;
-  // Description dtaille admin
+  // Description détaillée admin
   const descWrap    = document.getElementById('modalVideoDesc');
   const descContent = document.getElementById('modalVideoDescContent');
   const descToggle  = document.getElementById('modalVideoDescToggle');
@@ -4409,7 +2855,7 @@ async function openCourse(idx) {
       descWrap.style.display = 'none';
     }
   }
-  // Video gratuite : connexion requise pour lire
+  // Vidéo gratuite : connexion requise pour lire
   if (course.free) {
     if (!user) { _showUpgradeModal(null, course.title, true); return; }
     modal.classList.add('open');
@@ -4420,14 +2866,14 @@ async function openCourse(idx) {
     else { _ytApiReady ? _loadYT(id) : (_ytPendingId = id, _showVideoSlot('youtube')); }
     return;
   }
-  // Video payante : demander un token au serveur
+  // Vidéo payante : demander un token au serveur
   if (window.PaganiAPI) {
     modal.classList.add('open');
     _showVideoSlot('youtube'); // afficher un loader
     try {
       const result = await PaganiAPI.getVideoToken(realId);
       if (result.source === 'drive') {
-        // Rsoudre le token en driveId rel
+        // Résoudre le token en driveId réel
         const { driveId } = await PaganiAPI.resolveVideoToken(result.token);
         _loadDrive(driveId);
       } else {
@@ -4437,19 +2883,19 @@ async function openCourse(idx) {
       _showVideoError(
         e.message === 'ACCES_REFUSE'
           ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
-          : ' Vidéo bientôt disponible.'
+          : 'é Vidéo bientôt disponible.'
       );
     }
     return;
   }
-  // Fallback : ancien systme sans serveur
+  // Fallback : ancien système sans serveur
   const video = _getSecureVideo(course, user);
   modal.classList.add('open');
   if (!video) {
     _showVideoError(
       !user || (user.plan === 'Starter')
         ? '🔒 Cette formation est reservee aux membres Pro et Elite.'
-        : ' Vidéo bientôt disponible.'
+        : 'é Vidéo bientôt disponible.'
     );
     return;
   }
@@ -4460,7 +2906,7 @@ function closeModal() {
   const modal = document.getElementById('videoModal');
   if (!modal) return;
   modal.classList.remove('open');
-  // Mettre en pause sans dtruire
+  // Mettre en pause sans détruire
   if (_ytPlayer && typeof _ytPlayer.pauseVideo === 'function') {
     try { _ytPlayer.pauseVideo(); } catch(e) {}
   }
@@ -4469,18 +2915,18 @@ function closeModal() {
   if (drive) drive.src = '';
   _showVideoSlot('youtube');
 }
-// ===== Achat video unitaire =====
+// ===== Achat vidéo unitaire =====
 async function _showBuyVideoModal(user, course) {
   const existing = document.getElementById('buyVideoModalOverlay');
   if (existing) existing.remove();
-  // Rcuprer le prix dynamique depuis le serveur si disponible
+  // Récupérer le prix dynamique depuis le serveur si disponible
   let unitPrice = course.unitPrice || 10000;
   try {
     if (window.PaganiAPI) { const fv = await PaganiAPI.getVideos(); if (fv && fv.length) _adminVideosCache = fv; }
     const stored2 = _adminVideosCache.find(v => v.id === course.id);
     if (stored2 && stored2.unitPrice) unitPrice = stored2.unitPrice;
     const p = await PaganiAPI.getPricing();
-    // Prix spcifique a la video (stocke dans la video elle-meme) ou prix global
+    // Prix spécifique é la vidéo (stocké dans la vidéo elle-même) ou prix global
     const stored = getVideos().find(v => v.id === course.id);
     unitPrice = (stored && stored.unitPrice) || course.unitPrice || p.video || 10000;
   } catch(e) {}
@@ -4490,7 +2936,7 @@ async function _showBuyVideoModal(user, course) {
   overlay.innerHTML = `
     <div class="buy-video-modal" id="buyVideoModalBox">
       <div class="buy-video-header">
-        <div class="buy-video-icon">🎥</div>
+        <div class="buy-video-icon">🎬</div>
         <h2>${course.title}</h2>
         <p class="buy-video-desc">${course.desc}</p>
         <div class="buy-video-meta">
@@ -4506,15 +2952,15 @@ async function _showBuyVideoModal(user, course) {
           <div class="buy-option-header">
             <span class="buy-option-badge unit"><i class="fas fa-film"></i> Achat unique</span>
             <div class="buy-option-price">${unitPrice.toLocaleString('fr-FR')} <span>AR</span></div>
-            <p>Acces permanent a cette video uniquement.</p>
+            <p>Accès permanent é cette vidéo uniquement.</p>
           </div>
           <ul class="buy-option-features">
-            <li><i class="fas fa-check"></i> Acces a vie a cette formation</li>
+            <li><i class="fas fa-check"></i> Accès à vie é cette formation</li>
             <li><i class="fas fa-check"></i> Paiement unique, pas d'abonnement</li>
             <li class="muted"><i class="fas fa-times"></i> Autres formations non incluses</li>
           </ul>
           <button class="buy-option-btn unit" onclick="_selectBuyOption('unit', ${unitPrice})">
-            Acheter cette video <i class="fas fa-arrow-right"></i>
+            Acheter cette vidéo <i class="fas fa-arrow-right"></i>
           </button>
         </div>
         <!-- Option 2 : Abonnement Pro -->
@@ -4536,7 +2982,7 @@ async function _showBuyVideoModal(user, course) {
           </button>
         </div>
       </div>
-      <!-- Formulaire paiement (masqu par defaut) -->
+      <!-- Formulaire paiement (masqué par défaut) -->
       <div id="buyVideoPayment" style="display:none;padding:1.5rem">
         <div class="upgrade-payment-header">
           <button class="upgrade-back-btn" onclick="_backToBuyOptions()"><i class="fas fa-arrow-left"></i> Retour</button>
@@ -4546,8 +2992,8 @@ async function _showBuyVideoModal(user, course) {
           <div class="upgrade-step">
             <div class="upgrade-step-num">1</div>
             <div style="width:100%">
-              <strong>Selectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
-              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilise pour verifier votre paiement.</p>
+              <strong>Sélectionnez le compte Mobile Money depuis lequel vous allez envoyer</strong>
+              <p style="margin-bottom:0.8rem;margin-top:0.4rem;font-size:0.85rem;color:var(--text2)">Ce compte sera utilisé pour vérifier votre paiement.</p>
               <div id="buyUserMmWrap"></div>
             </div>
           </div>
@@ -4563,7 +3009,7 @@ async function _showBuyVideoModal(user, course) {
             <div style="width:100%">
               <strong>Confirmez votre paiement</strong>
               <div class="upgrade-form" style="margin-top:0.6rem">
-                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="Reference transaction (optionnel)" />
+                <input type="text" id="buyTxRef" class="upgrade-input" placeholder="Référence transaction (optionnel)" />
                 <div id="buyProofWrap" style="margin-top:0.6rem">
                   <label style="display:block;font-size:0.8rem;color:var(--text2);font-weight:600;margin-bottom:0.4rem">
                     <i class="fas fa-camera" style="color:var(--accent)"></i>
@@ -4571,7 +3017,7 @@ async function _showBuyVideoModal(user, course) {
                   </label>
                   <label id="buyProofLabel" style="display:flex;align-items:center;gap:0.6rem;background:var(--bg2);border:2px dashed var(--border);border-radius:10px;padding:0.75rem 1rem;cursor:pointer;font-size:0.85rem;color:var(--text2)">
                     <i class="fas fa-image" style="font-size:1.2rem;color:var(--accent)"></i>
-                    <span id="buyProofText">Cliquez pour ajouter une capture d\'ecran</span>
+                    <span id="buyProofText">Cliquez pour ajouter une capture d\'écran</span>
                     <input type="file" id="buyProofInput" accept="image/*" style="display:none" onchange="_previewBuyProof(this)" />
                   </label>
                   <div id="buyProofPreview" style="display:none;margin-top:0.5rem;position:relative">
@@ -4580,7 +3026,7 @@ async function _showBuyVideoModal(user, course) {
                   </div>
                 </div>
                 <button class="btn-primary" style="width:100%;padding:0.85rem;font-size:0.95rem;margin-top:0.6rem" onclick="_submitBuyRequest(${course.id})">
-                  <i class="fas fa-paper-plane"></i> J'ai envoye le paiement
+                  <i class="fas fa-paper-plane"></i> J'ai envoyé le paiement
                 </button>
                 <p id="buyMsg" style="font-size:0.82rem;min-height:1rem;text-align:center"></p>
               </div>
@@ -4588,7 +3034,7 @@ async function _showBuyVideoModal(user, course) {
           </div>
         </div>
       </div>
-      <!-- Succs -->
+      <!-- Succès -->
       <div id="buyVideoSuccess" style="display:none;padding:2rem;flex-direction:column;align-items:center;text-align:center;gap:0.8rem">
         <div style="font-size:3rem">✅</div>
         <h3>Demande envoyée !</h3>
@@ -4604,7 +3050,7 @@ async function _showBuyVideoModal(user, course) {
     const fmt = n => Number(n).toLocaleString('fr-FR');
     const elPro = document.getElementById('buyModalPricePro');
     if (elPro) elPro.innerHTML = `${fmt(p.pro || 30000)} <span>AR</span><small>/mois</small>`;
-    // Mettre a jour le bouton Pro avec le bon prix
+    // Mettre é jour le bouton Pro avec le bon prix
     const btnPro = overlay.querySelector('.buy-option-btn.pro');
     if (btnPro) btnPro.onclick = () => _selectBuyOption('pro', p.pro || 30000);
   } catch(e) {}
@@ -4627,13 +3073,13 @@ async function _selectBuyOption(type, amount) {
     }, 150);
     return;
   }
-  // Achat unitaire — afficher le formulaire de paiement
+  // Achat unitaire â€” afficher le formulaire de paiement
   const optionsEl = document.querySelector('.buy-video-options');
   const paymentEl = document.getElementById('buyVideoPayment');
   if (optionsEl) optionsEl.style.display = 'none';
   if (paymentEl) paymentEl.style.display = 'block';
   const title = document.getElementById('buyPaymentTitle');
-  if (title) title.textContent = `Paiement — ${amount.toLocaleString('fr-FR')} AR`;
+  if (title) title.textContent = `Paiement â€” ${amount.toLocaleString('fr-FR')} AR`;
   const repeatEl = document.getElementById('buyAmountRepeat');
   if (repeatEl) repeatEl.textContent = amount.toLocaleString('fr-FR') + ' AR';
   // Loader pendant le chargement des comptes
@@ -4650,7 +3096,7 @@ function _backToBuyOptions() {
   if (optionsEl) optionsEl.style.display = 'grid';
   if (paymentEl) paymentEl.style.display = 'none';
 }
-// ===== ACHAT VIDEO — SYSTEME DE PAIEMENT DYNAMIQUE =====
+// ===== ACHAT VIDEO â€” SYSTEME DE PAIEMENT DYNAMIQUE =====
 function _buildBuyPaymentView(user, adminAccounts) {
   const adminConfigured = adminAccounts.filter(a => a.phone);
   let userAccounts = [];
@@ -4776,7 +3222,7 @@ function _renderBuyUserMmSelector(user, userAccounts, commonOps, adminConfigured
     wrap.innerHTML = `<div class="upgrade-user-mm-single"><span class="upgrade-user-mm-icon" style="background:` + color + `22;color:` + color + `"><i class="fas fa-mobile-alt"></i></span><span class="upgrade-user-mm-details"><strong>` + acc.operator + `</strong><span>` + acc.phone + `</span><span class="upgrade-user-mm-name">` + acc.name + `</span></span><span class="upgrade-user-mm-locked"><i class="fas fa-lock"></i> Votre compte</span></div>` + warn + `<input type="hidden" id="buyOperator" value="` + acc.operator + `" /><input type="hidden" id="buyPhone" value="` + acc.phone + `" /><input type="hidden" id="buyMmName" value="` + (acc.name || '') + `" />`;
     return;
   }
-  // Plusieurs comptes — selecteur de cartes
+  // Plusieurs comptes â€” selecteur de cartes
   const defAcc = commonOps[0] || userAccounts[0];
   let html = `<p class="upgrade-form-label" style="margin-bottom:0.5rem"><i class="fas fa-hand-pointer" style="color:var(--accent)"></i> Choisissez votre compte d'envoi :</p><div class="upgrade-user-mm-selector">`;
   userAccounts.forEach((acc, i) => {
@@ -4842,14 +3288,14 @@ function _removeBuyProof() {
   if (img)     img.src = '';
   if (input)   input.value = '';
   if (label)   label.style.borderColor = 'var(--border)';
-  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'ecran";
+  if (text)    text.textContent = "Cliquez pour ajouter une capture d\'écran";
 }
 async function _submitBuyRequest(courseId) {
   const txRef = document.getElementById('buyTxRef')?.value.trim() || '';
   const proof = _buyProofBase64;
   const msg   = document.getElementById('buyMsg');
   const user  = getUser();
-  // Lire les champs dynamiques injectes par _buildBuyPaymentView
+  // Lire les champs dynamiques injectés par _buildBuyPaymentView
   const operator = document.getElementById('buyOperator')?.value || '';
   const phone    = document.getElementById('buyPhone')?.value    || '';
   const mmName   = document.getElementById('buyMmName')?.value   || '';
@@ -4863,11 +3309,11 @@ async function _submitBuyRequest(courseId) {
   msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
   try {
     const result = await PaganiAPI.buyVideo({ courseId, amount: _buySelectedAmount, txRef, proof, phone, operator, mmName });
-    const allVideos = getVideos();
+    const allVideos = getVideos().length ? getVideos() : COURSES;
     const course = allVideos.find(c => c.id === courseId || c.id === Number(courseId));
     if (user && window.PaganiNotif) {
       const purchaseId = result && result.id ? result.id : null;
-      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'Video', purchaseId);
+      await PaganiNotif.newFormationPurchase(user.name, course?.title || 'Vidéo', purchaseId);
     }
     _buyProofBase64 = '';
     document.getElementById('buyVideoPayment').style.display = 'none';
@@ -4875,18 +3321,18 @@ async function _submitBuyRequest(courseId) {
     if (successEl) {
       successEl.style.display = 'flex';
       const successMsg = document.getElementById('buySuccessMsg');
-      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a ete recue.<br>Votre acces sera active sous <strong>24h</strong> apres verification du paiement.';
+      if (successMsg) successMsg.innerHTML = 'Votre demande d\'achat a été reçue.<br>Votre accès sera activé sous <strong>24h</strong> après vérification du paiement.';
     }
   } catch(e) {
     const errMsgs = {
-      NON_AUTHENTIFIE:   'Session expiree. Veuillez vous reconnecter.',
-      TOKEN_INVALIDE:    'Session expiree. Veuillez vous reconnecter.',
+      NON_AUTHENTIFIE:   'Session expirée. Veuillez vous reconnecter.',
+      TOKEN_INVALIDE:    'Session expirée. Veuillez vous reconnecter.',
       PREUVE_REQUISE:    'La preuve de paiement est obligatoire.',
-      DEJA_ACHETE:       'Vous avez deja achete cette formation.',
+      DEJA_ACHETE:       'Vous avez déjà acheté cette formation.',
       VIDEO_INTROUVABLE: 'Formation introuvable.',
     };
     msg.style.color = 'var(--red)';
-    msg.textContent = '⚠️ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
+    msg.textContent = '❌ ' + (errMsgs[e.message] || 'Erreur : ' + e.message);
   }
 }
 
@@ -4895,7 +3341,7 @@ function copyLink() {
   const input = document.getElementById("affiliateLink");
   if (!input) return;
   const user = getUser();
-  if (user) input.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
+  if (user) input.value = `https://paganidigital.com/ref/${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
     msg.textContent = "✅ Lien copié dans le presse-papiers !";
@@ -4917,7 +3363,7 @@ async function updateAffiliateStats(user) {
   if (pending) pending.textContent = formatAR(user.pendingAR  || 0);
   if (paid)    paid.textContent    = formatAR(user.paidAR     || 0);
   if (balance) balance.textContent = formatAR(user.pendingAR  || 0);
-  if (affLink) affLink.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
+  if (affLink) affLink.value       = `https://paganidigital.com/ref/${user.refCode}`;
   _renderWithdrawMmSelector(user);
   await renderCommissionHistory(user);
 }
@@ -4937,7 +3383,7 @@ async function renderCommissionHistory(user) {
       <span>${h.filleulName}</span>
       <span><span class="history-type">${h.type}</span></span>
       <span class="green">${formatAR(h.montant)}</span>
-      <span><span class="status-badge ${h.statut === 'Verse' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
+      <span><span class="status-badge ${h.statut === 'Versé' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
     </div>`).join("");
 }
 async function requestWithdrawAR(e) {
@@ -4954,7 +3400,7 @@ async function requestWithdrawAR(e) {
     const updated = await PaganiAPI.getMe();
     if (updated) { window._currentUser = updated; updateAffiliateStats(updated); }
     msg.style.color = "var(--green)";
-    msg.textContent = `Demande de ${formatAR(amount)} envoyee vers ${operator} (${phone}). Traitement sous 24-72h.`;
+    msg.textContent = `✅ Demande de ${formatAR(amount)} envoyée vers ${operator} (${phone}). Traitement sous 24-72h.`;
   } catch(ex) {
     msg.style.color = "var(--red)";
     const errs = { MONTANT_MIN: "Montant minimum : 5 000 AR.", SOLDE_INSUFFISANT: "Solde insuffisant." };
@@ -4962,18 +3408,6 @@ async function requestWithdrawAR(e) {
   }
   setTimeout(() => msg.textContent = "", 6000);
 }
-// ===== LIENS SOCIAUX FOOTER =====
-async function loadFooterSocialLinks() {
-  try {
-    const data = await fetch(API_URL + '/social-links').then(r => r.json());
-    const map = { facebook: 'footerFacebook', tiktok: 'footerTiktok', telegram: 'footerTelegram', youtube: 'footerYoutube' };
-    Object.entries(map).forEach(([key, id]) => {
-      const el = document.getElementById(id);
-      if (el && data[key]) el.href = data[key];
-    });
-  } catch(e) {}
-}
-
 // ===== NAVBAR DYNAMIQUE =====
 function updateNavbar(user) {
   const navLinks = document.querySelector(".nav-links");
@@ -5040,7 +3474,7 @@ async function saveNavbarButton() {
     });
     const data = await r.json();
     if (data.ok) {
-      if (msg) { msg.style.color = 'var(--success)'; msg.textContent = '✅ Sauvegardé !'; }
+      if (msg) { msg.style.color = 'var(--success)'; msg.textContent = 'Sauvegarde !'; }
     } else {
       if (msg) { msg.style.color = 'var(--danger)'; msg.textContent = data.error || 'Erreur'; }
     }
@@ -5066,249 +3500,6 @@ async function loadNavbarBtnAdmin() {
   } catch(e) {}
 }
 
-async function loadSocialLinksAdmin() {
-  try {
-    const r = await fetch(API_URL + '/social-links');
-    const data = await r.json();
-    const el = id => document.getElementById(id);
-    if (el('socialFacebook')) el('socialFacebook').value = data.facebook || '';
-    if (el('socialTiktok'))   el('socialTiktok').value   = data.tiktok   || '';
-    if (el('socialTelegram')) el('socialTelegram').value = data.telegram  || '';
-    if (el('socialYoutube'))  el('socialYoutube').value  = data.youtube   || '';
-  } catch(e) {}
-}
-
-async function saveSocialLinks() {
-  const msg = document.getElementById('socialLinksMsg');
-  const payload = {
-    facebook: document.getElementById('socialFacebook')?.value.trim() || '',
-    tiktok:   document.getElementById('socialTiktok')?.value.trim()   || '',
-    telegram: document.getElementById('socialTelegram')?.value.trim() || '',
-    youtube:  document.getElementById('socialYoutube')?.value.trim()  || '',
-  };
-  try {
-    const token = localStorage.getItem('pd_jwt');
-    const r = await fetch(API_URL + '/admin/social-links', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify(payload)
-    });
-    const data = await r.json();
-    if (msg) { msg.style.color = data.ok ? 'var(--green)' : 'var(--red)'; msg.textContent = data.ok ? '✅ Sauvegardé !' : (data.error || 'Erreur'); }
-    setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
-  } catch(e) {
-    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur reseau'; }
-  }
-}
-
-// ===== ADMIN EBOOKS =====
-let _editingEbookId = null;
-let _ebookPurchasesCache = [];
-
-async function loadAdminEbooks() {
-  const list = document.getElementById('adminEbooksList');
-  if (!list) return;
-  list.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
-  let ebooks = [];
-  try { ebooks = await PaganiAPI.admin.getEbooks(); } catch(e) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
-    return;
-  }
-  if (!ebooks.length) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-book"></i><p>Aucun ebook. Cliquez sur "Nouvel ebook" pour commencer.</p></div>';
-    return;
-  }
-  list.innerHTML = `
-    <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span>Titre</span><span>Catégorie</span><span>Auteur</span><span>Prix</span><span>Actions</span>
-    </div>
-    ${ebooks.map(eb => `
-    <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-      <span class="video-admin-title">
-        <i class="fas fa-book-open" style="color:var(--accent2);margin-right:0.5rem"></i>
-        <span><strong>${esc(eb.title)}</strong><small>${eb.pages ? eb.pages + ' pages' : ''}</small></span>
-      </span>
-      <span><span class="course-tag">${esc(eb.category || '—')}</span></span>
-      <span style="font-size:0.82rem;color:var(--text2)">${esc(eb.author || '—')}</span>
-      <span style="font-size:0.88rem;font-weight:700;color:var(--accent2)">${Number(eb.price).toLocaleString('fr-FR')} AR</span>
-      <span class="video-admin-actions">
-        <button class="video-action-btn edit" onclick="editEbook(${eb.id})" title="Modifier"><i class="fas fa-edit"></i></button>
-        <button class="video-action-btn delete" onclick="deleteEbook(${eb.id}, '${esc(eb.title).replace(/'/g,"\\'")}')"><i class="fas fa-trash"></i></button>
-      </span>
-    </div>`).join('')}`;
-}
-
-function openEbookModal() {
-  _editingEbookId = null;
-  document.getElementById('ebookModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent2)"></i> Nouvel ebook';
-  ['ebTitle','ebDesc','ebCategory','ebAuthor','ebCover','ebFileUrl'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  ['ebPages','ebPrice'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  document.getElementById('ebookModalMsg').textContent = '';
-  document.getElementById('ebookModalOverlay').style.display = 'flex';
-  setTimeout(() => document.getElementById('ebTitle').focus(), 50);
-}
-
-async function editEbook(id) {
-  let eb;
-  try { const all = await PaganiAPI.admin.getEbooks(); eb = all.find(e => e.id === id); } catch(e) {}
-  if (!eb) return;
-  _editingEbookId = id;
-  document.getElementById('ebookModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent2)"></i> Modifier l\'ebook';
-  document.getElementById('ebTitle').value    = eb.title       || '';
-  document.getElementById('ebDesc').value     = eb.description || '';
-  document.getElementById('ebCategory').value = eb.category    || '';
-  document.getElementById('ebAuthor').value   = eb.author      || '';
-  document.getElementById('ebPages').value    = eb.pages       || '';
-  document.getElementById('ebPrice').value    = eb.price       || '';
-  document.getElementById('ebCover').value    = eb.cover       || '';
-  document.getElementById('ebFileUrl').value  = eb.fileUrl     || '';
-  document.getElementById('ebookModalMsg').textContent = '';
-  document.getElementById('ebookModalOverlay').style.display = 'flex';
-}
-
-async function saveEbook() {
-  const title    = document.getElementById('ebTitle').value.trim();
-  const price    = parseInt(document.getElementById('ebPrice').value);
-  const msg      = document.getElementById('ebookModalMsg');
-  if (!title)       { msg.textContent = 'Le titre est obligatoire.'; return; }
-  if (!price || price < 0) { msg.textContent = 'Entrez un prix valide.'; return; }
-  const payload = {
-    title,
-    description: document.getElementById('ebDesc').value.trim(),
-    category:    document.getElementById('ebCategory').value.trim(),
-    author:      document.getElementById('ebAuthor').value.trim(),
-    pages:       parseInt(document.getElementById('ebPages').value) || null,
-    price,
-    cover:       document.getElementById('ebCover').value.trim(),
-    fileUrl:     document.getElementById('ebFileUrl').value.trim(),
-  };
-  msg.textContent = '';
-  try {
-    if (_editingEbookId !== null) {
-      await PaganiAPI.admin.updateEbook(_editingEbookId, payload);
-    } else {
-      await PaganiAPI.admin.createEbook(payload);
-    }
-    closeEbookModal();
-    loadAdminEbooks();
-  } catch(e) { msg.textContent = 'Erreur : ' + e.message; }
-}
-
-function closeEbookModal() {
-  document.getElementById('ebookModalOverlay').style.display = 'none';
-  _editingEbookId = null;
-}
-
-function deleteEbook(id, title) {
-  const overlay = document.getElementById('deleteEbookOverlay');
-  document.getElementById('deleteEbookName').textContent = title;
-  document.getElementById('deleteEbookConfirmBtn').onclick = async () => {
-    overlay.style.display = 'none';
-    try { await PaganiAPI.admin.deleteEbook(id); loadAdminEbooks(); }
-    catch(e) { alert('Erreur : ' + e.message); }
-  };
-  overlay.style.display = 'flex';
-}
-
-// ===== ADMIN ACHATS EBOOKS =====
-async function loadAdminEbookPurchases() {
-  const list = document.getElementById('adminEbookPurchasesList');
-  if (!list) return;
-  list.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
-  try {
-    _ebookPurchasesCache = await PaganiAPI.admin.getEbookPurchases();
-  } catch(e) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
-    return;
-  }
-  const pending = _ebookPurchasesCache.filter(p => p.statut === 'En attente').length;
-  const badge = document.getElementById('ebookPurchasesBadge');
-  if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
-  _renderEbookPurchases(_ebookPurchasesCache);
-}
-
-function filterEbookPurchases(status, btn) {
-  document.querySelectorAll('#adminSection-ebookpurchases .admin-filter-pill').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  const filtered = status === 'all' ? _ebookPurchasesCache : _ebookPurchasesCache.filter(p => p.statut === status);
-  _renderEbookPurchases(filtered);
-}
-
-function _renderEbookPurchases(purchases) {
-  const list = document.getElementById('adminEbookPurchasesList');
-  if (!list) return;
-  if (!purchases.length) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-shopping-bag"></i><p>Aucune demande.</p></div>';
-    return;
-  }
-  list.innerHTML = purchases.map(p => {
-    const isApproved = p.statut === 'Approuvé';
-    const isPending  = p.statut === 'En attente';
-    const statusColor = isApproved ? 'var(--green)' : isPending ? 'var(--gold)' : 'var(--red)';
-    const statusIcon  = isApproved ? 'fa-check-circle' : isPending ? 'fa-clock' : 'fa-times-circle';
-    return `
-    <div class="sub-user-card ${isApproved ? 'sub-user-approved' : isPending ? 'sub-user-pending' : 'sub-user-rejected'}" style="margin-bottom:1rem">
-      <div class="sub-user-card-header">
-        <div style="display:flex;align-items:center;gap:0.8rem">
-          <div style="width:42px;height:42px;border-radius:10px;background:rgba(0,212,170,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <i class="fas fa-book-open" style="color:var(--accent2)"></i>
-          </div>
-          <div>
-            <strong style="font-size:0.95rem">${esc(p.userName || '')}</strong>
-            <span style="display:block;font-size:0.78rem;color:var(--text2)">${esc(p.ebookTitle || '')}</span>
-            <span style="display:block;font-size:0.72rem;color:var(--text2)">${new Date(p.createdAt).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'})}</span>
-          </div>
-        </div>
-        <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:700;color:${statusColor};background:${statusColor}22;border:1px solid ${statusColor}44;padding:0.25rem 0.7rem;border-radius:50px">
-          <i class="fas ${statusIcon}"></i> ${p.statut}
-        </span>
-      </div>
-      <div class="sub-user-details">
-        <div class="sub-user-detail"><i class="fas fa-tag" style="color:var(--accent2)"></i><span><strong>${Number(p.amount).toLocaleString('fr-FR')} AR</strong><small>Montant</small></span></div>
-        <div class="sub-user-detail"><i class="fas fa-mobile-alt" style="color:var(--accent)"></i><span><strong>${esc(p.operator || '—')}</strong><small>${esc(p.phone || '')}</small></span></div>
-        ${p.txRef ? `<div class="sub-user-detail"><i class="fas fa-hashtag" style="color:var(--text2)"></i><span><strong>${esc(p.txRef)}</strong><small>Réf. transaction</small></span></div>` : ''}
-        ${p.proof ? `<div class="sub-user-detail" style="cursor:pointer" onclick="_showEbookProof('${p.id}','${esc(p.userName || '')}','${esc(p.ebookTitle || '')}')"><i class="fas fa-camera" style="color:var(--accent2)"></i><span><strong style="color:var(--accent2)">Voir la preuve</strong><small>Capture d'—cran</small></span></div>` : ''}
-      </div>
-      ${isPending ? `
-      <div class="sub-user-actions">
-        <button class="btn-primary" style="padding:0.45rem 1.1rem;font-size:0.82rem" onclick="_approveEbookPurchase(${p.id},'${esc(p.fileUrl || '')}')">
-          <i class="fas fa-check"></i> Approuver
-        </button>
-        <button class="btn-outline" style="padding:0.45rem 1.1rem;font-size:0.82rem;color:var(--red);border-color:var(--red)" onclick="_rejectEbookPurchase(${p.id})">
-          <i class="fas fa-times"></i> Rejeter
-        </button>
-      </div>` : ''}
-    </div>`;
-  }).join('');
-}
-
-function _showEbookProof(purchaseId, userName, ebookTitle) {
-  const p = _ebookPurchasesCache.find(x => x.id == purchaseId);
-  if (!p || !p.proof) return;
-  document.getElementById('ebookProofModalInfo').textContent = `${userName} — ${ebookTitle}`;
-  document.getElementById('ebookProofModalImg').src = p.proof;
-  document.getElementById('ebookProofModalDownload').href = p.proof;
-  document.getElementById('ebookProofModal').style.display = 'flex';
-}
-
-async function _approveEbookPurchase(id, defaultFileUrl) {
-  const fileUrl = prompt('URL de téléchargement du fichier PDF (laisser vide pour utiliser celle de l\'ebook) :', defaultFileUrl || '');
-  if (fileUrl === null) return; // annulé
-  try {
-    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Approuvé', fileUrl: fileUrl.trim() || defaultFileUrl || '' });
-    loadAdminEbookPurchases();
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
-async function _rejectEbookPurchase(id) {
-  const reason = prompt('Raison du rejet (optionnel) :') ;
-  if (reason === null) return;
-  try {
-    await PaganiAPI.admin.updateEbookPurchase(id, { statut: 'Rejeté', rejectReason: reason.trim() });
-    loadAdminEbookPurchases();
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
 async function loadAdminShares() {
   const kpisEl = document.getElementById('sharesKpis');
   const tableEl = document.getElementById('sharesTableWrap');
@@ -5325,30 +3516,30 @@ async function loadAdminShares() {
     const uniq    = new Set(shares.map(s => s.userId)).size;
     const topPost = shares.reduce((acc, s) => { acc[s.postId] = (acc[s.postId] || 0) + 1; return acc; }, {});
     const topId   = Object.entries(topPost).sort((a,b) => b[1]-a[1])[0];
-    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : '';
+    const topTitle = topId ? (shares.find(s => s.postId == topId[0])?.title || 'Post #' + topId[0]) : '—';
     kpisEl.innerHTML = `
       <div class="video-stat-card"><i class="fab fa-facebook" style="color:#1877f2"></i><strong>${total}</strong><span>Partages total</span></div>
       <div class="video-stat-card"><i class="fas fa-users" style="color:var(--accent)"></i><strong>${uniq}</strong><span>Membres actifs</span></div>
-      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partag</span></div>`;
+      <div class="video-stat-card" style="flex:2;min-width:200px"><i class="fas fa-fire" style="color:var(--gold)"></i><strong style="font-size:0.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(topTitle)}</strong><span>Post le plus partagé</span></div>`;
   }
   if (!shares.length) {
-    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistre pour le moment.</p></div>';
+    tableEl.innerHTML = '<div class="history-empty"><i class="fab fa-facebook" style="opacity:0.3"></i><p>Aucun partage enregistré pour le moment.</p></div>';
     return;
   }
   tableEl.innerHTML = `
     <div class="video-admin-header" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span>Membre</span><span>Post partage</span><span>Code parrain</span><span>Date</span>
+      <span>Membre</span><span>Post partagé</span><span>Code parrain</span><span>Date</span>
     </div>
     ${shares.map(s => `
     <div class="video-admin-row" style="grid-template-columns:1.5fr 2fr 1.2fr 1fr">
-      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || '')}</span>
+      <span style="font-weight:600;font-size:0.88rem">${esc(s.userName || '—')}</span>
       <span style="font-size:0.82rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(s.title || 'Post #' + s.postId)}</span>
-      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || '')}</code></span>
+      <span><code style="background:rgba(108,99,255,0.1);color:var(--accent);padding:0.15rem 0.5rem;border-radius:5px;font-size:0.78rem">${esc(s.refCode || '—')}</code></span>
       <span style="font-size:0.78rem;color:var(--text2)">${timeAgo(s.createdAt)}</span>
     </div>`).join('')}`;
 }
 
-// ===== COMPTEUR ANIM (hero stats) =====
+// ===== COMPTEUR ANIMÉ (hero stats) =====
 function animateCounters() {
   document.querySelectorAll(".stat strong[data-target]").forEach(el => {
     const target = parseInt(el.dataset.target);
@@ -5362,15 +3553,365 @@ function animateCounters() {
     }, 20);
   });
 }
+
+// ===== FORMATEUR =====
+
+async function loadTrainerTab() {
+  const user = getUser();
+  if (!user) return;
+  const _API = (typeof API_URL !== 'undefined' ? API_URL : 'http://localhost:3001/api');
+  const statusEl   = document.getElementById('trainerRequestStatus');
+  const formEl     = document.getElementById('trainerRequestForm');
+  const submitEl   = document.getElementById('trainerSubmitSection');
+  const earningsEl = document.getElementById('trainerEarningsSection');
+  const listEl     = document.getElementById('trainerSubmissionsList');
+
+  // Formateur ou admin : afficher espace formateur
+  if (user.role === 'formateur' || user.role === 'admin') {
+    if (statusEl) statusEl.innerHTML =
+      '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(0,212,170,0.08);border:1px solid rgba(0,212,170,0.25);border-radius:12px">'
+      + '<i class="fas fa-check-circle" style="color:var(--accent2);font-size:1.4rem"></i>'
+      + '<div><strong style="color:var(--accent2)">Formateur Partenaire actif</strong><br>'
+      + '<span style="font-size:0.82rem;color:var(--text2)">Vous pouvez soumettre des contenus pour publication.</span></div>'
+      + '</div>';
+    if (formEl)     formEl.style.display     = 'none';
+    if (submitEl)   submitEl.style.display   = 'block';
+    if (earningsEl) earningsEl.style.display = 'block';
+    if (listEl)     listEl.style.display     = 'block';
+    await loadTrainerSubmissions();
+    await loadTrainerEarnings();
+    return;
+  }
+
+  // Vérifier si une demande existe
+  try {
+    const req = await fetch(_API + '/trainer/my-request', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+
+    if (req && req.statut === 'En attente') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px">'
+        + '<i class="fas fa-clock" style="color:var(--gold);font-size:1.4rem"></i>'
+        + '<div><strong style="color:var(--gold)">Demande en cours d&#39;examen</strong><br>'
+        + '<span style="font-size:0.82rem;color:var(--text2)">Soumise le ' + new Date(req.created_at).toLocaleDateString('fr-FR') + '. Vous serez notifié dès qu&#39;une décision sera prise.</span></div>'
+        + '</div>';
+      if (formEl) formEl.style.display = 'none';
+      return;
+    }
+    if (req && req.statut === 'Rejeté') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="display:flex;align-items:center;gap:0.8rem;padding:1rem;background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.25);border-radius:12px">'
+        + '<i class="fas fa-times-circle" style="color:var(--red);font-size:1.4rem"></i>'
+        + '<div><strong style="color:var(--red)">Demande refusée</strong><br>'
+        + '<span style="font-size:0.82rem;color:var(--text2)">' + (req.reject_reason || 'Contactez l&#39;administrateur.') + '</span></div>'
+        + '</div>';
+      if (formEl) formEl.style.display = 'block';
+      return;
+    }
+  } catch(e) {}
+
+  // Pas de demande : afficher le formulaire
+  if (statusEl) statusEl.innerHTML = '';
+  if (formEl)   formEl.style.display = 'block';
+}
+
+async function submitTrainerRequest() {
+  const expertise   = document.getElementById('trainerExpertise')?.value.trim();
+  const description = document.getElementById('trainerDescription')?.value.trim();
+  const demoUrl     = document.getElementById('trainerDemoUrl')?.value.trim();
+  const msg         = document.getElementById('trainerRequestMsg');
+  if (!expertise || !description) { if(msg){msg.style.color='var(--red)';msg.textContent='Remplissez tous les champs obligatoires.';} return; }
+  try {
+    await fetch(API_URL + '/trainer/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
+      body: JSON.stringify({ expertise, description, demoUrl })
+    }).then(r => { if(!r.ok) return r.json().then(e => { throw new Error(e.error); }); return r.json(); });
+    if(msg){msg.style.color='var(--accent2)';msg.textContent='✅ Candidature envoyée ! Vous serez notifié dès qu\'une décision sera prise.';}
+    setTimeout(() => loadTrainerTab(), 1500);
+  } catch(e) {
+    const errs = { DEMANDE_DEJA_EN_COURS: 'Une demande est déjà en cours d\'examen.', FORMATEUR_REQUIS: 'Vous êtes déjà formateur.' };
+    if(msg){msg.style.color='var(--red)';msg.textContent=errs[e.message]||'Erreur : '+e.message;}
+  }
+}
+
+async function loadTrainerSubmissions() {
+  const wrap = document.getElementById('trainerSubmissionsContent');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const subs = await fetch(API_URL + '/trainer/my-submissions', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+    if (!subs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucun contenu soumis pour le moment.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    const statusIcons  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
+    wrap.innerHTML = subs.map(s => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(108,99,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="fas ${s.content_type==='video'?'fa-play-circle':'fa-book-open'}" style="color:var(--accent)"></i>
+        </div>
+        <div style="flex:1;min-width:0">
+          <strong style="font-size:0.92rem">${esc(s.title)}</strong>
+          <span style="display:block;font-size:0.75rem;color:var(--text2)">${s.content_type==='video'?'Vidéo':'Ebook'} · ${Number(s.price).toLocaleString('fr-FR')} AR · ${new Date(s.created_at).toLocaleDateString('fr-FR')}</span>
+          ${s.reject_reason ? `<span style="font-size:0.75rem;color:var(--red)">Raison : ${esc(s.reject_reason)}</span>` : ''}
+        </div>
+        <span style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;font-weight:700;color:${statusColors[s.statut]||'var(--text2)'};background:${statusColors[s.statut]||'var(--text2)'}22;border:1px solid ${statusColors[s.statut]||'var(--text2)'}44;padding:0.25rem 0.7rem;border-radius:50px;white-space:nowrap">
+          <i class="fas ${statusIcons[s.statut]||'fa-question'}"></i> ${s.statut}
+        </span>
+      </div>`).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function loadTrainerEarnings() {
+  const statsEl = document.getElementById('trainerEarningsStats');
+  const listEl  = document.getElementById('trainerEarningsList');
+  if (!statsEl || !listEl) return;
+  try {
+    const data = await fetch(API_URL + '/trainer/my-earnings', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') }
+    }).then(r => r.json());
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    statsEl.innerHTML = `
+      <div class="aff-stat-card"><i class="fas fa-coins"></i><strong>${fmt(data.total||0)} AR</strong><span>Gains totaux</span></div>
+      <div class="aff-stat-card"><i class="fas fa-clock"></i><strong>${fmt(data.pending||0)} AR</strong><span>En attente</span></div>
+      <div class="aff-stat-card"><i class="fas fa-check-circle"></i><strong>${fmt(data.paid||0)} AR</strong><span>Versé</span></div>`;
+    if (!data.earnings.length) { listEl.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission pour le moment.</p></div>'; return; }
+    listEl.innerHTML = `
+      <div class="history-header" style="grid-template-columns:1fr 1.5fr 1fr 1fr 1fr"><span>Date</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span></div>
+      ${data.earnings.map(e => `
+      <div class="history-row" style="grid-template-columns:1fr 1.5fr 1fr 1fr 1fr">
+        <span>${new Date(e.created_at).toLocaleDateString('fr-FR')}</span>
+        <span style="font-size:0.82rem">${esc(e.content_title||'—')}</span>
+        <span class="green">${fmt(e.sale_amount)} AR</span>
+        <span class="green">${fmt(e.commission_amount)} AR <small style="color:var(--text2)">(${e.commission_rate}%)</small></span>
+        <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+      </div>`).join('')}`;
+  } catch(e) { if(listEl) listEl.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+function openTrainerSubmitModal() {
+  document.getElementById('trainerSubmitOverlay').style.display = 'flex';
+  document.getElementById('trainerSubmitMsg').textContent = '';
+}
+function closeTrainerSubmitModal() {
+  document.getElementById('trainerSubmitOverlay').style.display = 'none';
+}
+function toggleTrainerContentType(type) {
+  document.getElementById('tsVideoFields').style.display = type === 'video' ? 'block' : 'none';
+  document.getElementById('tsEbookFields').style.display = type === 'ebook' ? 'block' : 'none';
+}
+
+async function submitTrainerContent() {
+  const msg = document.getElementById('trainerSubmitMsg');
+  const contentType = document.querySelector('input[name="trainerContentType"]:checked')?.value || 'video';
+  const title = document.getElementById('tsTitle')?.value.trim();
+  const price = parseInt(document.getElementById('tsPrice')?.value) || 0;
+  if (!title) { msg.style.color='var(--red)'; msg.textContent='Le titre est obligatoire.'; return; }
+  if (!price) { msg.style.color='var(--red)'; msg.textContent='Le prix est obligatoire.'; return; }
+  const payload = {
+    contentType, title, price,
+    description: document.getElementById('tsDescription')?.value.trim() || '',
+    category:    document.getElementById('tsCategory')?.value || 'debutant',
+    level:       document.getElementById('tsLevel')?.value || 'Débutant',
+    accessType:  'unit',
+  };
+  if (contentType === 'video') {
+    const src = document.getElementById('tsVideoSource')?.value || 'youtube';
+    const vid = document.getElementById('tsVideoId')?.value.trim() || '';
+    payload.videoSource = src;
+    payload.videoId     = src === 'youtube' ? vid : '';
+    payload.driveId     = src === 'drive'   ? vid : '';
+    payload.duration    = document.getElementById('tsDuration')?.value.trim() || '';
+    payload.thumbnail   = document.getElementById('tsThumbnail')?.value.trim() || '';
+  } else {
+    payload.authorName = document.getElementById('tsAuthorName')?.value.trim() || '';
+    payload.pages      = parseInt(document.getElementById('tsPages')?.value) || null;
+    payload.cover      = document.getElementById('tsCover')?.value.trim() || '';
+    payload.fileUrl    = document.getElementById('tsFileUrl')?.value.trim() || '';
+  }
+  try {
+    await fetch(API_URL + '/trainer/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('pd_jwt') },
+      body: JSON.stringify(payload)
+    }).then(r => { if(!r.ok) return r.json().then(e => { throw new Error(e.error); }); return r.json(); });
+    msg.style.color = 'var(--accent2)';
+    msg.textContent = '✅ Contenu soumis ! L\'admin le validera sous 24-48h.';
+    setTimeout(() => { closeTrainerSubmitModal(); loadTrainerSubmissions(); }, 1500);
+  } catch(e) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = 'Erreur : ' + e.message;
+  }
+}
+
+// ── ADMIN FORMATEURS ──────────────────────────────────────────────────────────
+
+async function loadAdminTrainers() {
+  const wrap = document.getElementById('adminTrainersList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const reqs  = await fetch(API_URL + '/admin/trainer-requests', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    const badge = document.getElementById('trainerRequestsBadge');
+    const pending = reqs.filter(r => r.statut === 'En attente').length;
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!reqs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-chalkboard-teacher"></i><p>Aucune demande formateur.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    wrap.innerHTML = reqs.map(r => {
+      const av = r.avatar_photo
+        ? `<img src="${r.avatar_photo}" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+        : `<div class="avatar-circle" style="width:40px;height:40px;min-width:40px;font-size:0.8rem;background:${r.avatar_color||'#6c63ff'}">${getInitials(r.user_name)}</div>`;
+      return `
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;flex-wrap:wrap">
+            ${av}
+            <div style="flex:1;min-width:0">
+              <strong>${esc(r.user_name)}</strong>
+              <span style="display:block;font-size:0.75rem;color:var(--text2)">${new Date(r.created_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+            <span style="font-size:0.78rem;font-weight:700;color:${statusColors[r.statut]||'var(--text2)'};background:${statusColors[r.statut]||'var(--text2)'}22;padding:0.2rem 0.6rem;border-radius:50px">${r.statut}</span>
+          </div>
+          <div style="font-size:0.85rem;margin-bottom:0.5rem"><strong>Expertise :</strong> ${esc(r.expertise)}</div>
+          <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem">${esc(r.description)}</div>
+          ${r.demo_url ? `<a href="${r.demo_url}" target="_blank" style="font-size:0.78rem;color:var(--accent)"><i class="fas fa-external-link-alt"></i> Voir la démo</a>` : ''}
+          ${r.statut === 'En attente' ? `
+            <div style="display:flex;gap:0.6rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
+              <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem">
+                <label>Commission :</label>
+                <input type="number" id="comm-${r.id}" value="50" min="0" max="90" step="5" style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:0.3rem 0.5rem;font-size:0.82rem" /> %
+              </div>
+              <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="treatTrainerRequest(${r.id},'Approuvé')">
+                <i class="fas fa-check"></i> Accepter
+              </button>
+              <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;color:var(--red);border-color:var(--red)" onclick="treatTrainerRequest(${r.id},'Rejeté')">
+                <i class="fas fa-times"></i> Refuser
+              </button>
+            </div>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function treatTrainerRequest(id, statut) {
+  const token = localStorage.getItem('pd_jwt');
+  const commRate = parseInt(document.getElementById('comm-' + id)?.value) || 50;
+  let rejectReason = '';
+  if (statut === 'Rejeté') {
+    rejectReason = prompt('Raison du refus (optionnel) :') || '';
+  }
+  try {
+    await fetch(API_URL + '/admin/trainer-requests/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut, rejectReason, commissionRate: commRate })
+    });
+    await loadAdminTrainers();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerSubmissions() {
+  const wrap = document.getElementById('adminTrainerSubmissionsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const subs  = await fetch(API_URL + '/admin/trainer-submissions', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    const badge = document.getElementById('trainerSubmissionsBadge');
+    const pending = subs.filter(s => s.statut === 'En attente').length;
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!subs.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-file-upload"></i><p>Aucun contenu soumis.</p></div>'; return; }
+    const statusColors = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--accent2)', 'Rejeté': 'var(--red)' };
+    wrap.innerHTML = subs.map(s => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;flex-wrap:wrap">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(108,99,255,0.12);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <i class="fas ${s.content_type==='video'?'fa-play-circle':'fa-book-open'}" style="color:var(--accent)"></i>
+          </div>
+          <div style="flex:1;min-width:0">
+            <strong>${esc(s.title)}</strong>
+            <span style="display:block;font-size:0.75rem;color:var(--text2)">Par ${esc(s.trainer_name)} · ${s.content_type==='video'?'Vidéo':'Ebook'} · ${Number(s.price).toLocaleString('fr-FR')} AR · Commission formateur : ${s.trainer_commission_rate}%</span>
+          </div>
+          <span style="font-size:0.78rem;font-weight:700;color:${statusColors[s.statut]||'var(--text2)'};background:${statusColors[s.statut]||'var(--text2)'}22;padding:0.2rem 0.6rem;border-radius:50px">${s.statut}</span>
+        </div>
+        <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.5rem">${esc(s.description||'')}</div>
+        ${s.statut === 'En attente' ? `
+          <div style="display:flex;gap:0.6rem;margin-top:0.8rem;flex-wrap:wrap">
+            <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="treatTrainerSubmission(${s.id},'Approuvé')">
+              <i class="fas fa-check"></i> Valider et Publier
+            </button>
+            <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;color:var(--red);border-color:var(--red)" onclick="treatTrainerSubmission(${s.id},'Rejeté')">
+              <i class="fas fa-times"></i> Refuser
+            </button>
+          </div>` : ''}
+      </div>`).join('');
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function treatTrainerSubmission(id, statut) {
+  const token = localStorage.getItem('pd_jwt');
+  let rejectReason = '';
+  if (statut === 'Rejeté') {
+    rejectReason = prompt('Raison du refus (optionnel) :') || '';
+  }
+  try {
+    await fetch(API_URL + '/admin/trainer-submissions/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut, rejectReason })
+    });
+    await loadAdminTrainerSubmissions();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerEarnings() {
+  const wrap = document.getElementById('adminTrainerEarningsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  try {
+    const token = localStorage.getItem('pd_jwt');
+    const data  = await fetch(API_URL + '/admin/trainer-earnings', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+    if (!data.length) { wrap.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission formateur.</p></div>'; return; }
+    const fmt = n => Number(n).toLocaleString('fr-FR');
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span>Formateur</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span><span>Action</span>
+      </div>
+      ${data.map(e => `
+      <div class="video-admin-row" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span style="font-weight:600;font-size:0.85rem">${esc(e.trainer_name)}</span>
+        <span style="font-size:0.82rem;color:var(--text2)">${esc(e.content_title||'—')}</span>
+        <span class="green">${fmt(e.sale_amount)} AR</span>
+        <span class="green">${fmt(e.commission_amount)} AR <small>(${e.commission_rate}%)</small></span>
+        <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+        <span>
+          ${e.statut !== 'Payé' ? `<button class="admin-action-btn edit" title="Marquer payé" onclick="markTrainerEarningPaid(${e.id})"><i class="fas fa-check"></i></button>` : '—'}
+        </span>
+      </div>`).join('')}`;
+  } catch(e) { wrap.innerHTML = '<p style="color:var(--red)">Erreur de chargement.</p>'; }
+}
+
+async function markTrainerEarningPaid(id) {
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/trainer-earnings/' + id + '/paid', {
+      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token }
+    });
+    await loadAdminTrainerEarnings();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
 // ===== NAVBAR MOBILE =====
 function toggleMenu() {
   document.querySelector(".nav-links").classList.toggle("open");
 }
-// ===== GESTION VIDEOS ADMIN =====
+// ===== GESTION VIDÉOS ADMIN =====
 let _editingVideoId = null;
-let _adminVideosCache = []; // cache local pour viter des appels rpts
+let _adminVideosCache = []; // cache local pour éviter des appels répétés
 function getVideos() {
-  return _adminVideosCache.length ? _adminVideosCache : [];
+  return _adminVideosCache.length ? _adminVideosCache : COURSES.map(c => ({ ...c }));
 }
 function saveVideos(videos) {
   _adminVideosCache = videos;
@@ -5409,12 +3950,12 @@ async function renderAdminVideos(filter = 'all') {
   else if (filter === 'pro')   filtered = videos.filter(v => !v.free && !v.unitPrice);
   else if (filter !== 'all')   filtered = videos.filter(v => v.category === filter);
   if (filtered.length === 0) {
-    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune video dans cette categorie.</p></div>';
+    list.innerHTML = '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidéo dans cette catégorie.</p></div>';
     return;
   }
   list.innerHTML = `
     <div class="video-admin-header">
-      <span>Titre</span><span>Categorie</span><span>Niveau</span><span>Acces</span><span>Actions</span>
+      <span>Titre</span><span>Catégorie</span><span>Niveau</span><span>Accès</span><span>Actions</span>
     </div>
     ${filtered.map(v => `
     <div class="video-admin-row" id="vrow-${v.id}">
@@ -5451,11 +3992,11 @@ async function toggleVideoAccess(id) {
 async function setVideoAccess(id, targetType) {
   const v = getVideos().find(v => v.id === id);
   if (!v) return;
-  // Si on clique sur "Achat unitaire" ? ouvrir un mini-menu pour choisir
+  // Si on clique sur "Achat unitaire" â†’ ouvrir un mini-menu pour choisir
   if (!v.free && v.unitPrice && targetType === 'pro') {
     const row = document.getElementById(`vrow-${id}`);
     if (!row) return;
-    // Verifier si un menu existe deja
+    // Vérifier si un menu existe déjé
     if (row.querySelector('.access-menu')) { row.querySelector('.access-menu').remove(); return; }
     const menu = document.createElement('div');
     menu.className = 'access-menu';
@@ -5496,7 +4037,7 @@ function _currentAdminFilter() {
 function _onAccessTypeChange(type) {
   const priceGroup = document.getElementById('vPriceGroup');
   if (priceGroup) priceGroup.style.display = type === 'unit' ? 'block' : 'none';
-  // Synchroniser les radios si appel programmatiquement
+  // Synchroniser les radios si appelé programmatiquement
   const map = { free: 'vFree', paid: 'vPaid', unit: 'vUnit', pro: 'vPaid' };
   const radioId = map[type];
   if (radioId) {
@@ -5507,10 +4048,10 @@ function _onAccessTypeChange(type) {
 function openVideoModal() {
   _editingVideoId = null;
   _thumbnailBase64 = '';
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une video';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-plus" style="color:var(--accent)"></i> Ajouter une vidéo';
   ['vTitle','vDesc','vVideoDescription','vDuration','vVideoId','vDriveId','vThumbnailUrl','vPrice'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   document.getElementById('vCategory').value = 'debutant';
-  document.getElementById('vLevel').value    = 'Debutant';
+  document.getElementById('vLevel').value    = 'Débutant';
   document.getElementById('vFree').checked   = true;
   if (document.getElementById('vUnit')) document.getElementById('vUnit').checked = false;
   if (document.getElementById('vPaid')) document.getElementById('vPaid').checked = false;
@@ -5534,17 +4075,17 @@ async function editVideo(id) {
   if (!v) v = getVideos().find(x => x.id === id);
   if (!v) return;
   _editingVideoId = id;
-  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la video';
+  document.getElementById('videoModalTitle').innerHTML = '<i class="fas fa-edit" style="color:var(--accent)"></i> Modifier la vidéo';
   document.getElementById('vTitle').value    = v.title    || '';
   document.getElementById('vDesc').value     = v.description || v.desc || '';
   document.getElementById('vVideoDescription').value = v.videoDescription || '';
   document.getElementById('vDuration').value = v.duration || '';
   document.getElementById('vVideoId').value  = v.videoId  || '';
-  // Le serveur retourne le driveId en clair, localStorage le retourne chiffre
+  // Le serveur retourne le driveId en clair, localStorage le retourne chiffré
   document.getElementById('vDriveId').value  = window.PaganiAPI ? (v.driveId || '') : (v.driveId ? _decode(v.driveId) : '');
   document.getElementById('vCategory').value = v.category || 'debutant';
-  document.getElementById('vLevel').value    = v.level    || 'Debutant';
-  // Dterminer le type d'acces
+  document.getElementById('vLevel').value    = v.level    || 'Débutant';
+  // Déterminer le type d'accès
   const accessType = v.free ? 'free' : (v.accessType === 'unit' || v.unitPrice ? 'unit' : 'paid');
   const radioEl = document.getElementById(accessType === 'free' ? 'vFree' : accessType === 'unit' ? 'vUnit' : 'vPaid');
   if (radioEl) radioEl.checked = true;
@@ -5727,7 +4268,7 @@ function closeDashFollowModal() {
   const modal = document.getElementById('dashFollowModal');
   if (modal) modal.style.display = 'none';
 }
-// ===== MESSAGERIE PRIVE =====
+// ===== MESSAGERIE PRIVÉE =====
 let _currentChatUserId   = null;
 let _currentChatUserName = null;
 let _chatPollingTimer    = null;
@@ -5751,7 +4292,7 @@ function _initVirtualKeyboard() {
   window.addEventListener('resize', _applyHeight);
   _applyHeight();
 }
-// Appela une fois au chargement de la page messages
+// Appelé une fois au chargement de la page messages
 if (document.getElementById('msgApp')) {
   document.addEventListener('DOMContentLoaded', _initVirtualKeyboard);
 }
@@ -5763,32 +4304,10 @@ function _msgAvatar(u, size) {
   }
   return `<div class="avatar-circle msg-bubble-avatar" style="width:${s}px;height:${s}px;min-width:${s}px;font-size:${Math.round(s*0.3)}px;background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
 }
-// Aperçu du dernier événement dans la liste des conversations (message ou réaction)
-function _convPreview(c) {
-  const me = getUser();
-  const myId = me ? me.id : null;
-  // Comparer les dates : réaction vs dernier message
-  const rxDate  = c.lastRxDate  ? new Date(c.lastRxDate).getTime()  : 0;
-  const msgDate = c.lastDate    ? new Date(c.lastDate).getTime()    : 0;
-  if (c.lastRxEmoji && rxDate >= msgDate) {
-    // La réaction est plus récente (ou égale) au dernier message
-    const iMReacted = String(c.lastRxUserId) === String(myId);
-    const preview   = c.lastRxMsgContent ? (c.lastRxMsgContent.length > 20 ? c.lastRxMsgContent.slice(0,20)+'...' : c.lastRxMsgContent) : (c.lastRxMsgImage ? 'Photo' : 'Photo');
-    if (iMReacted) {
-      return c.lastRxEmoji + ' Vous avez réagi : ' + preview;
-    } else {
-      return c.lastRxEmoji + ' ' + c.name.split(' ')[0] + ' a réagi : ' + preview;
-    }
-  }
-  // Sinon : dernier message normal
-  if (!c.lastContent && c.lastImage) return '📷 Photo';
-  return esc(c.lastContent) || 'Démarrer la conversation';
-}
-
 async function loadConversations() {
   const list = document.getElementById('convList');
   if (!list) return;
-  if (!list.children.length) list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
+  list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-spinner fa-spin"></i><p>Chargement...</p></div>';
   try {
     const convs = await PaganiAPI.getConversations();
     _allConvs = convs;
@@ -5796,74 +4315,40 @@ async function loadConversations() {
       list.innerHTML = '<div class="mpx-conv-empty"><i class="fas fa-comment-slash"></i><p>Aucune conversation.<br>Envoyez un message depuis un profil.</p></div>';
       return;
     }
-    // Supprimer le spinner s'il est encore là
-    const _spinner = list.querySelector('.mpx-conv-empty');
-    if (_spinner) _spinner.remove();
-
-    // Refresh silencieux : diff DOM sans vider la liste
-    const _existingIds = new Set([...list.querySelectorAll('.mpx-conv-item')].map(el => el.dataset.userid));
-    const _newIds = new Set(convs.map(c => String(c.id)));
-    _existingIds.forEach(id => { if (!_newIds.has(id)) { const el = list.querySelector('[data-userid="'+id+'"]'); if (el) el.remove(); } });
-    convs.forEach(function(c, idx) {
+    list.innerHTML = convs.map(c => {
       const unread   = parseInt(c.unreadCount) || 0;
       const isActive = _currentChatUserId === c.id;
       const av = c.avatarPhoto
-        ? '<img src="'+c.avatarPhoto+'" style="width:44px;height:44px;border-radius:50%;object-fit:cover" />'
-        : '<div class="avatar-circle" style="width:44px;height:44px;min-width:44px;font-size:0.85rem;background:'+(c.avatarColor||'#6c63ff')+'">'+getInitials(c.name)+'</div>';
+        ? `<img src="${c.avatarPhoto}" style="width:44px;height:44px;border-radius:50%;object-fit:cover" />`
+        : `<div class="avatar-circle" style="width:44px;height:44px;min-width:44px;font-size:0.85rem;background:${c.avatarColor||'#6c63ff'}">${getInitials(c.name)}</div>`;
       const timeStr = c.lastDate ? timeAgo(c.lastDate) : '';
-      let item = list.querySelector('[data-userid="'+c.id+'"]');
-      if (!item) {
-        item = document.createElement('div');
-        item.dataset.userid = String(c.id);
-        item.dataset.name = c.name.replace(/"/g,'&quot;');
-        item.addEventListener('click', (function(cv){ return function(){ openChat(cv.id,cv.name,cv.avatarColor||'#6c63ff',cv.avatarPhoto||'',cv.plan||''); }; })(c));
-        list.appendChild(item);
-      }
-      const items = list.querySelectorAll('.mpx-conv-item');
-      if (items[idx] !== item) list.insertBefore(item, items[idx] || null);
-      item.className = 'mpx-conv-item' + (isActive ? ' active' : '');
-      item.innerHTML =
-        '<div class="mpx-conv-av">'+av+(unread ? '<span class="mpx-conv-unread">'+(unread > 9 ? '9+' : unread)+'</span>' : '')+'</div>'+
-        '<div class="mpx-conv-body"><div class="mpx-conv-name">'+esc(c.name)+'</div><div class="mpx-conv-preview">'+_convPreview(c)+'</div></div>'+
-        '<div class="mpx-conv-right">'+(timeStr ? '<span class="mpx-conv-time">'+timeStr+'</span>' : '')+'<div class="mpx-conv-presence-slot" id="pres-'+c.id+'"></div></div>';
-    });
-    // Statut de présence dans le slot dédié (colonne droite)
-    if (window.PaganiAPI && convs.length) {
-      convs.forEach(function(cv) {
-        PaganiAPI.getPresence(cv.id).then(function(p) {
-          var item = list.querySelector('[data-userid="'+cv.id+'"]');
-          if (!item) return;
-          // Point vert sur l'avatar via classe CSS (::after)
-          var av = item.querySelector('.mpx-conv-av');
-          if (av) {
-            if (p && p.online) av.classList.add('mpx-conv-av--online');
-            else av.classList.remove('mpx-conv-av--online');
-          }
-          // Texte de présence dans le slot dédié (colonne droite, sous le time)
-          var slot = document.getElementById('pres-'+cv.id);
-          if (slot) {
-            if (p && p.online) {
-              slot.innerHTML = '<span class="mpx-pres-online">En ligne</span>';
-            } else {
-              slot.innerHTML = '';
-            }
-          }
-        }).catch(function(){});
-      });
-    }
-    // Ouvrir automatiquement si redirig depuis une notification
+      return `
+        <div class="mpx-conv-item${isActive ? ' active' : ''}"
+          data-name="${c.name.replace(/"/g,'&quot;')}"
+          onclick="openChat(${c.id},'${c.name.replace(/'/g,"\\'")}',' ${c.avatarColor||'#6c63ff'}','${c.avatarPhoto||''}')">
+          <div class="mpx-conv-av">
+            ${av}
+            ${unread ? `<span class="mpx-conv-unread">${unread > 9 ? '9+' : unread}</span>` : ''}
+          </div>
+          <div class="mpx-conv-body">
+            <div class="mpx-conv-name">${esc(c.name)}</div>
+            <div class="mpx-conv-preview">${esc(c.lastContent) || 'Démarrer la conversation'}</div>
+          </div>
+          ${timeStr ? `<div class="mpx-conv-time">${timeStr}</div>` : ''}
+        </div>`;
+    }).join('');
+    // Ouvrir automatiquement si redirigé depuis une notification
     if (window._openChatWith) {
       const target = convs.find(c => c.id === window._openChatWith);
-      if (target) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '', target.plan || '');
+      if (target) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '');
       window._openChatWith = null;
     }
   } catch(e) {
     list.innerHTML = '<div class="mpx-conv-empty" style="color:var(--red)"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement</p></div>';
   }
 }
-async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
+async function openChat(userId, userName, avatarColor, avatarPhoto) {
   _currentChatUserId   = userId;
-  window.__typingChatUserId = userId;
   _currentChatUserName = userName;
   _chatMsgsCache = []; // Reinitialiser le cache a chaque nouvelle conversation
   _chatOldestTs  = null; // Reset pagination
@@ -5879,54 +4364,28 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   const inputRow = document.getElementById('chatInputRow');
   const profLink = document.getElementById('chatProfileLink');
   if (!messages) return;
-  // Mettre a jour l'URL pour persister l'etat au refresh
+  // Mettre à jour l'URL pour persister l'état au refresh
   const newUrl = window.location.pathname + '?with=' + userId;
   if (window.location.search !== '?with=' + userId) {
     history.pushState({ chatWith: userId, chatName: userName }, '', newUrl);
   }
-  // Afficher les elements
+  // Afficher les éléments
   if (header)   header.style.display   = 'flex';
   if (empty)    empty.style.display    = 'none';
   if (messages) messages.style.display = 'flex';
   if (inputRow) inputRow.style.display = 'block';
   if (profLink) profLink.href = `profil.html?id=${userId}`;
-  const avatarLink = document.getElementById('chatHeaderAvatar');
-  const infoLink   = document.getElementById('chatHeaderInfoLink');
-  if (avatarLink) avatarLink.href = `profil.html?id=${userId}`;
-  if (infoLink)   infoLink.href   = `profil.html?id=${userId}`;
-  // Avatar + nom dans l'en-tte
+  // Avatar + nom dans l'en-tête
   if (headerAv) {
-    headerAv.className = 'mpx-chat-avatar';
+    headerAv.className = 'mpx-chat-avatar mpx-chat-avatar-online';
     headerAv.innerHTML = avatarPhoto
       ? `<img src="${avatarPhoto}" style="width:40px;height:40px;border-radius:50%;object-fit:cover" />`
       : `<div class="avatar-circle" style="width:40px;height:40px;min-width:40px;font-size:0.8rem;background:${avatarColor||'#6c63ff'}">${getInitials(userName)}</div>`;
   }
   if (headerNm) headerNm.textContent = userName;
-  if (headerSub) {
-    const planColors = { Pro: 'var(--accent)', Elite: 'var(--gold)', Starter: 'var(--text2)' };
-    const color = planColors[userPlan] || 'var(--text2)';
-    const planHtml = userPlan
-      ? `<span style="color:${color}">Plan ${userPlan}</span>`
-      : '';
-    headerSub.innerHTML = '';
-    // Verifier le statut en ligne
-    if (window.PaganiAPI) {
-      var _presenceForUserId = userId;
-      PaganiAPI.getPresence(userId).then(function(p) {
-        // Ignorer si l'utilisateur a change entre temps
-        if (_currentChatUserId !== _presenceForUserId) return;
-        const isOnline = p && p.online;
-        if (headerAv) { if (isOnline) headerAv.classList.add('mpx-chat-avatar-online'); else headerAv.classList.remove('mpx-chat-avatar-online'); }
-        const onlineText = isOnline ? 'En ligne' : _presenceTimeAgo(p && p.lastSeen);
-        if (document.getElementById('chatHeaderSub') === headerSub) {
-          headerSub.className = 'mpx-chat-sub' + (isOnline ? ' mpx-chat-sub--online' : '');
-          headerSub.textContent = onlineText;
-          headerSub.style.display = onlineText ? 'flex' : 'none';
-        }
-      }).catch(function(){});
-    }
-  }
-  document.title = `${userName} - Messages`;
+  if (headerSub) headerSub.textContent = 'Membre Pagani Digital';
+  // Mettre à jour le titre de la page
+  document.title = `${userName} — Messages`;
   // Loader
   messages.innerHTML = '<div class="mpx-loading"><span></span><span></span><span></span></div>';
   // Mobile : afficher la colonne chat
@@ -5941,39 +4400,18 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
     chat.classList.add('mpx-chat-entering');
     chat.addEventListener('animationend', () => chat.classList.remove('mpx-chat-entering'), { once: true });
   }
-  // Mettre a jour la liste (marquer actif)
+  // Mettre à jour la liste (marquer actif)
   loadConversations();
   await _loadChatMessages(userId, true);
-  _rxCache = {};
-  // Marquer les messages comme lus (ticks ??)
+  // Marquer les messages comme lus (ticks ✓✓)
   if (window.PaganiAPI) PaganiAPI.markMessagesRead(userId).catch(() => {});
   _initChatScrollBtn(document.getElementById('chatMessages'));
   // Polling toutes les 5s
   if (_chatPollingTimer) clearInterval(_chatPollingTimer);
-  var _presenceRefreshCount = 0;
   _chatPollingTimer = setInterval(() => {
     if (_currentChatUserId === userId && !_chatBusy) {
       _loadChatMessages(userId);
-      loadConversations();
       _updateMsgBadge();
-      // Rafraîchir le statut de présence toutes les 30s (1 fois sur 6)
-      _presenceRefreshCount++;
-      if (_presenceRefreshCount % 6 === 0 && window.PaganiAPI) {
-        PaganiAPI.getPresence(userId).then(function(p) {
-          var hSub = document.getElementById('chatHeaderSub');
-          var hAv  = document.getElementById('chatHeaderAvatar');
-          if (!hSub) return;
-          var planColors = { Pro: 'var(--accent)', Elite: 'var(--gold)', Starter: 'var(--text2)' };
-          var color = planColors[userPlan] || 'var(--text2)';
-          var planHtml = userPlan ? '<span style="color:'+color+'">Plan '+userPlan+'</span>' : '';
-          var isOnline = p && p.online;
-          if (hAv) { if (isOnline) hAv.classList.add('mpx-chat-avatar-online'); else hAv.classList.remove('mpx-chat-avatar-online'); }
-          var onlineText = isOnline ? 'En ligne' : _presenceTimeAgo(p && p.lastSeen);
-          hSub.className = 'mpx-chat-sub' + (isOnline ? ' mpx-chat-sub--online' : '');
-          hSub.textContent = onlineText;
-          hSub.style.display = onlineText ? 'flex' : 'none';
-        }).catch(function(){});
-      }
     }
   }, 5000);
 }
@@ -5983,15 +4421,14 @@ function closeChatMobile() {
   document.body.classList.remove('chat-open');
   const body = document.querySelector('.msg-page-body');
   if (body) body.style.height = '';
-  // Retour immdiat a la sidebar sans attendre animationend
+  // Retour immédiat à la sidebar sans attendre animationend
   if (chat)    { chat.classList.remove('msg-visible'); chat.classList.remove('mpx-chat-entering'); chat.classList.remove('mpx-chat-leaving'); }
   if (sidebar) sidebar.classList.remove('msg-hidden');
   _currentChatUserId   = null;
-  window.__typingChatUserId = null;
   _currentChatUserName = null;
   if (_chatPollingTimer) { clearInterval(_chatPollingTimer); _chatPollingTimer = null; }
   history.pushState({}, '', window.location.pathname);
-  document.title = 'Messages - Pagani Digital';
+  document.title = 'Messages — Pagani Digital';
   const header   = document.getElementById('chatHeader');
   const messages = document.getElementById('chatMessages');
   const inputRow = document.getElementById('chatInputRow');
@@ -6000,12 +4437,12 @@ function closeChatMobile() {
   if (messages) messages.style.display = 'none';
   if (inputRow) inputRow.style.display = 'none';
 }
-// Grer le bouton retour du navigateur
+// Gérer le bouton retour du navigateur
 window.addEventListener('popstate', (e) => {
   if (!document.getElementById('mpxChat')) return;
   const params = new URLSearchParams(window.location.search);
   if (!params.get('with')) {
-    // Retour a la liste
+    // Retour à la liste
     const sidebar = document.getElementById('mpxSidebar');
     const chat    = document.getElementById('mpxChat');
     if (sidebar) sidebar.classList.remove('msg-hidden');
@@ -6028,45 +4465,10 @@ function _formatMsgTime(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 }
-// ===== NOTIFICATION SONORE MESSAGES =====
-function _playMsgSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
-  } catch(e) {}
-}
 // Cache local des messages affiches (id -> true) pour eviter de reconstruire le DOM
 let _chatMsgsCache = [];
 
 let _chatImageBase64 = '';
-let _replyMsg = null; // { id, content, senderName, isMine }
-
-function _setReply(msgId, content, senderName, isMine) {
-  _replyMsg = { id: msgId, content, senderName, isMine };
-  const bar = document.getElementById('chatReplyBar');
-  const name = document.getElementById('chatReplyName');
-  const text = document.getElementById('chatReplyText');
-  if (!bar) return;
-  if (name) name.textContent = isMine ? 'Vous' : senderName;
-  if (text) text.textContent = content || '📷 Photo';
-  bar.style.display = 'flex';
-  document.getElementById('chatInput')?.focus();
-}
-
-function _clearReply() {
-  _replyMsg = null;
-  const bar = document.getElementById('chatReplyBar');
-  if (bar) bar.style.display = 'none';
-}
 
 function _previewChatImage(input) {
   const file2 = input.files[0];
@@ -6100,7 +4502,7 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
   const avatarHtml = (!isMine && !nextIsSame)
     ? `<div class="mpx-bubble-av">${otherAv}</div>`
     : (!isMine ? `<div class="mpx-bubble-av" style="visibility:hidden"></div>` : '');
-  const timeStr   = _formatMsgTime(m.createdAt);
+  const timeStr = _formatMsgTime(m.createdAt);
   const animClass = isNew ? ' mpx-bubble-new' : '';
   const imageHtml = m.image ? '<div class="mpx-bubble-img-wrap"><img src="' + m.image + '" class="mpx-bubble-img" onclick="_openMsgImage(this.src)" /></div>' : '';
   const textHtml  = m.content ? esc(m.content) : '';
@@ -6109,141 +4511,28 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
         ? '<span class="mpx-tick mpx-tick-read" title="Vu"><i class="fas fa-check-double"></i></span>'
         : '<span class="mpx-tick" title="Envoy\u00e9"><i class="fas fa-check"></i></span>')
     : '';
-  const senderName = isMine ? 'Vous' : (_currentChatUserName || '');
-  const quoteHtml = m.replyTo
-    ? `<div class="mpx-bubble-quote" onclick="_scrollToMsg(${m.replyTo.id})">
-        <div class="mpx-bubble-quote-inner">
-          <span class="mpx-bubble-quote-name">${esc(m.replyTo.senderName || '')}</span>
-          <span class="mpx-bubble-quote-text">${esc(m.replyTo.content || '📷 Photo')}</span>
-        </div>
-       </div>`
-    : '';
-  const safeContent = (m.content || '').replace(/\\/g, '\\\\').replace(/'/g, '\x27');
-  const safeSender  = senderName.replace(/\\/g, '\\\\').replace(/'/g, '\x27');
-  const rowSwipeAttr = `data-msgid="${m.id}" ontouchstart="_onBubbleTouchStart(event,${m.id},'${safeContent}','${safeSender}',${isMine})" ontouchend="_onBubbleTouchEnd(event)" ontouchcancel="_onBubbleTouchEnd(event)" ontouchmove="_onBubbleTouchMove(event)"`;
-  const bubbleLpAttr = `ontouchstart="_startMsgLongPress(event,${m.id})" ontouchend="_cancelMsgLongPress()" ontouchcancel="_cancelMsgLongPress()"`;
-  const rxTrigger = `<button class="mpx-rx-trigger" title="R\u00e9agir" onclick="event.stopPropagation();_showRxPicker(event,${m.id})"><i class="fas fa-smile"></i></button>`;
-  const replyBtn  = `<button class="mpx-reply-btn" title="R\u00e9pondre" onclick="event.stopPropagation();_setReply(${m.id},'${safeContent}','${safeSender}',${isMine})"><i class="fas fa-reply"></i></button>`;
-  const rxZone = `<div class="mpx-bubble-reactions" id="rx-zone-${m.id}"></div>`;
-  return dateSep + `<div class="mpx-bubble-row${isMine ? ' mine' : ''}${animClass}" ${rowSwipeAttr} id="msg-${m.id}">
+  return dateSep + `<div class="mpx-bubble-row${isMine ? ' mine' : ''}${animClass}" data-msgid="${m.id}">
     ${avatarHtml}
-    <div class="mpx-bubble-wrap">
-      ${replyBtn}
-      <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr}>
-        ${quoteHtml}${imageHtml}${textHtml}
-        <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
-        ${rxTrigger}
-      </div>
+    <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}">
+      ${imageHtml}${textHtml}
+      <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
+      ${isMine ? '<button class="mpx-msg-del-btn" onclick="_deleteChatMessage('+m.id+')" title="Supprimer"><i class=\"fas fa-trash\"></i></button>' : ''}
     </div>
-  </div>
-  ${rxZone}`;
+  </div>`;
 }
 
-// Met a jour les ticks ?/?? dans le DOM sans re-render
-
-// ===== SUPPRESSION MESSAGE (LONG PRESS) =====
-let _msgLPT = null;
-function _startMsgLongPress(e, id) {
-  _cancelMsgLongPress();
-  // Long press uniquement sur mobile (touch)
-  if (e.type !== 'touchstart') return;
-  _msgLPT = setTimeout(function() {
-    _msgLPT = null;
-    _closeRxPicker();
-    _showRxPicker(e, id);
-  }, 500);
-}
-function _cancelMsgLongPress() { if (_msgLPT) { clearTimeout(_msgLPT); _msgLPT = null; } }
-// ===== SWIPE POUR REPONDRE =====
-var _swipeStartX = 0, _swipeStartY = 0, _swipeEl = null, _swipeActive = false;
-var _swipeMsgId = null, _swipeMsgContent = null, _swipeMsgSender = null, _swipeMsgIsMine = false;
-
-function _onBubbleTouchStart(e, id, content, sender, isMine) {
-  if (e.touches.length !== 1) return;
-  _swipeStartX   = e.touches[0].clientX;
-  _swipeStartY   = e.touches[0].clientY;
-  _swipeEl       = e.currentTarget;
-  _swipeActive   = false;
-  _swipeMsgId      = id;
-  _swipeMsgContent = content;
-  _swipeMsgSender  = sender;
-  _swipeMsgIsMine  = isMine;
-}
-
-function _onBubbleTouchMove(e) {
-  if (!_swipeEl || e.touches.length !== 1) return;
-  var dx = e.touches[0].clientX - _swipeStartX;
-  var dy = e.touches[0].clientY - _swipeStartY;
-  // Swipe horizontal uniquement (pas de scroll vertical)
-  if (!_swipeActive && Math.abs(dy) > Math.abs(dx)) { _swipeEl = null; return; }
-  if (Math.abs(dx) < 8) return;
-  _swipeActive = true;
-  e.preventDefault();
-  // Limiter le déplacement à 72px
-  var clamped = Math.max(-72, Math.min(72, dx));
-  var wrap = _swipeEl.querySelector('.mpx-bubble-wrap');
-  if (wrap) wrap.style.transform = 'translateX(' + clamped + 'px)';
-  // Afficher l'icône reply quand on dépasse 40px
-  var btn = _swipeEl.querySelector('.mpx-reply-btn');
-  if (btn) btn.classList.toggle('mpx-reply-btn--active', Math.abs(clamped) >= 40);
-}
-
-function _onBubbleTouchEnd(e) {
-  if (!_swipeEl) return;
-  var wrap = _swipeEl.querySelector('.mpx-bubble-wrap');
-  var btn  = _swipeEl.querySelector('.mpx-reply-btn');
-  var dx   = (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : _swipeStartX) - _swipeStartX;
-  if (wrap) { wrap.style.transition = 'transform 0.2s ease'; wrap.style.transform = 'translateX(0)'; setTimeout(function(){ if(wrap) wrap.style.transition = ''; }, 220); }
-  if (btn)  btn.classList.remove('mpx-reply-btn--active');
-  if (_swipeActive && Math.abs(dx) >= 40) {
-    _setReply(_swipeMsgId, _swipeMsgContent, _swipeMsgSender, _swipeMsgIsMine);
-  }
-  _swipeEl = null; _swipeActive = false;
-}
-
-function _scrollToMsg(msgId) {
-  var el = document.getElementById('msg-' + msgId);
-  if (!el) return;
-  var container = document.getElementById('chatMessages');
-  if (container) {
-    var elTop    = el.offsetTop;
-    var elHeight = el.offsetHeight;
-    var target   = elTop - (container.clientHeight / 2) + (elHeight / 2);
-    container.scrollTo({ top: target, behavior: 'smooth' });
-  } else {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-  el.classList.add('mpx-bubble-highlight');
-  setTimeout(function(){ el.classList.remove('mpx-bubble-highlight'); }, 1500);
-}
-function _showMsgMenu(id) {
-  document.querySelectorAll('.mpx-msg-menu').forEach(function(m) { m.remove(); });
-  var menu = document.createElement('div');
-  menu.className = 'mpx-msg-menu';
-  menu.innerHTML = '<button onclick="_deleteChatMessage(' + id + ')"><i class="fas fa-trash"></i> Supprimer</button>';
-  var row = document.querySelector('[data-msgid="' + id + '"]');
-  if (!row) return;
-  row.style.position = 'relative';
-  row.appendChild(menu);
-  function blockClick(ev) { ev.stopPropagation(); row.removeEventListener('click', blockClick, true); }
-  row.addEventListener('click', blockClick, true);
-  setTimeout(function() {
-    row.removeEventListener('click', blockClick, true);
-    document.addEventListener('click', function c(ev) {
-      if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', c, true); }
-    }, true);
-  }, 500);
-}
+// ===== SUPPRESSION MESSAGE =====
 async function _deleteChatMessage(id) {
-  document.querySelectorAll('.mpx-msg-menu').forEach(function(m) { m.remove(); });
-  if (!_currentChatUserId || !window.PaganiAPI) return;
+  if (!confirm('Supprimer ce message ?')) return;
+  if (!window._currentChatUserId || !window.PaganiAPI) return;
   try {
-    await PaganiAPI.deleteMessage(_currentChatUserId, id);
-    var row = document.querySelector('[data-msgid="' + id + '"]');
+    await PaganiAPI.deleteMessage(window._currentChatUserId, id);
+    const row = document.querySelector('[data-msgid="' + id + '"]');
     if (row) row.remove();
-    _chatMsgsCache = _chatMsgsCache.filter(function(m) { return m.id !== id; });
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 }
+
+// Met à jour les ticks ✓/✓✓ dans le DOM sans re-render
 function _updateReadTicks(msgs, container) {
   if (!container) return;
   msgs.forEach(m => {
@@ -6265,7 +4554,7 @@ function _updateReadTicks(msgs, container) {
   });
 }
 
-// Curseur pour la pagination (oldest createdAt charg)
+// Curseur pour la pagination (oldest createdAt chargé)
 let _chatOldestTs = null;
 let _chatAllLoaded = false;
 let _chatLoadingMore = false;
@@ -6290,7 +4579,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
 
     if (!msgs.length) {
       if (isFirstLoad) {
-        messages.innerHTML = '<div class="mpx-empty" style="flex:1;justify-content:center"><div class="mpx-empty-blob"><i class="fas fa-comment"></i></div><p>Démarrez la conversation !</p></div>';
+        messages.innerHTML = '<div class="mpx-empty" style="flex:1;justify-content:center"><div class="mpx-empty-blob"><i class="fas fa-comment"></i></div><p>DÃ©marrez la conversation !</p></div>';
         _chatMsgsCache = [];
         _chatOldestTs  = null;
         _chatAllLoaded = true;
@@ -6299,7 +4588,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
     }
 
     if (isFirstLoad) {
-      // -- PREMIER CHARGEMENT ---------------------------------------
+      // â”€â”€ PREMIER CHARGEMENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       _chatOldestTs  = msgs[0].createdAt;
       _chatAllLoaded = msgs.length < 30;
 
@@ -6331,19 +4620,15 @@ async function _loadChatMessages(userId, forceScrollBottom) {
 
       messages.scrollTop = messages.scrollHeight;
       messages.style.scrollBehavior = '';
+
       _chatBusy = false;
-      // Charger les reactions apres que les rx-zone soient dans le DOM
-      _loadRxForConv(userId);
 
     } else {
-      // -- POLLING : ajouter uniquement les nouveaux messages -------
+      // â”€â”€ POLLING : ajouter uniquement les nouveaux messages â”€â”€â”€â”€â”€â”€â”€
       const cachedIds = new Set(_chatMsgsCache.map(m => m.id));
       const newMsgs   = msgs.filter(m => !cachedIds.has(m.id));
 
       if (newMsgs.length > 0) {
-        // Son discret si au moins un message reçu (pas de moi)
-        const hasIncoming = newMsgs.some(m => m.senderId !== (user && user.id));
-        if (hasIncoming) _playMsgSound();
         newMsgs.forEach(m => {
           const globalPrev = _chatMsgsCache[_chatMsgsCache.length - 1];
           const isMine     = m.senderId === (user && user.id);
@@ -6360,7 +4645,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
           const tmp  = document.createElement('div');
           tmp.innerHTML = html;
 
-          // Remplacer le message optimiste en place (pas de suppression + réinsertion)
+          // Remplacer le message optimiste en place (pas de suppression + rÃ©insertion)
           const optimistic = isMine ? messages.querySelector('[data-optimistic]') : null;
           if (optimistic) {
             const realRow = tmp.querySelector('.mpx-bubble-row');
@@ -6376,6 +4661,7 @@ async function _loadChatMessages(userId, forceScrollBottom) {
           }
           _chatMsgsCache.push(m);
         });
+
         if (shouldScroll) {
           messages.scrollTop = messages.scrollHeight;
         } else {
@@ -6383,10 +4669,8 @@ async function _loadChatMessages(userId, forceScrollBottom) {
         }
       }
 
-      // Mettre à jour les ticks même sans nouveaux messages
+      // Mettre Ã  jour les ticks mÃªme sans nouveaux messages
       _updateReadTicks(msgs, messages);
-      // Refresh réactions — chaque cycle polling
-      _loadRxForConv(userId);
     }
 
     _updateMsgBadge();
@@ -6493,9 +4777,6 @@ async function sendChatMessage() {
   if (!content && !image) return;
   if (!_currentChatUserId) return;
 
-  const reply = _replyMsg ? { id: _replyMsg.id, content: _replyMsg.content, senderName: _replyMsg.senderName } : null;
-  _clearReply();
-
   if (input) input.value = '';
   if (input) input.focus();
   _removeChatImage();
@@ -6505,21 +4786,23 @@ async function sendChatMessage() {
     const row = document.createElement('div');
     row.className = 'mpx-bubble-row mine mpx-bubble-new';
     row.setAttribute('data-optimistic', '1');
-    const timeStr  = _formatMsgTime(new Date().toISOString());
-    const imgHtml  = image ? '<div class="mpx-bubble-img-wrap"><img src="' + image + '" class="mpx-bubble-img" /></div>' : '';
-    const quoteHtml = reply
-      ? '<div class="mpx-bubble-quote"><div class="mpx-bubble-quote-inner"><span class="mpx-bubble-quote-name">' + esc(reply.senderName || '') + '</span><span class="mpx-bubble-quote-text">' + esc(reply.content || '\ud83d\udcf7 Photo') + '</span></div></div>'
-      : '';
-    row.innerHTML = '<div class="mpx-bubble-wrap"><div class="mpx-bubble mine">' + quoteHtml + imgHtml + (content ? esc(content) : '') + '<span class="mpx-bubble-meta">' + timeStr + '<span class="mpx-tick" title="Envoy\u00e9"><i class="fas fa-check"></i></span></span></div></div>';
+    const timeStr = _formatMsgTime(new Date().toISOString());
+    const imgHtml = image ? '<div class="mpx-bubble-img-wrap"><img src="' + image + '" class="mpx-bubble-img" /></div>' : '';
+    row.innerHTML = '<div class="mpx-bubble mine">' + imgHtml + (content ? esc(content) : '') + '<span class="mpx-bubble-meta">' + timeStr + '<span class="mpx-tick" title="EnvoyÃ©"><i class="fas fa-check"></i></span></span></div>';
     messages.appendChild(row);
     messages.scrollTop = messages.scrollHeight;
   }
 
   try {
-    await PaganiAPI.sendMessage(_currentChatUserId, content, image, reply ? reply.id : null);
+    await PaganiAPI.sendMessage(_currentChatUserId, content, image);
+    // Le polling remplacera l'optimiste par le vrai message via replaceWith
     loadConversations();
   } catch(e) {
-    if (messages) { const opt = messages.querySelector('[data-optimistic]'); if (opt) opt.remove(); }
+    // Echec : retirer l'optimiste et remettre le texte
+    if (messages) {
+      const opt = messages.querySelector('[data-optimistic]');
+      if (opt) opt.remove();
+    }
     if (input && content) input.value = content;
   }
 }
@@ -6617,8 +4900,8 @@ async function renderUserSubscriptions() {
     const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
     const planIcons  = { Starter: 'fas fa-user', Pro: 'fas fa-crown', Elite: 'fas fa-gem' };
     const planDescs  = {
-      Starter: 'Acces aux formations gratuites et au programme d\'affiliation.',
-      Pro:     'Acces a toutes les formations + commission 35%.',
+      Starter: 'Accès aux formations gratuites et au programme d\'affiliation.',
+      Pro:     'Accès à toutes les formations + commission 35%.',
       Elite:   'Acces complet + coaching 1-on-1 + commission 50%.'
     };
     planBox.innerHTML = `
@@ -6665,17 +4948,17 @@ async function renderUserSubscriptions() {
     <i class="fas fa-history"></i> Historique des demandes
   </h3>` + subs.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuve'   ? 'status-paid'
+                      : r.statut === 'Approuvé'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuvé'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
-    const canRetry = r.statut === 'Rejete';
+    const canRetry = r.statut === 'Rejeté';
     const isPending = r.statut === 'En attente';
     return `
-    <div class="sub-user-card ${r.statut === 'Approuve' ? 'sub-user-approved' : r.statut === 'Rejete' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
-      <!-- EN-TTE -->
+    <div class="sub-user-card ${r.statut === 'Approuvé' ? 'sub-user-approved' : r.statut === 'Rejeté' ? 'sub-user-rejected' : 'sub-user-pending'}" id="sub-user-${r.id}">
+      <!-- EN-TéTE -->
       <div class="sub-user-card-header">
         <div style="display:flex;align-items:center;gap:0.7rem">
           <span class="sub-plan-badge" style="background:${planColors[r.plan]||'var(--accent)'}22;color:${planColors[r.plan]||'var(--accent)'}">
@@ -6686,14 +4969,14 @@ async function renderUserSubscriptions() {
           </span>
         </div>
         <span style="font-size:0.78rem;color:var(--text2)">
-          ${new Date(r.createdAt).toLocaleDateString('fr-FR')}  ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
+          ${new Date(r.createdAt).toLocaleDateString('fr-FR')} é ${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}
         </span>
       </div>
-      <!-- DTAILS PAIEMENT -->
+      <!-- DéTAILS PAIEMENT -->
       <div class="sub-user-details">
         <div class="sub-user-detail">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
-          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoye</small></span>
+          <span><strong>${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant envoyé</small></span>
         </div>
         <div class="sub-user-detail">
           <i class="fas fa-mobile-alt" style="color:${opColor}"></i>
@@ -6702,15 +4985,15 @@ async function renderUserSubscriptions() {
         ${r.txRef ? `
         <div class="sub-user-detail">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>Reference</small></span>
+          <span><strong>${r.txRef}</strong><small>Référence</small></span>
         </div>` : ''}
       </div>
       <!-- MESSAGE STATUT -->
-      ${r.statut === 'Approuve' ? `
+      ${r.statut === 'Approuvé' ? `
       <div class="sub-user-status-msg approved">
         <i class="fas fa-check-circle"></i>
         <div>
-          <strong>Abonnement activee !</strong>
+          <strong>Abonnement activée !</strong>
           <p>Votre plan ${r.plan} est actif. Profitez de toutes les formations.</p>
         </div>
         <a href="formations.html" class="btn-primary" style="padding:0.45rem 1rem;font-size:0.82rem;white-space:nowrap">
@@ -6721,18 +5004,18 @@ async function renderUserSubscriptions() {
       <div class="sub-user-status-msg pending">
         <i class="fas fa-clock"></i>
         <div>
-          <strong>En cours de verification</strong>
-          <p>Votre paiement est en cours de verification par l\'administrateur. Activation sous 24h.</p>
+          <strong>En cours de vérification</strong>
+          <p>Votre paiement est en cours de vérification par l\'administrateur. Activation sous 24h.</p>
         </div>
       </div>` : ''}
-      ${r.statut === 'Rejete' ? `
+      ${r.statut === 'Rejeté' ? `
       <div class="sub-user-status-msg rejected">
         <i class="fas fa-times-circle"></i>
         <div>
-          <strong>Demande rejetee</strong>
+          <strong>Demande rejetée</strong>
           ${r.rejectReason
             ? `<p><strong>Raison :</strong> ${r.rejectReason}</p>`
-            : `<p>Votre demande n'a pas pu etre validee. Contactez le support si besoin.</p>`
+            : `<p>Votre demande n'a pas pu être validée. Contactez le support si besoin.</p>`
           }
         </div>
       </div>` : ''}
@@ -6751,7 +5034,7 @@ async function renderUserSubscriptions() {
       <div class="sub-user-actions">
         <p style="font-size:0.78rem;color:var(--text2)">
           <i class="fas fa-info-circle" style="color:var(--gold)"></i>
-          Si vous n'avez pas encore envoye le paiement, vous pouvez le faire maintenant.
+          Si vous n'avez pas encore envoyé le paiement, vous pouvez le faire maintenant.
         </p>
       </div>` : ''}
     </div>`;
@@ -6762,7 +5045,7 @@ function _retrySubscription(plan, amount) {
   if (!user) return;
   // Ouvrir directement la modale de paiement sur le bon plan
   _showUpgradeModal(user, `Plan ${plan}`);
-  // Aprs que la modale s'ouvre, slectionner automatiquement le bon plan
+  // Aprés que la modale s'ouvre, sélectionner automatiquement le bon plan
   setTimeout(() => {
     const btn = document.querySelector(`.upgrade-plan-btn${plan === 'Elite' ? '.elite' : ':not(.elite)'}`);
     if (btn) btn.click();
@@ -6775,7 +5058,7 @@ function _scrollToSubCard(subId) {
   // Carte admin : sub-{id} | carte utilisateur : sub-user-{id}
   const card = document.getElementById('sub-' + subId) || document.getElementById('sub-user-' + subId);
   if (!card) {
-    // Liste pas encore rendue — réessayer dans 400ms (max 3 fois)
+    // Liste pas encore rendue â€” réessayer dans 400ms (max 3 fois)
     if (!_scrollToSubCard._retries) _scrollToSubCard._retries = {};
     const key = String(subId);
     _scrollToSubCard._retries[key] = (_scrollToSubCard._retries[key] || 0) + 1;
@@ -6814,259 +5097,18 @@ function switchAdminSection(section, btn) {
   if (section === 'videopurchases')  renderAdminVideoPurchases();
   if (section === 'modules')         renderAdminModules();
   if (section === 'modulepurchases') renderAdminModulePurchases();
-  if (section === 'leaderboard')     { if (typeof loadAdminLeaderboard === 'function') loadAdminLeaderboard(); }
   if (section === 'navbarbtn') loadNavbarBtnAdmin();
-  if (section === 'sociallinks') loadSocialLinksAdmin();
   if (section === 'shares')          loadAdminShares();
-  if (section === 'ebooks')          loadAdminEbooks();
-  if (section === 'ebookpurchases')  loadAdminEbookPurchases();
-  if (section === 'trainers')          loadAdminTrainers();
+  if (section === 'leaderboard')     loadAdminLeaderboard();
+  if (section === 'ebookpurchases')  renderAdminEbookPurchases();
+  if (section === 'sociallinks')     loadAdminSocialLinks();
+  if (section === 'plans')           loadAdminStats();
+  if (section === 'trainers')        loadAdminTrainers();
   if (section === 'trainersubmissions') loadAdminTrainerSubmissions();
-  if (section === 'trainerearnings')    loadAdminTrainerEarnings();
+  if (section === 'trainerearnings') loadAdminTrainerEarnings();
+  if (section === 'finance')         loadAdminFinance();
 }
-// ===== ADMIN FORMATEURS =====
-async function loadAdminTrainers() {
-  var list = document.getElementById('adminTrainersList');
-  if (!list) return;
-  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-requests', { headers: { 'Authorization': 'Bearer ' + token } });
-    var reqs = await r.json();
-    // Mettre à jour le badge
-    var pending = reqs.filter(function(r) { return r.statut === 'En attente'; }).length;
-    var badge = document.getElementById('trainerRequestsBadge');
-    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
-    if (!reqs.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucune demande pour le moment.</p>'; return; }
-    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
-    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
-    list.innerHTML = reqs.map(function(req) {
-      var av = req.avatar_photo
-        ? '<img src="' + req.avatar_photo + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover" />'
-        : '<div class="avatar-circle avatar-sm" style="background:' + (req.avatar_color||'#6c63ff') + '">' + (req.user_name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
-      var c = sColor[req.statut] || 'var(--text2)';
-      var isPending = req.statut === 'En attente';
-      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:0.8rem">' +
-        '<div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
-        av +
-        '<div style="flex:1"><strong>' + req.user_name + '</strong>' +
-        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + new Date(req.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
-        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px">' +
-        '<i class="fas ' + (sIcon[req.statut]||'fa-clock') + '"></i> ' + req.statut + '</span></div>' +
-        '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.6rem"><strong style="color:var(--text)">Expertise :</strong> ' + req.expertise + '</div>' +
-        '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.8rem">' + req.description + '</div>' +
-        (req.demo_url ? '<div style="margin-bottom:0.8rem"><a href="' + req.demo_url + '" target="_blank" rel="noopener" style="font-size:0.8rem;color:var(--accent)"><i class="fas fa-link"></i> Voir la démo</a></div>' : '') +
-        (isPending ? (
-          '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">' +
-          '<label style="font-size:0.78rem;color:var(--text2)">Commission % :</label>' +
-          '<input type="number" id="commRate-' + req.id + '" value="50" min="1" max="100" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.3rem 0.5rem;font-size:0.82rem" />' +
-          '<button onclick="_approveTrainer(' + req.id + ')" class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem"><i class="fas fa-check"></i> Accepter</button>' +
-          '<button onclick="_rejectTrainer(' + req.id + ')" style="padding:0.4rem 1rem;font-size:0.82rem;background:var(--red);border:none;color:#fff;border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times"></i> Refuser</button>' +
-          '</div>'
-        ) : '') +
-        '</div>';
-    }).join('');
-  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
-}
-
-async function _approveTrainer(id) {
-  var rate = parseInt(document.getElementById('commRate-' + id)?.value) || 50;
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-requests/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ statut: 'Approuvé', commissionRate: rate })
-    });
-    if (!r.ok) throw new Error('Erreur serveur');
-    loadAdminTrainers();
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
-async function _rejectTrainer(id) {
-  var reason = prompt('Raison du refus (optionnel) :') || '';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-requests/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ statut: 'Rejeté', rejectReason: reason })
-    });
-    if (!r.ok) throw new Error('Erreur serveur');
-    loadAdminTrainers();
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
-async function loadAdminTrainerSubmissions() {
-  var list = document.getElementById('adminTrainerSubmissionsList');
-  if (!list) return;
-  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-submissions', { headers: { 'Authorization': 'Bearer ' + token } });
-    var subs = await r.json();
-    var pending = subs.filter(function(s) { return s.statut === 'En attente'; }).length;
-    var badge = document.getElementById('trainerSubmissionsBadge');
-    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
-    if (!subs.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucune soumission pour le moment.</p>'; return; }
-    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
-    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
-    list.innerHTML = subs.map(function(s) {
-      var c = sColor[s.statut] || 'var(--text2)';
-      var isPending = s.statut === 'En attente';
-      var isVideo = s.content_type === 'video';
-
-      // Bloc prévisualisation
-      var previewBlock = '';
-      if (isVideo) {
-        var ytId = s.video_source === 'youtube' ? s.video_id : '';
-        var driveId = s.video_source === 'drive' ? s.drive_id : '';
-        var thumb = s.thumbnail || (ytId ? 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg' : '');
-        previewBlock =
-          '<div style="margin-bottom:0.8rem">' +
-          (thumb ? '<img src="' + thumb + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:0.5rem;display:block" />' : '') +
-          '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
-          (ytId ? '<a href="https://www.youtube.com/watch?v=' + ytId + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(255,0,0,0.12);color:#ff4444;border:1px solid rgba(255,0,0,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fab fa-youtube"></i> Voir sur YouTube</a>' : '') +
-          (driveId ? '<a href="https://drive.google.com/file/d/' + driveId + '/view" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fas fa-play-circle"></i> Voir sur Drive</a>' : '') +
-          '</div></div>';
-      } else {
-        previewBlock =
-          '<div style="display:flex;gap:0.8rem;align-items:flex-start;margin-bottom:0.8rem">' +
-          (s.cover ? '<img src="' + s.cover + '" style="width:60px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border)" />' : '') +
-          '<div>' +
-          (s.file_url ? '<a href="' + s.file_url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(0,212,170,0.12);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fas fa-file-pdf"></i> Voir le PDF</a>' : '') +
-          (s.pages ? '<span style="display:block;font-size:0.75rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-book"></i> ' + s.pages + ' pages</span>' : '') +
-          '</div></div>';
-      }
-
-      // Infos détaillées
-      var infoBlock =
-        '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
-        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-tag"></i> ' + Number(s.price).toLocaleString('fr-FR') + ' AR</span>' +
-        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-layer-group"></i> ' + s.category + '</span>' +
-        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-signal"></i> ' + (s.level||'—') + '</span>' +
-        (isVideo && s.duration ? '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-clock"></i> ' + s.duration + '</span>' : '') +
-        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-' + (isVideo ? 'play-circle' : 'book-open') + '"></i> ' + s.content_type + '</span>' +
-        '</div>';
-
-      // Bloc actions (uniquement si En attente)
-      var actionsBlock = '';
-      if (isPending) {
-        actionsBlock =
-          '<div style="border-top:1px solid var(--border);padding-top:0.8rem;margin-top:0.4rem">' +
-          '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem">' +
-          '<button onclick="_approveSubmission(' + s.id + ', this)" class="btn-primary" style="padding:0.45rem 1.1rem;font-size:0.82rem"><i class="fas fa-check"></i> Valider et publier</button>' +
-          '<button onclick="_toggleRejectForm(' + s.id + ')" style="padding:0.45rem 1.1rem;font-size:0.82rem;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times"></i> Refuser</button>' +
-          '</div>' +
-          '<div id="rejectForm-' + s.id + '" style="display:none;margin-top:0.4rem">' +
-          '<textarea id="rejectReason-' + s.id + '" rows="2" placeholder="Raison du refus (obligatoire)..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.82rem;font-family:inherit;resize:none;margin-bottom:0.5rem"></textarea>' +
-          '<button onclick="_rejectSubmission(' + s.id + ')" style="padding:0.4rem 1rem;font-size:0.82rem;background:var(--red);border:none;color:#fff;border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times-circle"></i> Confirmer le refus</button>' +
-          '</div>' +
-          '</div>';
-      }
-
-      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">' +
-        // En-tête
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
-        '<div><strong style="font-size:0.95rem">' + s.title + '</strong>' +
-        '<span style="display:block;font-size:0.78rem;color:var(--text2);margin-top:0.2rem"><i class="fas fa-user"></i> ' + s.trainer_name + ' · ' + new Date(s.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
-        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px;white-space:nowrap">' +
-        '<i class="fas ' + (sIcon[s.statut]||'fa-clock') + '"></i> ' + s.statut + '</span></div>' +
-        // Description
-        (s.description ? '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.8rem;line-height:1.5">' + s.description + '</div>' : '') +
-        // Infos
-        infoBlock +
-        // Prévisualisation
-        previewBlock +
-        // Raison refus si rejeté
-        (s.reject_reason ? '<div style="font-size:0.8rem;color:var(--red);background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;padding:0.5rem 0.8rem;margin-bottom:0.6rem"><i class="fas fa-info-circle"></i> ' + s.reject_reason + '</div>' : '') +
-        // Actions
-        actionsBlock +
-        '</div>';
-    }).join('');
-  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
-}
-
-async function _approveSubmission(id, btn) {
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publication...'; }
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-submissions/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ statut: 'Approuvé' })
-    });
-    if (!r.ok) throw new Error('Erreur serveur');
-    loadAdminTrainerSubmissions();
-  } catch(e) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Valider et publier'; } alert('Erreur : ' + e.message); }
-}
-
-function _toggleRejectForm(id) {
-  var form = document.getElementById('rejectForm-' + id);
-  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
-
-async function _rejectSubmission(id) {
-  var reasonEl = document.getElementById('rejectReason-' + id);
-  var reason   = reasonEl ? reasonEl.value.trim() : '';
-  if (!reason) { if (reasonEl) { reasonEl.style.borderColor = 'var(--red)'; reasonEl.focus(); } return; }
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-submissions/' + id, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ statut: 'Rejeté', rejectReason: reason })
-    });
-    if (!r.ok) throw new Error('Erreur serveur');
-    loadAdminTrainerSubmissions();
-  } catch(e) { alert('Erreur : ' + e.message); }
-}
-
-async function loadAdminTrainerEarnings() {
-  var list = document.getElementById('adminTrainerEarningsList');
-  if (!list) return;
-  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  try {
-    var r = await fetch(API + '/admin/trainer-earnings', { headers: { 'Authorization': 'Bearer ' + token } });
-    var earnings = await r.json();
-    if (!earnings.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucun gain pour le moment.</p>'; return; }
-    var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
-    list.innerHTML = earnings.map(function(e) {
-      var isPending = e.statut === 'En attente';
-      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.8rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem;gap:0.8rem;flex-wrap:wrap">' +
-        '<div><strong>' + e.trainer_name + '</strong>' +
-        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + e.content_title + ' · ' + e.buyer_name + ' · ' + new Date(e.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
-        '<div style="display:flex;align-items:center;gap:0.6rem">' +
-        '<strong style="color:var(--accent2)">' + fmt(e.commission_amount) + ' AR</strong>' +
-        (isPending
-          ? '<button onclick="_markTrainerEarningPaid(' + e.id + ', this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Marquer payé</button>'
-          : '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.2rem 0.5rem;border-radius:50px">✓ Payé</span>'
-        ) +
-        '</div></div>';
-    }).join('');
-  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
-}
-
-async function _markTrainerEarningPaid(id, btn) {
-  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-  var token = localStorage.getItem('pd_jwt');
-  btn.disabled = true;
-  try {
-    await fetch(API + '/admin/trainer-earnings/' + id + '/paid', {
-      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token }
-    });
-    btn.outerHTML = '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.2rem 0.5rem;border-radius:50px">✓ Payé</span>';
-  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
-}
-// ===== TARIFS ADMIN — ONGLETS =====
+// ===== TARIFS ADMIN â€” ONGLETS =====
 function switchPricingTab(tab, btn) {
   document.querySelectorAll('.pricing-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.pricing-tab-content').forEach(c => c.style.display = 'none');
@@ -7110,14 +5152,14 @@ async function loadAdminPricingSubscriptions() {
           <input type="number" id="priceElite" class="upgrade-input" value="${p.elite}" min="0" step="1000" />
         </div>
       </div>
-      <!-- Video unitaire -->
+      <!-- Vidéo unitaire -->
       <div class="pricing-admin-card">
         <div class="pricing-admin-card-header">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          <strong>Achat video unitaire</strong>
+          <strong>Achat vidéo unitaire</strong>
         </div>
         <div class="pricing-admin-row">
-          <label>Prix par video <small>(AR)</small></label>
+          <label>Prix par vidéo <small>(AR)</small></label>
           <input type="number" id="priceVideo" class="upgrade-input" value="${p.video}" min="0" step="500" />
         </div>
         <div class="pricing-admin-row">
@@ -7177,7 +5219,7 @@ async function loadAdminPricingSubscriptions() {
       </button>
       <p id="pricingMsg" style="font-size:0.82rem;min-height:1rem"></p>
     </div>
-    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> Derniere mise a jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
+    ${p.updatedAt ? `<p style="font-size:0.72rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-clock"></i> Dernière mise à jour : ${new Date(p.updatedAt).toLocaleString('fr-FR')}</p>` : ''}`;
 }
 async function saveAdminPricing() {
   const msg = document.getElementById('pricingMsg');
@@ -7201,14 +5243,14 @@ async function saveAdminPricing() {
   };
   try {
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Tarifs mis a jour avec succes.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✅ Tarifs mis à jour avec succès.'; }
     setTimeout(() => loadAdminPricingSubscriptions(), 800);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== TARIFS ADMIN — PRIX PAR VIDEO =====
+// ===== TARIFS ADMIN â€” PRIX PAR VIDÉO =====
 async function loadAdminVideoPricing() {
   const container = document.getElementById('adminVideoPricingContent');
   if (!container) return;
@@ -7228,9 +5270,9 @@ async function loadAdminVideoPricing() {
       <div class="pricing-video-global">
         <div class="pricing-admin-card-header">
           <i class="fas fa-tag" style="color:var(--accent2)"></i>
-          <strong>Prix global par defaut</strong>
+          <strong>Prix global par défaut</strong>
         </div>
-        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux videos sans prix individuel defini.</p>
+        <p style="font-size:0.8rem;color:var(--text2);margin:0.4rem 0 0.8rem">Ce prix s'applique aux vidéos sans prix individuel défini.</p>
         <div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap">
           <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1;min-width:160px">
             <label style="font-size:0.78rem;color:var(--text2);font-weight:600">Prix global <small>(AR)</small></label>
@@ -7247,15 +5289,15 @@ async function loadAdminVideoPricing() {
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem">
         <h3 style="font-size:0.95rem;font-weight:700">
           <i class="fas fa-film" style="color:var(--accent)"></i>
-          Prix individuels - Videos payantes (${paid.length})
+          Prix individuels â€” Vidéos payantes (${paid.length})
         </h3>
         <span style="font-size:0.78rem;color:var(--text2)">Laissez vide pour utiliser le prix global</span>
       </div>
       ${paid.length === 0
-        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune video payante.</p></div>'
+        ? '<div class="history-empty"><i class="fas fa-film"></i><p>Aucune vidéo payante.</p></div>'
         : `<div class="video-price-list">
             <div class="video-price-header">
-              <span>Video</span><span>Categorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
+              <span>Vidéo</span><span>Catégorie</span><span>Prix actuel</span><span>Nouveau prix (AR)</span><span></span>
             </div>
             ${paid.map(v => `
             <div class="video-price-row" id="vpr-${v.id}">
@@ -7288,7 +5330,7 @@ async function saveGlobalVideoPrice() {
   try {
     const p = await PaganiAPI.getPricing();
     await PaganiAPI.admin.updatePricing({ ...p, video: val });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Sauvegarde'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✅ Sauvegardé'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
@@ -7316,12 +5358,12 @@ async function saveVideoPrice(videoId) {
       row.style.background = 'rgba(0,212,170,0.06)';
       setTimeout(() => row.style.background = '', 1200);
     }
-    // Mettre a jour le cache local
+    // Mettre é jour le cache local
     const v = _adminVideosCache.find(x => x.id === videoId);
     if (v) { v.unitPrice = price; v.accessType = price ? 'unit' : 'pro'; }
   } catch(e) { alert('Erreur : ' + e.message); }
 }
-// ===== TARIFS ADMIN — PRIX PAR MODULE =====
+// ===== TARIFS ADMIN â€” PRIX PAR MODULE =====
 async function loadAdminModulePricing() {
   const container = document.getElementById('adminModulePricingContent');
   if (!container) return;
@@ -7329,13 +5371,13 @@ async function loadAdminModulePricing() {
   let modules = [];
   try { modules = await PaganiAPI.admin.getVideoModules(); } catch(e) {}
   if (!modules.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module creee. Creeez d\'abord des modules dans la section Modules.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module créé. Créez d\'abord des modules dans la section Modules.</p></div>';
     return;
   }
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      Definissez un prix d'acces par module. Un utilisateur qui achete un module debloque toutes ses videos.
+      Définissez un prix d'accès par module. Un utilisateur qui achète un module débloque toutes ses vidéos.
     </p>
     <div class="module-pricing-grid">
       ${modules.map(m => `
@@ -7368,13 +5410,13 @@ async function saveModulePrice(moduleId) {
   const msg   = document.getElementById(`mpm-${moduleId}`);
   try {
     await PaganiAPI.admin.updateVideoModule(moduleId, { modulePrice: price });
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '? Sauvegarde'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'âœ“ Sauvegardé'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur'; }
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 3000);
 }
-// ===== TARIFS ADMIN — COMMISSIONS =====
+// ===== TARIFS ADMIN â€” COMMISSIONS =====
 async function loadAdminCommissions() {
   const container = document.getElementById('adminCommissionContent');
   if (!container) return;
@@ -7396,7 +5438,7 @@ async function loadAdminCommissions() {
   container.innerHTML = `
     <p style="font-size:0.82rem;color:var(--text2);margin-bottom:1.2rem">
       <i class="fas fa-info-circle" style="color:var(--accent)"></i>
-      Les commissions sont calculees sur le montant paye par le filleul lors d'un abonnement ou d'un achat de formation.
+      Les commissions sont calculées sur le montant payé par le filleul lors d'un abonnement ou d'un achat de formation.
     </p>
     <div class="comm-pricing-grid">
       ${plans.map(pl => `
@@ -7421,7 +5463,7 @@ async function loadAdminCommissions() {
         </div>
         <div class="comm-pricing-example">
           <i class="fas fa-calculator" style="color:var(--text2)"></i>
-          <span>Ex: abonnement Pro 30 000 AR - <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
+          <span>Ex: abonnement Pro 30 000 AR é <strong id="commEx-${pl.key}" style="color:${pl.color}"></strong></span>
         </div>
       </div>`).join('')}
     </div>
@@ -7481,13 +5523,13 @@ async function saveAdminCommissions() {
       },
     };
     await PaganiAPI.admin.updatePricing(payload);
-    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = 'Commissions mises a jour.'; }
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✅ Commissions mises à jour.'; }
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur : ' + e.message; }
   }
   setTimeout(() => { if (msg) msg.textContent = ''; }, 4000);
 }
-// ===== ACHATS VIDEOS ADMIN =====
+// ===== ACHATS VIDÉOS ADMIN =====
 let _videoPurchasesCache = [];
 let _videoPurchasesFilter = 'all';
 async function renderAdminVideoPurchases() {
@@ -7502,7 +5544,7 @@ async function renderAdminVideoPurchases() {
   }
   _updateVideoPurchasesBadge();
   _renderFilteredVideoPurchases();
-  // Scroller vers une demande spcifique si parametre URL
+  // Scroller vers une demande spécifique si paramêtre URL
   const urlParams = new URLSearchParams(window.location.search);
   const purchaseId = urlParams.get('purchase');
   if (purchaseId) setTimeout(() => _scrollToVideoPurchaseCard(purchaseId), 400);
@@ -7536,15 +5578,15 @@ function _vpConfirm(type, r) {
     if (!modal) { resolve(true); return; }
     box.className = 'vp-confirm-box vp-confirm-' + type;
     if (type === 'approve') {
-      iconEl.textContent  = '?';
+      iconEl.textContent  = '✅';
       titleEl.textContent = 'Approuver cet achat ?';
-      subEl.textContent   = 'L\'acces a la video sera debloque immediatement pour ce membre.';
+      subEl.textContent   = 'L\'accès é la vidéo sera débloqué immédiatement pour ce membre.';
       okLabel.textContent = 'Oui, approuver';
       okBtn.querySelector('i').className = 'fas fa-check';
     } else {
-      iconEl.textContent  = '?';
+      iconEl.textContent  = '❌';
       titleEl.textContent = 'Rejeter cette demande ?';
-      subEl.textContent   = 'Le membre sera notifie du rejet. Cette action peut etre annulee.';
+      subEl.textContent   = 'Le membre sera notifié du rejet. Cette action peut être annulée.';
       okLabel.textContent = 'Oui, rejeter';
       okBtn.querySelector('i').className = 'fas fa-ban';
     }
@@ -7553,9 +5595,9 @@ function _vpConfirm(type, r) {
     const av    = (user && user.avatarPhoto)
       ? '<img src="' + user.avatarPhoto + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover" />'
       : '<div class="vp-confirm-user-avatar" style="background:' + color + '">' + getInitials(r.userName || '?') + '</div>';
-    const videoLabel = (r.videoTitle || ('Video #' + r.courseId));
+    const videoLabel = (r.videoTitle || ('Vidéo #' + r.courseId));
     const amtLabel   = (r.amount || 0).toLocaleString('fr-FR') + ' AR';
-    userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' — ' + amtLabel + '</small></div>';
+    userEl.innerHTML = av + '<div class="vp-confirm-user-info"><strong>' + (r.userName || 'Utilisateur') + '</strong><small>' + videoLabel + ' â€” ' + amtLabel + '</small></div>';
     okBtn.onclick = function() { _vpConfirmClose(); _vpConfirmResolve = null; resolve(true); };
     modal.classList.add('vp-confirm-open');
   });
@@ -7570,7 +5612,7 @@ function _vpConfirmClose() {
 }
 function _vpTimeAgo(dateStr) {
   const diff = Math.floor((Date.now() - new Date(dateStr)) / 60000);
-  if (diff < 1)  return { text: ' l\'instant', urgent: true };
+  if (diff < 1)  return { text: 'é l\'instant', urgent: true };
   if (diff < 60) return { text: `Il y a ${diff} min`, urgent: diff < 30 };
   if (diff < 1440) return { text: `Il y a ${Math.floor(diff/60)}h`, urgent: false };
   return { text: new Date(dateStr).toLocaleDateString('fr-FR'), urgent: false };
@@ -7591,26 +5633,26 @@ function _renderFilteredVideoPurchases() {
     : _videoPurchasesCache.filter(r => r.statut === _videoPurchasesFilter);
   // Compteurs
   const pending  = _videoPurchasesCache.filter(r => r.statut === 'En attente').length;
-  const approved = _videoPurchasesCache.filter(r => r.statut === 'Approuve').length;
-  const rejected = _videoPurchasesCache.filter(r => r.statut === 'Rejete').length;
+  const approved = _videoPurchasesCache.filter(r => r.statut === 'Approuvé').length;
+  const rejected = _videoPurchasesCache.filter(r => r.statut === 'Rejeté').length;
   const counterHTML = `
     <div class="vp-section-counter">
       ${pending  ? `<span class="vp-counter-pill pending"><i class="fas fa-clock"></i> ${pending} en attente</span>` : ''}
-      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuvee${approved>1?'s':''}</span>` : ''}
-      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejetee${rejected>1?'s':''}</span>` : ''}
+      ${approved ? `<span class="vp-counter-pill approved"><i class="fas fa-check-circle"></i> ${approved} approuvée${approved>1?'s':''}</span>` : ''}
+      ${rejected ? `<span class="vp-counter-pill rejected"><i class="fas fa-times-circle"></i> ${rejected} rejetée${rejected>1?'s':''}</span>` : ''}
     </div>`;
   if (!list.length) {
-    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat video.</p></div>';
+    container.innerHTML = counterHTML + '<div class="history-empty"><i class="fas fa-shopping-cart"></i><p>Aucune demande d\'Achat vidéo.</p></div>';
     return;
   }
   const opColors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   const now = Date.now();
   container.innerHTML = counterHTML + list.map((r, idx) => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuve'   ? 'status-paid'
+                      : r.statut === 'Approuvé'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuvé'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor  = opColors[r.operator] || 'var(--accent)';
     const user     = _allUsersCache.find(u => u.id === r.userId);
@@ -7619,7 +5661,7 @@ function _renderFilteredVideoPurchases() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     const timeInfo = _vpTimeAgo(r.createdAt);
     const isNew    = r.statut === 'En attente' && (now - new Date(r.createdAt)) < 3600000;
-    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'Approuve' ? 'vp-approved' : 'vp-rejected';
+    const vpClass  = r.statut === 'En attente' ? 'vp-pending' : r.statut === 'Approuvé' ? 'vp-approved' : 'vp-rejected';
     return `
     <div class="vp-card ${vpClass}" id="vp-${r.id}" style="animation-delay:${idx * 50}ms">
       <div class="vp-card-header">
@@ -7633,7 +5675,7 @@ function _renderFilteredVideoPurchases() {
         <div class="vp-card-meta">
           ${isNew ? '<span class="vp-new-badge">Nouveau</span>' : ''}
           <span class="sub-plan-badge" style="background:rgba(245,158,11,0.15);color:var(--gold)">
-            <i class="fas fa-film"></i> Achat video
+            <i class="fas fa-film"></i> Achat vidéo
           </span>
           <span class="status-badge ${statusClass}" id="vp-status-${r.id}">
             <i class="${statusIcon}"></i> ${r.statut}
@@ -7646,13 +5688,13 @@ function _renderFilteredVideoPurchases() {
       <div class="vp-card-details">
         <div class="vp-detail-item">
           <i class="fas fa-play-circle" style="color:var(--accent)"></i>
-          <span><strong>${r.videoTitle || 'Video #' + r.courseId}</strong><small>Formation</small></span>
+          <span><strong>${r.videoTitle || 'Vidéo #' + r.courseId}</strong><small>Formation</small></span>
         </div>
         <div class="vp-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
           <span><strong class="vp-amount-highlight">${(r.amount||0).toLocaleString('fr-FR')} AR</strong><small>Montant</small></span>
         </div>
-        ${(r.phone || r.operator) ? `<div class="vp-detail-item"><i class="fas fa-mobile-alt" style="color:${opColor}"></i><span><strong>${r.operator||''}${r.mmName?' — '+r.mmName:''}</strong><small>${r.phone||''}</small></span></div>` : ''}
+        ${(r.phone || r.operator) ? `<div class="vp-detail-item"><i class="fas fa-mobile-alt" style="color:${opColor}"></i><span><strong>${r.operator||''}${r.mmName?' â€” '+r.mmName:''}</strong><small>${r.phone||''}</small></span></div>` : ''}
         <div class="vp-detail-item">
           <i class="fas fa-calendar-alt" style="color:var(--text2)"></i>
           <span><strong>${new Date(r.createdAt).toLocaleDateString('fr-FR')}</strong><small>${new Date(r.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</small></span>
@@ -7660,7 +5702,7 @@ function _renderFilteredVideoPurchases() {
         ${r.txRef ? `
         <div class="vp-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>Reference</small></span>
+          <span><strong>${r.txRef}</strong><small>Référence</small></span>
         </div>` : ''}
       </div>
       <div class="vp-proof-zone">
@@ -7686,24 +5728,24 @@ function _buildVideoPurchaseActions(r) {
         <i class="fas fa-times"></i> Rejeter
       </button>
       <button class="vp-btn-approve" id="vp-btn-approve-${r.id}" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-check"></i> Approuver et debloquer
+        <i class="fas fa-check"></i> Approuver et débloquer
       </button>`;
   }
-  if (r.statut === 'Rejete') {
+  if (r.statut === 'Rejeté') {
     return `
       <span class="vp-status-done rejected">
         <i class="fas fa-times-circle"></i>
-        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
-        ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> — ${r.rejectReason}</em>` : ''}
+        Rejeté le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : 'â€”'}
+        ${r.rejectReason ? `<em style="opacity:0.7;font-style:italic"> â€” ${r.rejectReason}</em>` : ''}
       </span>
       <button class="vp-btn-sm-approve" onclick="approveVideoPurchase(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand meme
+        <i class="fas fa-undo"></i> Approuver quand même
       </button>`;
   }
   return `
     <span class="vp-status-done approved">
       <i class="fas fa-check-circle"></i>
-      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+      Approuvé le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : 'â€”'}
     </span>
     <button class="vp-btn-sm-reject" onclick="_vpShowRejectModal(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -7715,12 +5757,12 @@ function _vpShowRejectModal(id) {
   const zone = document.getElementById('vp-reject-modal-' + id);
   if (!zone) return;
   const r = _videoPurchasesCache.find(x => x.id === id);
-  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non recu', 'Doublon'];
+  const presets = ['Preuve invalide', 'Montant incorrect', 'Paiement non reçu', 'Doublon'];
   zone.innerHTML = `
     <div class="vp-reject-modal">
       <div class="vp-reject-modal-header">
         <i class="fas fa-exclamation-triangle"></i>
-        <strong>Rejeter - ${r ? (r.videoTitle || 'Video #' + r.courseId) : ''}</strong>
+        <strong>Rejeter â€” ${r ? (r.videoTitle || 'Vidéo #' + r.courseId) : ''}</strong>
       </div>
       <div class="vp-reject-presets">
         ${presets.map(p => `<button class="vp-reject-preset" onclick="_vpSelectPreset(this,'vp-reject-reason-${id}')">${p}</button>`).join('')}
@@ -7755,7 +5797,7 @@ async function approveVideoPurchase(id) {
   if (btn) { btn.classList.add('vp-loading'); btn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
     await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Approuvé' });
-    r.statut = 'Approuve';
+    r.statut = 'Approuvé';
     r.treatedAt = new Date().toISOString();
     const card = document.getElementById('vp-' + id);
     if (card) {
@@ -7766,11 +5808,11 @@ async function approveVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Approuve'; statusEl.className = 'status-badge status-paid'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Approuvé'; statusEl.className = 'status-badge status-paid'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('Acces debloque pour ' + r.userName);
+    _vpShowToast('✅ Accès débloqué pour ' + r.userName);
   } catch(e) {
-    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et debloquer'; }
+    if (btn) { btn.classList.remove('vp-loading'); btn.innerHTML = '<i class="fas fa-check"></i> Approuver et débloquer'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
   }
 }
@@ -7785,7 +5827,7 @@ async function rejectVideoPurchase(id) {
   if (confirmBtn) { confirmBtn.classList.add('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-spinner"></i> Traitement...'; }
   try {
     await PaganiAPI.admin.updateVideoPurchase(id, { statut: 'Rejeté', rejectReason: reason });
-    r.statut = 'Rejete';
+    r.statut = 'Rejeté';
     r.rejectReason = reason;
     r.treatedAt = new Date().toISOString();
     const rejectZone = document.getElementById('vp-reject-modal-' + id);
@@ -7799,9 +5841,9 @@ async function rejectVideoPurchase(id) {
     const actionsEl = document.getElementById('vp-actions-' + id);
     const statusEl  = document.getElementById('vp-status-' + id);
     if (actionsEl) actionsEl.innerHTML = _buildVideoPurchaseActions(r);
-    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejete'; statusEl.className = 'status-badge status-rejected'; }
+    if (statusEl)  { statusEl.innerHTML = '<i class="fas fa-times-circle"></i> Rejeté'; statusEl.className = 'status-badge status-rejected'; }
     _updateVideoPurchasesBadge();
-    _vpShowToast('Demande rejetée' + (reason ? ' — ' + reason : ''), 'error');
+    _vpShowToast('Demande rejetée' + (reason ? ' â€” ' + reason : ''), 'error');
   } catch(e) {
     if (confirmBtn) { confirmBtn.classList.remove('vp-loading'); confirmBtn.innerHTML = '<i class="fas fa-ban"></i> Confirmer le rejet'; }
     _vpShowToast('Erreur : ' + e.message, 'error');
@@ -7815,7 +5857,7 @@ function openVideoPurchaseProof(id) {
   const info  = document.getElementById('proofModalInfo');
   const dl    = document.getElementById('proofModalDownload');
   if (!modal || !img) return;
-  if (info) info.textContent = `${r.userName} — ${r.videoTitle || 'Video'} — ${(r.amount||0).toLocaleString('fr-FR')} AR`;
+  if (info) info.textContent = `${r.userName} â€” ${r.videoTitle || 'Vidéo'} â€” ${(r.amount||0).toLocaleString('fr-FR')} AR`;
   img.src = r.proof;
   if (dl) dl.href = r.proof;
   modal.style.display = 'flex';
@@ -7837,7 +5879,7 @@ async function renderAdminSubscriptions() {
   container.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
   try {
     if (window.PaganiAPI) {
-      // Charger les users si cache vide (ncessaire pour rcuprer les noms MM)
+      // Charger les users si cache vide (nécessaire pour récupérer les noms MM)
       if (!_allUsersCache.length) _allUsersCache = await PaganiAPI.admin.getUsers();
       _subsCache = await PaganiAPI.admin.getUpgradeRequests();
     }
@@ -7858,16 +5900,16 @@ function filterSubsByStatus(status, btn) {
   if (btn) btn.classList.add('active');
   _renderFilteredSubs();
 }
-// Rcupre le nom MM depuis le cache utilisateurs si absent de la demande
+// Récupére le nom MM depuis le cache utilisateurs si absent de la demande
 function _getMmNameFromCache(r) {
   const user = _allUsersCache.find(u => u.id === r.userId);
-  if (!user) return '—';
-  // Chercher dans mmAccounts le compte correspondant a l'operateur utilise
+  if (!user) return 'â€”';
+  // Chercher dans mmAccounts le compte correspondant à l'opérateur utilisé
   const acc = (user.mmAccounts || []).find(a => a.operator === r.operator && a.phone);
   if (acc && acc.name) return acc.name;
   // Fallback sur mmName racine
   if (user.mmName) return user.mmName;
-  return user.name || '—';
+  return user.name || 'â€”';
 }
 function _renderFilteredSubs() {
   const container = document.getElementById('adminSubsList');
@@ -7882,10 +5924,10 @@ function _renderFilteredSubs() {
   const opColors   = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
   container.innerHTML = list.map(r => {
     const statusClass = r.statut === 'En attente' ? 'status-pending'
-                      : r.statut === 'Approuve'   ? 'status-paid'
+                      : r.statut === 'Approuvé'   ? 'status-paid'
                       : 'status-rejected';
     const statusIcon  = r.statut === 'En attente' ? 'fas fa-clock'
-                      : r.statut === 'Approuve'   ? 'fas fa-check-circle'
+                      : r.statut === 'Approuvé'   ? 'fas fa-check-circle'
                       : 'fas fa-times-circle';
     const opColor = opColors[r.operator] || 'var(--accent)';
     const user    = _allUsersCache.find(u => u.id === r.userId);
@@ -7894,7 +5936,7 @@ function _renderFilteredSubs() {
       : `<div class="avatar-circle avatar-sm" style="background:${user?.avatarColor||'#6c63ff'};flex-shrink:0">${getInitials(r.userName||'?')}</div>`;
     return `
     <div class="sub-request-card ${r.statut === 'En attente' ? 'sub-pending' : ''}" id="sub-${r.id}">
-      <!-- EN-TTE -->
+      <!-- EN-TéTE -->
       <div class="sub-card-header">
         <div class="sub-card-user">
           ${av}
@@ -7912,7 +5954,7 @@ function _renderFilteredSubs() {
           </span>
         </div>
       </div>
-      <!-- DTAILS -->
+      <!-- DéTAILS -->
       <div class="sub-card-details">
         <div class="sub-detail-item">
           <i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i>
@@ -7933,7 +5975,7 @@ function _renderFilteredSubs() {
         ${r.txRef ? `
         <div class="sub-detail-item">
           <i class="fas fa-hashtag" style="color:var(--text2)"></i>
-          <span><strong>${r.txRef}</strong><small>Reference</small></span>
+          <span><strong>${r.txRef}</strong><small>Référence</small></span>
         </div>` : ''}
       </div>
       <!-- PREUVE -->
@@ -7954,7 +5996,7 @@ function _renderFilteredSubs() {
     </div>`;
   }).join('');
 }
-// Construit le HTML des actions selon l\'etat de la demande
+// Construit le HTML des actions selon l\'état de la demande
 function _buildSubActions(r) {
   if (r.statut === 'En attente') {
     return `
@@ -7965,22 +6007,22 @@ function _buildSubActions(r) {
         <i class="fas fa-check"></i> Approuver et activer le plan
       </button>`;
   }
-  if (r.statut === 'Rejete') {
+  if (r.statut === 'Rejeté') {
     return `
       <span style="font-size:0.78rem;color:var(--text2);display:flex;align-items:center;gap:0.4rem">
         <i class="fas fa-times-circle" style="color:var(--red)"></i>
-        Rejete le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
-        ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">— ${r.rejectReason}</em>` : ''}
+        Rejeté le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : 'â€”'}
+        ${r.rejectReason ? `<em style="color:var(--red);opacity:0.8">â€” ${r.rejectReason}</em>` : ''}
       </span>
       <button class="sub-action-approve" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubApprove(${r.id})">
-        <i class="fas fa-undo"></i> Approuver quand meme
+        <i class="fas fa-undo"></i> Approuver quand même
       </button>`;
   }
-  // Approuve
+  // Approuvé
   return `
     <span style="font-size:0.78rem;color:var(--green);display:flex;align-items:center;gap:0.4rem">
       <i class="fas fa-check-circle"></i>
-      Approuve le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : '—'}
+      Approuvé le ${r.treatedAt ? new Date(r.treatedAt).toLocaleDateString('fr-FR') : 'â€”'}
     </span>
     <button class="sub-action-reject" style="font-size:0.78rem;padding:0.35rem 0.9rem" onclick="openSubReject(${r.id})">
       <i class="fas fa-ban"></i> Annuler l'approbation
@@ -8001,12 +6043,12 @@ function openSubApprove(id) {
         <div>
           <strong>Confirmer l'approbation</strong>
           <p>Activer le plan <strong>${r.plan}</strong> pour <strong>${r.userName}</strong> ?<br>
-          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifie immediatement.</span></p>
+          <span style="font-size:0.78rem;color:var(--text2)">L'utilisateur sera notifié immédiatement.</span></p>
         </div>
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'Approuve')">
+        <button class="sub-inline-confirm approve" onclick="_confirmSubAction(${id}, 'Approuvé')">
           <i class="fas fa-check"></i> Oui, activer le plan ${r.plan}
         </button>
       </div>
@@ -8025,24 +6067,24 @@ function openSubReject(id) {
         <i class="fas fa-times-circle" style="color:var(--red);font-size:1.2rem"></i>
         <div>
           <strong>Rejeter cette demande</strong>
-          <p>Demande de <strong>${r.userName}</strong> — Plan <strong>${r.plan}</strong></p>
+          <p>Demande de <strong>${r.userName}</strong> â€” Plan <strong>${r.plan}</strong></p>
         </div>
       </div>
       <div class="sub-reject-reason-wrap">
         <label style="font-size:0.78rem;color:var(--text2);font-weight:600;display:block;margin-bottom:0.4rem">
-          Raison du rejet <span style="opacity:0.6">(optionnel — envoyee a l\'utilisateur)</span>
+          Raison du rejet <span style="opacity:0.6">(optionnel â€” envoyée à l\'utilisateur)</span>
         </label>
         <div class="sub-reject-presets">
-          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non recu')">Paiement non recu</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('Paiement non reçu')">Paiement non reçu</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Montant incorrect')">Montant incorrect</button>
           <button class="pay-reason-pill" onclick="_setRejectReason('Preuve invalide')">Preuve invalide</button>
-          <button class="pay-reason-pill" onclick="_setRejectReason('Numero non reconnu')">Numero non reconnu</button>
+          <button class="pay-reason-pill" onclick="_setRejectReason('Numéro non reconnu')">Numéro non reconnu</button>
         </div>
-        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalisee..." style="margin-top:0.5rem" />
+        <input type="text" id="rejectReasonInput-${id}" class="upgrade-input" placeholder="Raison personnalisée..." style="margin-top:0.5rem" />
       </div>
       <div class="sub-inline-actions">
         <button class="sub-inline-cancel" onclick="_cancelSubAction(${id})"><i class="fas fa-arrow-left"></i> Annuler</button>
-        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'Rejete')">
+        <button class="sub-inline-confirm reject" onclick="_confirmSubAction(${id}, 'Rejeté')">
           <i class="fas fa-times"></i> Confirmer le rejet
         </button>
       </div>
@@ -8062,7 +6104,7 @@ function _cancelSubAction(id) {
 async function _confirmSubAction(id, statut) {
   const r = _subsCache.find(x => x.id === id);
   if (!r) return;
-  const rejectReason = statut === 'Rejete'
+  const rejectReason = statut === 'Rejeté'
     ? (document.getElementById(`rejectReasonInput-${id}`)?.value.trim() || '')
     : '';
   const zone = document.getElementById(`sub-actions-${id}`);
@@ -8072,10 +6114,10 @@ async function _confirmSubAction(id, statut) {
     r.statut       = statut;
     r.treatedAt    = new Date().toISOString();
     r.rejectReason = rejectReason;
-    if (statut === 'Approuve') {
+    if (statut === 'Approuvé') {
       const u = _allUsersCache.find(u => u.id === r.userId);
       if (u) u.plan = r.plan;
-      // Rafraechir le token si c'est l\'utilisateur courant (cas rare mais possible)
+      // Rafraéchir le token si c'est l\'utilisateur courant (cas rare mais possible)
       if (result._newToken && window._currentUser && window._currentUser.id === r.userId) {
         localStorage.setItem('pd_jwt', result._newToken);
         window._currentUser.plan = r.plan;
@@ -8089,15 +6131,15 @@ async function _confirmSubAction(id, statut) {
   }
   _subActionTarget = null;
 }
-// Met a jour uniquement la carte concerne sans re-render toute la liste
+// Met à jour uniquement la carte concernée sans re-render toute la liste
 function _updateSubCard(r) {
   const card = document.getElementById(`sub-${r.id}`);
   if (!card) return;
   // Badge statut
   const statusEl = document.getElementById(`sub-status-${r.id}`);
   if (statusEl) {
-    const statusClass = r.statut === 'Approuve' ? 'status-paid' : 'status-rejected';
-    const statusIcon  = r.statut === 'Approuve' ? 'fas fa-check-circle' : 'fas fa-times-circle';
+    const statusClass = r.statut === 'Approuvé' ? 'status-paid' : 'status-rejected';
+    const statusIcon  = r.statut === 'Approuvé' ? 'fas fa-check-circle' : 'fas fa-times-circle';
     statusEl.className = `status-badge ${statusClass}`;
     statusEl.innerHTML = `<i class="${statusIcon}"></i> ${r.statut}`;
   }
@@ -8109,7 +6151,7 @@ function _updateSubCard(r) {
     zone.innerHTML = _buildSubActions(r);
     // Animation flash
     zone.style.transition = 'background 0.4s';
-    zone.style.background = r.statut === 'Approuve' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
+    zone.style.background = r.statut === 'Approuvé' ? 'rgba(0,212,170,0.08)' : 'rgba(255,77,109,0.06)';
     setTimeout(() => { zone.style.background = ''; }, 1200);
   }
 }
@@ -8127,7 +6169,7 @@ function openProofModal(id) {
       <span><i class="fas fa-user" style="color:var(--accent)"></i> <strong>${req.userName}</strong></span>
       <span><i class="fas fa-crown" style="color:var(--gold)"></i> Plan <strong>${req.plan}</strong></span>
       <span><i class="fas fa-money-bill-wave" style="color:var(--accent2)"></i> <strong>${(req.amount||0).toLocaleString('fr-FR')} AR</strong></span>
-      <span><i class="fas fa-mobile-alt"></i> ${req.operator} — ${req.phone}</span>
+      <span><i class="fas fa-mobile-alt"></i> ${req.operator} â€” ${req.phone}</span>
     </div>`;
   modal.style.display = 'flex';
 }
@@ -8157,7 +6199,7 @@ function _renderFilteredUsers() {
     list = list.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
   }
   if (!list.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouve.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-users"></i><p>Aucun membre trouvé.</p></div>';
     return;
   }
   const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
@@ -8178,7 +6220,7 @@ function _renderFilteredUsers() {
         <span class="admin-user-actions">
           <button class="admin-action-btn view" onclick="openUserCommissions(${u.id})" title="Voir commissions"><i class="fas fa-coins"></i></button>
           <button class="admin-action-btn plan" onclick="openChangePlan(${u.id})" title="Changer le plan"><i class="fas fa-crown"></i></button>
-          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'Desactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
+          <button class="admin-action-btn toggle" onclick="toggleUserStatus(${u.id})" title="${u.isActive?'Désactiver':'Activer'}"><i class="fas fa-${u.isActive?'ban':'check'}"></i></button>
           <button class="admin-action-btn del" onclick="openDeleteUser(${u.id})" title="Supprimer"><i class="fas fa-trash"></i></button>
         </span>
       </div>`;
@@ -8200,7 +6242,7 @@ async function openUserCommissions(userId) {
   const modal = document.getElementById('userCommModal');
   const title = document.getElementById('userCommModalTitle');
   const body  = document.getElementById('userCommModalBody');
-  title.innerHTML = `<i class="fas fa-coins" style="color:var(--gold)"></i> Commissions — ${user.name}`;
+  title.innerHTML = `<i class="fas fa-coins" style="color:var(--gold)"></i> Commissions â€” ${user.name}`;
   body.innerHTML  = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
   modal.style.display = 'flex';
   let comms = [];
@@ -8213,12 +6255,12 @@ async function openUserCommissions(userId) {
   } catch(e) {}
   const total   = comms.reduce((s, c) => s + (c.montant||0), 0);
   const pending = comms.filter(c => c.statut === 'En attente').reduce((s, c) => s + (c.montant||0), 0);
-  const paid    = comms.filter(c => c.statut === 'Verse').reduce((s, c) => s + (c.montant||0), 0);
+  const paid    = comms.filter(c => c.statut === 'Versé').reduce((s, c) => s + (c.montant||0), 0);
   body.innerHTML = `
     <div class="user-comm-summary">
-      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagne</span></div>
+      <div class="user-comm-stat"><strong>${formatAR(total)}</strong><span>Total gagné</span></div>
       <div class="user-comm-stat"><strong style="color:var(--gold)">${formatAR(pending)}</strong><span>En attente</span></div>
-      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>Verse</span></div>
+      <div class="user-comm-stat"><strong style="color:var(--green)">${formatAR(paid)}</strong><span>Versé</span></div>
     </div>
     ${comms.length === 0
       ? '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucune commission.</p></div>'
@@ -8229,10 +6271,10 @@ async function openUserCommissions(userId) {
           ${comms.map(c => `
             <div class="history-row" style="grid-template-columns:1fr 1.2fr 1.4fr 1fr 0.9fr">
               <span>${new Date(c.createdAt).toLocaleDateString('fr-FR')}</span>
-              <span>${c.filleulName||'—'}</span>
+              <span>${c.filleulName||'â€”'}</span>
               <span><span class="history-type">${c.type}</span></span>
               <span class="green">${formatAR(c.montant)}</span>
-              <span><span class="status-badge ${c.statut==='Verse'?'status-paid':'status-pending'}">${c.statut}</span></span>
+              <span><span class="status-badge ${c.statut==='Versé'?'status-paid':'status-pending'}">${c.statut}</span></span>
             </div>`).join('')}
         </div>`
     }`;
@@ -8241,7 +6283,7 @@ function openChangePlan(userId) {
   const user = _allUsersCache.find(u => u.id === userId);
   if (!user) return;
   _userPlanTarget = userId;
-  document.getElementById('userPlanModalName').textContent = `${user.name} — Plan actuel : ${user.plan}`;
+  document.getElementById('userPlanModalName').textContent = `${user.name} â€” Plan actuel : ${user.plan}`;
   document.getElementById('userPlanModal').style.display = 'flex';
 }
 async function confirmChangePlan(plan) {
@@ -8293,13 +6335,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (window.PaganiNotif) {
     PaganiNotif.startPolling();
     if (user) PaganiNotif.refreshBadge();
-    if (user && 'Notification' in window && Notification.permission === 'granted') {
-      initPushNotifications();
-    } else if (user && 'Notification' in window && Notification.permission === 'default') {
-      setTimeout(showPushBanner, 4000);
-    }
   }
-  // Toujours afficher le feed et les cours (meme sans etre connect)
+  // Toujours afficher le feed et les cours (même sans être connecté)
   if (window.PaganiAPI) {
     try { const vids = await PaganiAPI.getVideos(); if (vids && vids.length) _adminVideosCache = vids; } catch(e) {}
   }
@@ -8308,16 +6345,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   updateFormationsStats();
   updateNavbar(user);
   loadNavbarCustomBtn();
-  // Dashboard : afficher si connect, sinon laisser loginSection visible
+  // Dashboard : afficher si connecté, sinon laisser loginSection visible
   const loginSection = document.getElementById("loginSection");
   if (loginSection) {
     if (user) {
       showDashboard(user);
       await updateAffiliateStats(user);
     }
-    // Si pas connect, loginSection reste visible (comportement normal)
+    // Si pas connecté, loginSection reste visible (comportement normal)
   }
-  // Gestion des parametres URL
+  // Gestion des paramêtres URL
   const urlParams = new URLSearchParams(window.location.search);
   const tabParam     = urlParams.get('tab');
   const sectionParam = urlParams.get('section');
@@ -8354,7 +6391,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 });
-// ===== VUE UTILISATEUR - MES ACHATS VIDEO =====
+// ===== VUE UTILISATEUR - MES ACHATS VIDÉO =====
 async function renderUserVideoPurchases() {
   const container = document.getElementById('myVideosPurchaseList');
   if (!container) return;
@@ -8424,7 +6461,7 @@ async function renderUserVideoPurchases() {
       + '</div>';
   }).join('');
 }
-// ===== POLLING ADMIN - BADGE TEMPS REL =====
+// ===== POLLING ADMIN - BADGE TEMPS RÉEL =====
 let _adminPollInterval = null;
 function _startAdminPolling() {
   if (_adminPollInterval) return;
@@ -8455,7 +6492,7 @@ function _startAdminPolling() {
     } catch(e) {}
   }, 30000);
 }
-// ===== GESTION MODULES VIDEO ADMIN =====
+// ===== GESTION MODULES VIDÉO ADMIN =====
 let _modulesCache = [];
 let _editingModuleId = null;
 let _moduleModalFromVideo = false;
@@ -8465,7 +6502,7 @@ _modulesCache = [];
 _editingModuleId = null;
 _moduleModalFromVideo = false;
 
-// ===== ADMIN — ACHATS MODULES =====
+// ===== ADMIN â€” ACHATS MODULES =====
 let _modulePurchasesCache = [];
 let _modulePurchasesFilter = 'all';
 async function renderAdminModulePurchases() {
@@ -8665,41 +6702,28 @@ async function renderAdminModules() {
     return;
   }
   if (!_modulesCache.length) {
-    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module créé. Cliquez sur <strong>Nouveau module</strong> pour commencer.</p></div>';
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-layer-group"></i><p>Aucun module cree. Cliquez sur <strong>Nouveau module</strong> pour commencer.</p></div>';
     return;
   }
-  var typeBadges = {
-    public: { label: 'Public', color: 'var(--green)', icon: 'fa-users' },
-    admin_private: { label: 'Privé Admin', color: 'var(--red)', icon: 'fa-lock' },
-    trainer_private: { label: 'Privé Formateur', color: 'var(--accent)', icon: 'fa-chalkboard-teacher' }
-  };
-  container.innerHTML = _modulesCache.map(function(m) {
-    var color = m.color || '#6c63ff';
-    var icon  = m.icon  || 'fas fa-layer-group';
-    var type  = m.type  || 'public';
-    var badge = typeBadges[type] || typeBadges.public;
-    var isTrainer = type === 'trainer_private';
-    var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
-    return '<div style="display:flex;align-items:center;gap:1rem;padding:0.9rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem">' +
-      '<span style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:' + color + '22;color:' + color + '">' +
-      '<i class="' + icon + '"></i></span>' +
-      '<div style="flex:1;min-width:0">' +
-      '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.2rem">' +
-      '<strong style="font-size:0.95rem">' + m.title + '</strong>' +
-      '<span style="font-size:0.72rem;font-weight:700;color:' + badge.color + ';background:' + badge.color + '18;border:1px solid ' + badge.color + '44;padding:0.15rem 0.5rem;border-radius:50px;white-space:nowrap">' +
-      '<i class="fas ' + badge.icon + '"></i> ' + badge.label + '</span>' +
-      (m.modulePrice ? '<span style="font-size:0.72rem;font-weight:700;color:var(--gold);background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px"><i class="fas fa-tag"></i> ' + fmt(m.modulePrice) + ' AR</span>' : '') +
-      '</div>' +
-      (m.description ? '<span style="font-size:0.78rem;color:var(--text2)">' + m.description + '</span>' : '') +
-      '<span style="font-size:0.72rem;color:var(--text2);display:block;margin-top:0.2rem">Position : ' + (m.position || 0) + '</span>' +
-      '</div>' +
-      '<div style="display:flex;gap:0.4rem;flex-shrink:0">' +
-      (isTrainer ? '<span style="font-size:0.72rem;color:var(--text2);padding:0.3rem 0.6rem" title="Module formateur - lecture seule"><i class="fas fa-eye"></i></span>' : '<button class="admin-action-btn edit" onclick="openModuleModal(' + m.id + ')" title="Modifier"><i class="fas fa-edit"></i></button>') +
-      (isTrainer ? '' : '<button class="admin-action-btn del" onclick="deleteModule(' + m.id + ')" title="Supprimer"><i class="fas fa-trash"></i></button>') +
-      '</div></div>';
+  container.innerHTML = _modulesCache.map(m => {
+    const color = m.color || '#6c63ff';
+    const icon  = m.icon  || 'fas fa-layer-group';
+    return `<div style="display:flex;align-items:center;gap:1rem;padding:0.9rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem">
+      <span style="width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;background:${color}22;color:${color}">
+        <i class="${icon}"></i>
+      </span>
+      <div style="flex:1;min-width:0">
+        <strong style="display:block;font-size:0.95rem">${m.title}</strong>
+        ${m.description ? `<span style="font-size:0.78rem;color:var(--text2)">${m.description}</span>` : ''}
+        <span style="font-size:0.72rem;color:var(--text2);display:block;margin-top:0.2rem">Position : ${m.position || 0}</span>
+      </div>
+      <div style="display:flex;gap:0.4rem;flex-shrink:0">
+        <button class="admin-action-btn edit" onclick="openModuleModal(${m.id})" title="Modifier"><i class="fas fa-edit"></i></button>
+        <button class="admin-action-btn del"  onclick="deleteModule(${m.id})"    title="Supprimer"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`;
   }).join('');
 }
-
 async function _populateModuleSelect(selectedId) {
   const sel = document.getElementById('vModuleId');
   if (!sel) return;
@@ -8707,10 +6731,8 @@ async function _populateModuleSelect(selectedId) {
   if (!modules.length) {
     try { modules = await PaganiAPI.admin.getVideoModules(); _modulesCache = modules; } catch(e) {}
   }
-  // Admin ne voit que ses propres modules (public + admin_private), pas les modules formateur
-  const filtered = modules.filter(m => !m.type || m.type === 'public' || m.type === 'admin_private');
   sel.innerHTML = '<option value="">-- Aucun module --</option>' +
-    filtered.map(m => `<option value="${m.id}" ${m.id == selectedId ? 'selected' : ''}>${m.title}${m.type === 'admin_private' ? ' (Privé)' : ''}</option>`).join('');
+    modules.map(m => `<option value="${m.id}" ${m.id == selectedId ? 'selected' : ''}>${m.title}</option>`).join('');
 }
 function openModuleModal(id) {
   _moduleModalFromVideo = false;
@@ -8724,10 +6746,6 @@ function openModuleModal(id) {
   document.getElementById('mIcon').value     = m ? m.icon        : 'fas fa-layer-group';
   document.getElementById('mColor').value    = m ? m.color       : '#6c63ff';
   document.getElementById('mPosition').value = m ? m.position    : 0;
-  document.getElementById('mModulePrice').value = (m && m.modulePrice) ? m.modulePrice : '';
-  var mtype = (m && m.type) || 'public';
-  document.querySelectorAll('input[name="mType"]').forEach(function(r) { r.checked = r.value === mtype; });
-  _onModuleTypeChange();
   document.getElementById('moduleModalMsg').textContent = '';
   document.getElementById('moduleModalOverlay').style.display = 'flex';
   setTimeout(() => document.getElementById('mTitle').focus(), 50);
@@ -8736,15 +6754,6 @@ function openModuleModalFromVideo() {
   _moduleModalFromVideo = true;
   openModuleModal(null);
 }
-function _onModuleTypeChange() {
-  var sel = document.querySelector('input[name="mType"]:checked');
-  var type = sel ? sel.value : 'public';
-  var lblPub = document.getElementById('mTypeLabelPublic');
-  var lblPrv = document.getElementById('mTypeLabelPrivate');
-  if (lblPub) lblPub.style.borderColor = type === 'public' ? 'var(--green)' : 'var(--border)';
-  if (lblPrv) lblPrv.style.borderColor = type === 'admin_private' ? 'var(--red)' : 'var(--border)';
-}
-
 function closeModuleModal() {
   document.getElementById('moduleModalOverlay').style.display = 'none';
   _editingModuleId = null;
@@ -8756,24 +6765,21 @@ async function saveModule() {
   const icon     = document.getElementById('mIcon').value.trim() || 'fas fa-layer-group';
   const color    = document.getElementById('mColor').value || '#6c63ff';
   const position = parseInt(document.getElementById('mPosition').value) || 0;
-  const mPrice   = parseInt(document.getElementById('mModulePrice')?.value) || null;
-  const mTypeEl  = document.querySelector('input[name="mType"]:checked');
-  const mType    = mTypeEl ? mTypeEl.value : 'public';
   const msg      = document.getElementById('moduleModalMsg');
   if (!title) { msg.textContent = 'Le titre est obligatoire.'; return; }
   msg.textContent = '';
   try {
     let saved;
     if (_editingModuleId) {
-      saved = await PaganiAPI.admin.updateVideoModule(_editingModuleId, { title, description: desc, icon, color, position, modulePrice: mPrice, type: mType });
+      saved = await PaganiAPI.admin.updateVideoModule(_editingModuleId, { title, description: desc, icon, color, position });
     } else {
-      saved = await PaganiAPI.admin.createVideoModule({ title, description: desc, icon, color, position, modulePrice: mPrice, type: mType });
+      saved = await PaganiAPI.admin.createVideoModule({ title, description: desc, icon, color, position });
     }
     if (_editingModuleId) {
-      const idx = _modulesCache.findIndex(function(m) { return m.id === _editingModuleId; });
-      if (idx !== -1) _modulesCache[idx] = Object.assign({}, saved, { type: mType, modulePrice: mPrice });
+      const idx = _modulesCache.findIndex(m => m.id === _editingModuleId);
+      if (idx !== -1) _modulesCache[idx] = saved;
     } else {
-      _modulesCache.push(Object.assign({}, saved, { type: mType, modulePrice: mPrice }));
+      _modulesCache.push(saved);
     }
     closeModuleModal();
     if (_moduleModalFromVideo) {
@@ -8874,15 +6880,9 @@ async function loadMyPosts() {
   try {
     const posts = await PaganiAPI.getPostsByUser(user.id);
     if (!posts || !posts.length) {
-      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publie.</p></div>';
+      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publié.</p></div>';
       return;
     }
-    // Charger les réactions en batch
-    try {
-      const ids = posts.map(p => p.id);
-      const batchRes = await Promise.allSettled(ids.slice(0, 20).map(id => PaganiAPI.getPostReactions(id)));
-      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
-    } catch(e) {}
     container.innerHTML = '';
     posts.forEach(post => {
       const normalized = {
@@ -8892,9 +6892,6 @@ async function loadMyPosts() {
         date:     post.date || post.createdAt  || new Date().toISOString(),
       };
       const el = buildPostCard(normalized, user, user.role === 'admin');
-      // Fusionner dans _postsCache pour que openEditPostModal trouve le post
-      const cIdx = _postsCache.findIndex(p => Number(p.id) === Number(normalized.id));
-      if (cIdx === -1) _postsCache.push(normalized); else _postsCache[cIdx] = normalized;
       container.appendChild(el);
       _observeLazyImages(el);
     });
@@ -8905,7 +6902,36 @@ async function loadMyPosts() {
 // ===== PUBLICATIONS SUR LE PROFIL PUBLIC =====
 let _profilePostsCache = [];
 
-// loadUserPostsForProfile défini plus haut
+async function loadUserPostsForProfile(userId) {
+  const container = document.getElementById('profilePostsList');
+  if (!container) return;
+  container.innerHTML = '<div class="history-empty"><i class="fas fa-spinner fa-spin"></i></div>';
+  try {
+    const posts = await PaganiAPI.getPostsByUser(userId);
+    _profilePostsCache = posts || [];
+    const statEl = document.getElementById('pubStatPosts');
+    if (statEl) statEl.textContent = posts ? posts.length : 0;
+    if (!posts || !posts.length) {
+      container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Aucune publication.</p></div>';
+      return;
+    }
+    const user = getUser();
+    container.innerHTML = '';
+    posts.forEach(post => {
+      const normalized = {
+        ...post,
+        likes:    Array.isArray(post.likes)    ? post.likes    : [],
+        comments: Array.isArray(post.comments) ? post.comments : [],
+        date:     post.date || post.createdAt  || new Date().toISOString(),
+      };
+      const el = buildPostCard(normalized, user, false);
+      container.appendChild(el);
+      _observeLazyImages(el);
+    });
+  } catch(e) {
+    container.innerHTML = '<div class="history-empty" style="color:var(--red)"><i class="fas fa-exclamation-circle"></i><p>Erreur de chargement.</p></div>';
+  }
+}
 // ===== PANNEAU PUBLICATION DANS L'ONGLET MES PUBLICATIONS =====
 let _myPostsDashImageBase64 = '';
 function _initMyPostsPanel() {
@@ -8971,7 +6997,7 @@ async function submitMyPostsDashboard() {
       };
       const container = document.getElementById('myPostsList');
       if (container) {
-        // Retirer le message "aucune publication" si prsent
+        // Retirer le message "aucune publication" si présent
         const empty = container.querySelector('.history-empty');
         if (empty) empty.remove();
         const el = buildPostCard(normalized, user, false);
@@ -8989,9 +7015,215 @@ async function submitMyPostsDashboard() {
   }
 }
 
-// ===== DESIGN AMLIORATIONS =====
+// ===== DESIGN AMÉLIORATIONS =====
 
-// tape 1 : Navbar scroll effect
+// Étape 1 : Navbar scroll effect
+// ===== FOOTER SOCIAL LINKS =====
+async function loadFooterSocialLinks() {
+  try {
+    const data = await fetch(API_URL + '/social-links').then(r => r.json());
+    const ids = { facebook: 'footerFacebook', tiktok: 'footerTiktok', telegram: 'footerTelegram', youtube: 'footerYoutube' };
+    Object.entries(ids).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && data[key]) el.href = data[key];
+    });
+  } catch(e) {}
+}
+
+// ===== ADMIN FINANCE =====
+async function loadAdminFinance() {
+  const token = localStorage.getItem('pd_jwt');
+  const kpiEl = document.getElementById('financeDetailKpis');
+  if (kpiEl) kpiEl.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+
+  try {
+    const data = await fetch(API_URL + '/admin/finance-summary', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+
+    if (kpiEl) {
+      kpiEl.innerHTML = [
+        { icon: 'fa-shopping-cart',      color: 'var(--accent2)', bg: 'rgba(0,212,170,0.12)',    label: 'Ventes totales',         val: fmt(data.totalSales),      sub: data.salesCount + ' vente' + (data.salesCount > 1 ? 's' : '') },
+        { icon: 'fa-chalkboard-teacher', color: 'var(--gold)',    bg: 'rgba(245,158,11,0.12)',   label: 'Brut formateurs',        val: fmt(data.trainerBrut),     sub: fmt(data.trainerPending) + ' en attente' },
+        { icon: 'fa-users',              color: 'var(--accent)',  bg: 'rgba(108,99,255,0.12)',   label: 'Commissions membres',    val: fmt(data.commPending),     sub: 'en attente de versement' },
+        { icon: 'fa-money-bill-wave',    color: 'var(--red)',     bg: 'rgba(255,77,109,0.12)',   label: 'Retraits en attente',    val: fmt(data.withdrawPending), sub: fmt(data.withdrawPaid) + ' déjà versé' },
+        { icon: 'fa-hand-holding-usd',   color: '#00d4aa',        bg: 'rgba(0,212,170,0.15)',    label: 'Net admin (estimé)',     val: fmt(data.netAdmin),        sub: 'après déductions' },
+      ].map(k => `
+        <div class="admin-kpi" style="border-left:3px solid ${k.color}">
+          <div class="admin-kpi-icon" style="background:${k.bg}"><i class="fas ${k.icon}" style="color:${k.color}"></i></div>
+          <div>
+            <strong style="color:${k.color}">${k.val}</strong>
+            <span>${k.label}</span>
+            <small style="color:var(--text2);font-size:0.7rem;display:block">${k.sub}</small>
+          </div>
+        </div>`).join('');
+    }
+
+    // Mettre à jour aussi les mini-KPI du bloc en haut
+    const el = id => document.getElementById(id);
+    if (el('kpiTotalSales'))     el('kpiTotalSales').textContent     = fmt(data.totalSales);
+    if (el('kpiTrainerBrut'))    el('kpiTrainerBrut').textContent    = fmt(data.trainerBrut);
+    if (el('kpiWithdrawPending'))el('kpiWithdrawPending').textContent= fmt(data.withdrawPending);
+    if (el('kpiNetAdmin'))       el('kpiNetAdmin').textContent       = fmt(data.netAdmin);
+
+  } catch(e) {
+    if (kpiEl) kpiEl.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+
+  // Charger le sous-onglet actif par défaut
+  await loadFinanceWithdraws();
+}
+
+async function loadFinanceWithdraws() {
+  const wrap = document.getElementById('financeWithdrawsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const w = await fetch(API_URL + '/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    // Filtrer membres avec pending_ar > 0
+    const withPending = w.filter(u => parseFloat(u.pendingAR || u.pending_ar || 0) > 0);
+    if (!withPending.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-check-circle" style="color:var(--accent2)"></i><p>Aucun retrait en attente.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <span>Membre</span><span>Gains disponibles</span><span>En attente</span><span>Déjà versé</span>
+      </div>
+      ${withPending.map(u => {
+        const av = u.avatarPhoto
+          ? `<img src="${u.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle avatar-sm" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span class="admin-user-name">${av}<span>${esc(u.name)}<small>${esc(u.email||'')}</small></span></span>
+            <span class="green">${fmt(u.earningsAR || u.earnings_ar || 0)}</span>
+            <span style="color:var(--gold)">${fmt(u.pendingAR || u.pending_ar || 0)}</span>
+            <span style="color:var(--text2)">${fmt(u.paidAR || u.paid_ar || 0)}</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function loadFinanceCommissions() {
+  const wrap = document.getElementById('financeCommissionsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const users = await fetch(API_URL + '/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    const withComm = users.filter(u => (u.earningsAR || u.earnings_ar || 0) > 0 || (u.refs || 0) > 0);
+    if (!withComm.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-percent"></i><p>Aucune commission membre.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <span>Membre</span><span>Plan</span><span>Filleuls</span><span>Commissions</span>
+      </div>
+      ${withComm.map(u => {
+        const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+        const av = u.avatarPhoto
+          ? `<img src="${u.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle avatar-sm" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span class="admin-user-name">${av}<span>${esc(u.name)}</span></span>
+            <span><span class="admin-plan-badge" style="background:${planColors[u.plan]||'var(--accent)'}">${u.plan}</span></span>
+            <span>${u.refs || 0}</span>
+            <span class="green">${fmt(u.earningsAR || u.earnings_ar || 0)}</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function loadFinanceTrainerEarnings() {
+  const wrap = document.getElementById('financeTrainerEarningsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const data = await fetch(API_URL + '/admin/trainer-earnings', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    if (!data.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission formateur.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span>Formateur</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span><span>Action</span>
+      </div>
+      ${data.map(e => {
+        const av = e.avatar_photo
+          ? `<img src="${e.avatar_photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle" style="width:28px;height:28px;min-width:28px;font-size:0.6rem;background:${e.avatar_color||'#6c63ff'}">${getInitials(e.trainer_name||'?')}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+            <span style="display:flex;align-items:center;gap:0.5rem">${av}<span style="font-size:0.85rem">${esc(e.trainer_name||'—')}</span></span>
+            <span style="font-size:0.82rem;color:var(--text2)">${esc(e.content_title||'—')}</span>
+            <span class="green">${fmt(e.sale_amount)}</span>
+            <span class="green">${fmt(e.commission_amount)} <small style="color:var(--text2)">(${e.commission_rate}%)</small></span>
+            <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+            <span>${e.statut !== 'Payé'
+              ? `<button onclick="markTrainerEarningPaid(${e.id},this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Payer</button>`
+              : '<i class="fas fa-check" style="color:var(--accent2)"></i>'
+            }</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function markTrainerEarningPaid(id, btn) {
+  btn.disabled = true;
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/trainer-earnings/' + id + '/paid', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    await loadFinanceTrainerEarnings();
+    await loadAdminFinance();
+  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
+}
+
+function switchFinanceTab(tab, btn) {
+  ['withdraws', 'commissions', 'trainerearnings'].forEach(t => {
+    const el = document.getElementById('financeTab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#financeSubTabs .admin-filter-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'withdraws')      loadFinanceWithdraws();
+  if (tab === 'commissions')    loadFinanceCommissions();
+  if (tab === 'trainerearnings') loadFinanceTrainerEarnings();
+}
+
+
+// Exposer les fonctions Finance globalement
+window.loadAdminFinance         = loadAdminFinance;
+window.loadFinanceWithdraws     = loadFinanceWithdraws;
+window.loadFinanceCommissions   = loadFinanceCommissions;
+window.loadFinanceTrainerEarnings = loadFinanceTrainerEarnings;
+window.markTrainerEarningPaid   = markTrainerEarningPaid;
+window.switchFinanceTab         = switchFinanceTab;
+
 (function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
@@ -9002,7 +7234,7 @@ async function submitMyPostsDashboard() {
   onScroll();
 })();
 
-// tape 8 : Bouton scroll-to-top
+// Étape 8 : Bouton scroll-to-top
 (function initScrollTop() {
   const btn = document.createElement('button');
   btn.id = 'scrollTopBtn';
@@ -9014,338 +7246,3 @@ async function submitMyPostsDashboard() {
     btn.classList.toggle('visible', window.scrollY > 300);
   }, { passive: true });
 })();
-
-
-// ===== RÉACTIONS SUR LES MESSAGES =====
-var _RX_EMOJIS = ['❤️','😂','😮','😢','😡','👍'];
-var _rxPickerMsgId = null;
-var _rxPickerEl    = null;
-
-// -- Ouvrir / fermer le picker ----------------------------------------------
-function _showRxPicker(e, msgId) {
-  e.stopPropagation();
-  // Si déjà ouvert sur ce message ? fermer
-  if (_rxPickerMsgId === msgId) { _closeRxPicker(); return; }
-  _closeRxPicker();
-
-  var row = document.querySelector('[data-msgid="' + msgId + '"]');
-  if (!row) return;
-
-  var picker = document.createElement('div');
-  picker.className = 'mpx-reaction-picker';
-  picker.dataset.for = msgId;
-
-  var me = getUser();
-  var myRx = _getRxForMsg(msgId);
-
-  _RX_EMOJIS.forEach(function(emoji) {
-    var btn = document.createElement('button');
-    btn.className = 'mpx-rx-emoji-btn' + (myRx === emoji ? ' selected' : '');
-    btn.textContent = emoji;
-    btn.title = emoji;
-    btn.onclick = function(ev) { ev.stopPropagation(); _toggleReaction(msgId, emoji); _closeRxPicker(); };
-    picker.appendChild(btn);
-  });
-
-  var bubble = row.querySelector('.mpx-bubble');
-  if (!bubble) return;
-  var isMobile = window.innerWidth <= 580;
-  if (isMobile) {
-    // Positionner au-dessus de la bulle maintenue (comme WhatsApp/Messenger)
-    document.body.appendChild(picker);
-    var rect = bubble.getBoundingClientRect();
-    var pickerW = 280;
-    var left = rect.left + rect.width / 2 - pickerW / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - pickerW - 8));
-    var top = rect.top - 64;
-    if (top < 60) top = rect.bottom + 8;
-    picker.style.position  = 'fixed';
-    picker.style.left      = left + 'px';
-    picker.style.top       = top + 'px';
-    picker.style.right     = 'auto';
-    picker.style.bottom    = 'auto';
-    picker.style.transform = 'none';
-    picker.style.zIndex    = '600';
-  } else {
-    bubble.appendChild(picker);
-  }
-  _rxPickerMsgId = msgId;
-  _rxPickerEl    = picker;
-
-  // Fermer au clic extérieur
-  setTimeout(function() {
-    document.addEventListener('click', _rxOutsideClick, true);
-  }, 10);
-}
-
-function _closeRxPicker() {
-  if (_rxPickerEl) {
-    _rxPickerEl.classList.add('closing');
-    var el = _rxPickerEl;
-    setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 140);
-  }
-  _rxPickerEl    = null;
-  _rxPickerMsgId = null;
-  document.removeEventListener('click', _rxOutsideClick, true);
-}
-
-function _rxOutsideClick(ev) {
-  if (_rxPickerEl && !_rxPickerEl.contains(ev.target)) _closeRxPicker();
-}
-
-// -- Cache local des réactions { msgId: { emoji: [userId, ...] } } ----------
-var _rxCache = {};
-
-function _getRxForMsg(msgId) {
-  var me = getUser();
-  var key = String(msgId);
-  if (!me || !_rxCache[key]) return null;
-  var map = _rxCache[key];
-  var myId = String(me.id);
-  for (var emoji in map) {
-    if (map[emoji].map(String).indexOf(myId) !== -1) return emoji;
-  }
-  return null;
-}
-
-// -- Toggle réaction --------------------------------------------------------
-async function _toggleReaction(msgId, emoji) {
-  var me = getUser();
-  if (!me || !_currentChatUserId) return;
-
-  var key = String(msgId);
-  var myId = String(me.id);
-  if (!_rxCache[key]) _rxCache[key] = {};
-  var map = _rxCache[key];
-
-  // Retirer l'ancienne réaction de l'utilisateur si elle existe
-  var prev = _getRxForMsg(key);
-  if (prev) {
-    map[prev] = (map[prev] || []).map(String).filter(function(id) { return id !== myId; });
-    if (!map[prev].length) delete map[prev];
-  }
-
-  // Ajouter la nouvelle (sauf si c'—tait la même ? toggle off)
-  if (prev !== emoji) {
-    if (!map[emoji]) map[emoji] = [];
-    map[emoji].push(myId);
-  }
-
-  _renderRxZone(key);
-
-  // Appel API (étape 3 — route backend)
-  try {
-    var token = localStorage.getItem('pd_jwt');
-    var action = (prev === emoji) ? 'remove' : 'add';
-    await fetch(API_URL + '/messages/' + _currentChatUserId + '/' + msgId + '/reaction', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ emoji: emoji, action: action })
-    });
-  } catch(err) {}
-}
-
-// -- Rendu de la zone réactions sous une bulle ------------------------------
-function _renderRxZone(msgId) {
-  var zone = document.getElementById('rx-zone-' + msgId);
-  if (!zone) return;
-
-  var map = _rxCache[String(msgId)] || {};
-  var me  = getUser();
-  var myId = me ? String(me.id) : null;
-  var html = '';
-
-  Object.keys(map).forEach(function(emoji) {
-    var users = map[emoji];
-    if (!users || !users.length) return;
-    var isMine = myId && users.map(String).indexOf(myId) !== -1;
-    html += '<span class="mpx-rx-badge' + (isMine ? ' mine-rx' : '') + '"'
-          + ' onclick="_onRxBadgeClick(' + msgId + ',\'' + emoji + '\')"'
-          + ' title="' + users.length + ' r\u00e9action(s)">'
-          + '<span class="mpx-rx-badge-emoji">' + emoji + '</span>'
-          + '<span class="mpx-rx-badge-count">' + users.length + '</span>'
-          + '</span>';
-  });
-
-  zone.innerHTML = html;
-}
-
-function _onRxBadgeClick(msgId, emoji) {
-  _toggleReaction(msgId, emoji);
-}
-
-// -- Charger les réactions depuis le serveur pour la conv ouverte -----------
-async function _loadRxForConv(userId) {
-  try {
-    var token = localStorage.getItem('pd_jwt');
-    var r = await fetch(API_URL + '/messages/' + userId + '/reactions', {
-      headers: { 'Authorization': 'Bearer ' + token }
-    });
-    if (!r.ok) return;
-    var data = await r.json(); // { msgId: { emoji: [userId,...] } }
-    _rxCache = data || {};
-    // Rendre toutes les zones visibles
-    Object.keys(_rxCache).forEach(function(msgId) {
-      _renderRxZone(msgId);
-    });
-  } catch(e) {}
-}
-
-// Réaction reçue en temps r—el via SSE
-function _onRxSSE(notif) {
-  var msgId  = String(notif.msgId);
-  var emoji  = notif.emoji;
-  var userId = String(notif.userId);
-  var action = notif.action || 'add';
-  if (!_rxCache[msgId]) _rxCache[msgId] = {};
-  var map = _rxCache[msgId];
-  // Retirer l'ancienne réaction de cet utilisateur
-  Object.keys(map).forEach(function(e) {
-    map[e] = (map[e] || []).map(String).filter(function(id) { return id !== userId; });
-    if (!map[e].length) delete map[e];
-  });
-  if (action !== 'remove') {
-    if (!map[emoji]) map[emoji] = [];
-    if (map[emoji].indexOf(userId) === -1) map[emoji].push(userId);
-  }
-  _renderRxZone(msgId);
-}
-
-
-// ── PUSH NOTIFICATIONS PWA ───────────────────────────────────────────────────
-async function initPushNotifications() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  try {
-    // Demander la permission explicitement
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    await navigator.serviceWorker.ready;
-    const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
-    const { key } = await fetch(API + '/push/vapid-public-key').then(r => r.json());
-    let sub = await reg.pushManager.getSubscription();
-    if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: _urlBase64ToUint8Array(key)
-      });
-    }
-    const token = localStorage.getItem('pd_jwt');
-    await fetch(API + '/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify(sub.toJSON())
-    });
-  } catch(e) {}
-}
-
-function _urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw = atob(base64);
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return arr;
-}
-
-// ── TOGGLE PUSH DEPUIS DASHBOARD ─────────────────────────────────────────────
-async function togglePushNotif() {
-  const btn = document.getElementById('pushNotifBtn');
-  const status = document.getElementById('pushNotifStatus');
-  const perm = Notification.permission;
-  if (perm === 'denied') {
-    alert('Les notifications sont bloquées. Allez dans les paramètres de votre navigateur pour les autoriser.');
-    return;
-  }
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
-  await initPushNotifications();
-  updatePushNotifUI();
-  if (btn) btn.disabled = false;
-}
-
-async function updatePushNotifUI() {
-  const btn = document.getElementById('pushNotifBtn');
-  const status = document.getElementById('pushNotifStatus');
-  if (!btn || !status) return;
-  const perm = Notification.permission;
-  if (perm === 'granted') {
-    const reg = await navigator.serviceWorker.getRegistration();
-    const sub = reg ? await reg.pushManager.getSubscription() : null;
-    if (sub) {
-      status.textContent = 'Activées — vous recevrez des notifications';
-      status.style.color = 'var(--accent2)';
-      btn.innerHTML = '<i class="fas fa-bell-slash"></i> Désactiver';
-      btn.onclick = disablePushNotif;
-      return;
-    }
-  }
-  if (perm === 'denied') {
-    status.textContent = 'Bloquées dans les paramètres du navigateur';
-    status.style.color = 'var(--red)';
-    btn.innerHTML = '<i class="fas fa-ban"></i> Bloquées';
-    btn.disabled = true;
-    return;
-  }
-  status.textContent = 'Désactivées — cliquez pour recevoir des notifications';
-  status.style.color = 'var(--text2)';
-  btn.innerHTML = '<i class="fas fa-bell"></i> Activer';
-  btn.onclick = togglePushNotif;
-}
-
-async function disablePushNotif() {
-  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || 'https://pagani-digital.onrender.com/api';
-  const reg = await navigator.serviceWorker.getRegistration();
-  const sub = reg ? await reg.pushManager.getSubscription() : null;
-  if (sub) {
-    const token = localStorage.getItem('pd_jwt');
-    await fetch(API + '/push/unsubscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ endpoint: sub.endpoint })
-    }).catch(() => {});
-    await sub.unsubscribe();
-  }
-  updatePushNotifUI();
-}
-
-// ── BANNIÈRE PUSH ─────────────────────────────────────────────────────────────
-function showPushBanner() {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-  if (Notification.permission !== 'default') return;
-  if (localStorage.getItem('pd_push_banner_dismissed')) return;
-  if (document.getElementById('pushBanner')) return;
-
-  const banner = document.createElement('div');
-  banner.id = 'pushBanner';
-  banner.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--bg2);border:1px solid var(--accent);border-radius:14px;padding:0.8rem 1rem;display:flex;align-items:center;gap:0.8rem;box-shadow:0 4px 24px rgba(0,0,0,0.3);max-width:360px;width:calc(100% - 2rem);animation:slideUp 0.3s ease';
-  banner.innerHTML =
-    '<i class="fas fa-bell" style="color:var(--accent);font-size:1.2rem;flex-shrink:0"></i>' +
-    '<div style="flex:1;min-width:0">' +
-      '<div style="font-weight:700;font-size:0.88rem">Activer les notifications</div>' +
-      '<div style="font-size:0.75rem;color:var(--text2)">Recevez les alertes en temps réel</div>' +
-    '</div>' +
-    '<button onclick="acceptPushBanner()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0.4rem 0.8rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">Activer</button>' +
-    '<button onclick="dismissPushBanner()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:1rem;padding:0.2rem;flex-shrink:0"><i class="fas fa-times"></i></button>';
-
-  document.body.appendChild(banner);
-}
-
-async function acceptPushBanner() {
-  const b = document.getElementById('pushBanner');
-  if (b) b.remove();
-  // Demander la permission directement au clic (requis par Chrome mobile)
-  const perm = await Notification.requestPermission();
-  if (perm !== 'granted') {
-    localStorage.setItem('pd_push_banner_dismissed', '1');
-    return;
-  }
-  localStorage.setItem('pd_push_banner_dismissed', '1');
-  await initPushNotifications();
-  updatePushNotifUI();
-}
-
-function dismissPushBanner() {
-  const b = document.getElementById('pushBanner');
-  if (b) b.remove();
-  localStorage.setItem('pd_push_banner_dismissed', '1');
-}

@@ -505,6 +505,35 @@
           <h2><i class="fas fa-shield-alt"></i> Tableau de bord Admin</h2>
           <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadAdminStats()"><i class="fas fa-sync-alt"></i> Actualiser</button>
         </div>
+        <!-- KPI FINANCE -->
+        <div id="adminFinanceBlock" style="margin-bottom:1.2rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem">
+            <span style="font-size:0.78rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em">
+              <i class="fas fa-chart-line" style="color:var(--accent2);margin-right:0.4rem"></i>Finance & Revenus
+            </span>
+            <button onclick="switchAdminSection('finance', this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);color:var(--accent2);padding:0.2rem 0.7rem;border-radius:50px;cursor:pointer;font-family:inherit">
+              Voir le détail
+            </button>
+          </div>
+          <div class="admin-kpi-grid" id="financeKpiGrid">
+            <div class="admin-kpi" style="border-left:3px solid var(--accent2)">
+              <div class="admin-kpi-icon" style="background:rgba(0,212,170,0.12)"><i class="fas fa-shopping-cart" style="color:var(--accent2)"></i></div>
+              <div><strong id="kpiTotalSales">—</strong><span>Ventes totales</span></div>
+            </div>
+            <div class="admin-kpi" style="border-left:3px solid var(--gold)">
+              <div class="admin-kpi-icon" style="background:rgba(245,158,11,0.12)"><i class="fas fa-chalkboard-teacher" style="color:var(--gold)"></i></div>
+              <div><strong id="kpiTrainerBrut">—</strong><span>Brut formateurs</span></div>
+            </div>
+            <div class="admin-kpi" style="border-left:3px solid #6c63ff">
+              <div class="admin-kpi-icon" style="background:rgba(108,99,255,0.12)"><i class="fas fa-coins" style="color:var(--accent)"></i></div>
+              <div><strong id="kpiWithdrawPending">—</strong><span>Retraits en attente</span></div>
+            </div>
+            <div class="admin-kpi" style="border-left:3px solid #00d4aa">
+              <div class="admin-kpi-icon" style="background:rgba(0,212,170,0.15)"><i class="fas fa-hand-holding-usd" style="color:var(--accent2)"></i></div>
+              <div><strong id="kpiNetAdmin">—</strong><span>Net admin</span></div>
+            </div>
+          </div>
+        </div>
         <!-- KPI COMPACTS -->
         <div class="admin-kpi-grid" id="adminKpiGrid">
           <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(108,99,255,0.15)"><i class="fas fa-users" style="color:var(--accent)"></i></div><div><strong id="kpiTotal">—</strong><span>Membres</span></div></div>
@@ -518,6 +547,9 @@
         </div>
         <!-- NAVIGATION INTERNE ADMIN -->
         <div class="admin-subnav">
+          <button class="admin-subnav-btn" id="adminSubnavFinance" onclick="switchAdminSection('finance', this)">
+            <i class="fas fa-chart-line" style="color:var(--accent2)"></i> Finance
+          </button>
           <button class="admin-subnav-btn active" onclick="switchAdminSection('users', this)">
             <i class="fas fa-users"></i> Utilisateurs
           </button>
@@ -780,6 +812,46 @@
           <!-- LISTE DES DEMANDES -->
           <div id="adminSubsList"></div>
         </div>
+        <!-- SECTION : FINANCE -->
+        <div id="adminSection-finance" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1.2rem">
+            <div>
+              <h3><i class="fas fa-chart-line" style="color:var(--accent2)"></i> Finance &amp; Revenus</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Vue centralis&eacute;e des ventes, commissions et retraits.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminFinance()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+
+          <!-- KPI FINANCE D&Eacute;TAIL -->
+          <div id="financeDetailKpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.8rem;margin-bottom:1.5rem"></div>
+
+          <!-- SOUS-ONGLETS -->
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1.2rem" id="financeSubTabs">
+            <button class="admin-filter-pill active" onclick="switchFinanceTab('withdraws', this)">
+              <i class="fas fa-money-bill-wave"></i> Retraits
+            </button>
+            <button class="admin-filter-pill" onclick="switchFinanceTab('commissions', this)">
+              <i class="fas fa-percent"></i> Commissions membres
+            </button>
+            <button class="admin-filter-pill" onclick="switchFinanceTab('trainerearnings', this)">
+              <i class="fas fa-chalkboard-teacher"></i> Gains formateurs
+            </button>
+          </div>
+
+          <!-- CONTENU SOUS-ONGLETS -->
+          <div id="financeTab-withdraws">
+            <div id="financeWithdrawsList"></div>
+          </div>
+          <div id="financeTab-commissions" style="display:none">
+            <div id="financeCommissionsList"></div>
+          </div>
+          <div id="financeTab-trainerearnings" style="display:none">
+            <div id="financeTrainerEarningsList"></div>
+          </div>
+        </div>
+
         <!-- SECTION : UTILISATEURS -->
         <div id="adminSection-users" class="admin-sub-section">
           <div class="admin-users-toolbar">
@@ -1728,8 +1800,8 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   </div>
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1776608487261"></script>
-  <script src="/js/app.js?v=1776608487261"></script>
+  <script src="/js/api.js?v=1776887820564"></script>
+  <script src="/js/app.js?v=1776887820564"></script>
   <script src="https://www.youtube.com/iframe_api" referrerpolicy="strict-origin-when-cross-origin" defer></script>
   <script>
     // ── LEADERBOARD ADMIN ──

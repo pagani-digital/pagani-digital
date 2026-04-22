@@ -1684,6 +1684,21 @@ async function loadAdminStats() {
   }).join("");
   // Charger les comptes de paiement
   await loadAdminPaymentAccounts();
+  // Charger les mini-KPI Finance
+  setTimeout(async () => {
+    try {
+      const token = localStorage.getItem('pd_jwt');
+      const fin = await fetch(API_URL + '/admin/finance-summary', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.json());
+      const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+      const el = id => document.getElementById(id);
+      if (el('kpiTotalSales'))      el('kpiTotalSales').textContent      = fmt(fin.totalSales);
+      if (el('kpiTrainerBrut'))     el('kpiTrainerBrut').textContent     = fmt(fin.trainerBrut);
+      if (el('kpiWithdrawPending')) el('kpiWithdrawPending').textContent = fmt(fin.withdrawPending);
+      if (el('kpiNetAdmin'))        el('kpiNetAdmin').textContent        = fmt(fin.netAdmin);
+    } catch(e) {}
+  }, 300);
   // Badge abonnements en attente
   try {
     if (window.PaganiAPI) {
@@ -5091,6 +5106,7 @@ function switchAdminSection(section, btn) {
   if (section === 'trainers')        loadAdminTrainers();
   if (section === 'trainersubmissions') loadAdminTrainerSubmissions();
   if (section === 'trainerearnings') loadAdminTrainerEarnings();
+  if (section === 'finance')         loadAdminFinance();
 }
 // ===== TARIFS ADMIN â€” ONGLETS =====
 function switchPricingTab(tab, btn) {
@@ -7002,6 +7018,212 @@ async function submitMyPostsDashboard() {
 // ===== DESIGN AMÉLIORATIONS =====
 
 // Étape 1 : Navbar scroll effect
+// ===== FOOTER SOCIAL LINKS =====
+async function loadFooterSocialLinks() {
+  try {
+    const data = await fetch(API_URL + '/social-links').then(r => r.json());
+    const ids = { facebook: 'footerFacebook', tiktok: 'footerTiktok', telegram: 'footerTelegram', youtube: 'footerYoutube' };
+    Object.entries(ids).forEach(([key, id]) => {
+      const el = document.getElementById(id);
+      if (el && data[key]) el.href = data[key];
+    });
+  } catch(e) {}
+}
+
+// ===== ADMIN FINANCE =====
+async function loadAdminFinance() {
+  const token = localStorage.getItem('pd_jwt');
+  const kpiEl = document.getElementById('financeDetailKpis');
+  if (kpiEl) kpiEl.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+
+  try {
+    const data = await fetch(API_URL + '/admin/finance-summary', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+
+    if (kpiEl) {
+      kpiEl.innerHTML = [
+        { icon: 'fa-shopping-cart',      color: 'var(--accent2)', bg: 'rgba(0,212,170,0.12)',    label: 'Ventes totales',         val: fmt(data.totalSales),      sub: data.salesCount + ' vente' + (data.salesCount > 1 ? 's' : '') },
+        { icon: 'fa-chalkboard-teacher', color: 'var(--gold)',    bg: 'rgba(245,158,11,0.12)',   label: 'Brut formateurs',        val: fmt(data.trainerBrut),     sub: fmt(data.trainerPending) + ' en attente' },
+        { icon: 'fa-users',              color: 'var(--accent)',  bg: 'rgba(108,99,255,0.12)',   label: 'Commissions membres',    val: fmt(data.commPending),     sub: 'en attente de versement' },
+        { icon: 'fa-money-bill-wave',    color: 'var(--red)',     bg: 'rgba(255,77,109,0.12)',   label: 'Retraits en attente',    val: fmt(data.withdrawPending), sub: fmt(data.withdrawPaid) + ' déjà versé' },
+        { icon: 'fa-hand-holding-usd',   color: '#00d4aa',        bg: 'rgba(0,212,170,0.15)',    label: 'Net admin (estimé)',     val: fmt(data.netAdmin),        sub: 'après déductions' },
+      ].map(k => `
+        <div class="admin-kpi" style="border-left:3px solid ${k.color}">
+          <div class="admin-kpi-icon" style="background:${k.bg}"><i class="fas ${k.icon}" style="color:${k.color}"></i></div>
+          <div>
+            <strong style="color:${k.color}">${k.val}</strong>
+            <span>${k.label}</span>
+            <small style="color:var(--text2);font-size:0.7rem;display:block">${k.sub}</small>
+          </div>
+        </div>`).join('');
+    }
+
+    // Mettre à jour aussi les mini-KPI du bloc en haut
+    const el = id => document.getElementById(id);
+    if (el('kpiTotalSales'))     el('kpiTotalSales').textContent     = fmt(data.totalSales);
+    if (el('kpiTrainerBrut'))    el('kpiTrainerBrut').textContent    = fmt(data.trainerBrut);
+    if (el('kpiWithdrawPending'))el('kpiWithdrawPending').textContent= fmt(data.withdrawPending);
+    if (el('kpiNetAdmin'))       el('kpiNetAdmin').textContent       = fmt(data.netAdmin);
+
+  } catch(e) {
+    if (kpiEl) kpiEl.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+
+  // Charger le sous-onglet actif par défaut
+  await loadFinanceWithdraws();
+}
+
+async function loadFinanceWithdraws() {
+  const wrap = document.getElementById('financeWithdrawsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const w = await fetch(API_URL + '/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    // Filtrer membres avec pending_ar > 0
+    const withPending = w.filter(u => parseFloat(u.pendingAR || u.pending_ar || 0) > 0);
+    if (!withPending.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-check-circle" style="color:var(--accent2)"></i><p>Aucun retrait en attente.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <span>Membre</span><span>Gains disponibles</span><span>En attente</span><span>Déjà versé</span>
+      </div>
+      ${withPending.map(u => {
+        const av = u.avatarPhoto
+          ? `<img src="${u.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle avatar-sm" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span class="admin-user-name">${av}<span>${esc(u.name)}<small>${esc(u.email||'')}</small></span></span>
+            <span class="green">${fmt(u.earningsAR || u.earnings_ar || 0)}</span>
+            <span style="color:var(--gold)">${fmt(u.pendingAR || u.pending_ar || 0)}</span>
+            <span style="color:var(--text2)">${fmt(u.paidAR || u.paid_ar || 0)}</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function loadFinanceCommissions() {
+  const wrap = document.getElementById('financeCommissionsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const users = await fetch(API_URL + '/admin/users', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    const withComm = users.filter(u => (u.earningsAR || u.earnings_ar || 0) > 0 || (u.refs || 0) > 0);
+    if (!withComm.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-percent"></i><p>Aucune commission membre.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <span>Membre</span><span>Plan</span><span>Filleuls</span><span>Commissions</span>
+      </div>
+      ${withComm.map(u => {
+        const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+        const av = u.avatarPhoto
+          ? `<img src="${u.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle avatar-sm" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span class="admin-user-name">${av}<span>${esc(u.name)}</span></span>
+            <span><span class="admin-plan-badge" style="background:${planColors[u.plan]||'var(--accent)'}">${u.plan}</span></span>
+            <span>${u.refs || 0}</span>
+            <span class="green">${fmt(u.earningsAR || u.earnings_ar || 0)}</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function loadFinanceTrainerEarnings() {
+  const wrap = document.getElementById('financeTrainerEarningsList');
+  if (!wrap) return;
+  wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const data = await fetch(API_URL + '/admin/trainer-earnings', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    }).then(r => r.json());
+    if (!data.length) {
+      wrap.innerHTML = '<div class="history-empty"><i class="fas fa-coins"></i><p>Aucune commission formateur.</p></div>';
+      return;
+    }
+    const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
+    wrap.innerHTML = `
+      <div class="video-admin-header" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+        <span>Formateur</span><span>Contenu</span><span>Vente</span><span>Commission</span><span>Statut</span><span>Action</span>
+      </div>
+      ${data.map(e => {
+        const av = e.avatar_photo
+          ? `<img src="${e.avatar_photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle" style="width:28px;height:28px;min-width:28px;font-size:0.6rem;background:${e.avatar_color||'#6c63ff'}">${getInitials(e.trainer_name||'?')}</div>`;
+        return `
+          <div class="video-admin-row" style="grid-template-columns:1.5fr 1.5fr 1fr 1fr 1fr 0.8fr">
+            <span style="display:flex;align-items:center;gap:0.5rem">${av}<span style="font-size:0.85rem">${esc(e.trainer_name||'—')}</span></span>
+            <span style="font-size:0.82rem;color:var(--text2)">${esc(e.content_title||'—')}</span>
+            <span class="green">${fmt(e.sale_amount)}</span>
+            <span class="green">${fmt(e.commission_amount)} <small style="color:var(--text2)">(${e.commission_rate}%)</small></span>
+            <span><span class="status-badge ${e.statut==='Payé'?'status-paid':'status-pending'}">${e.statut}</span></span>
+            <span>${e.statut !== 'Payé'
+              ? `<button onclick="markTrainerEarningPaid(${e.id},this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Payer</button>`
+              : '<i class="fas fa-check" style="color:var(--accent2)"></i>'
+            }</span>
+          </div>`;
+      }).join('')}`;
+  } catch(e) {
+    wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+  }
+}
+
+async function markTrainerEarningPaid(id, btn) {
+  btn.disabled = true;
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/trainer-earnings/' + id + '/paid', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    await loadFinanceTrainerEarnings();
+    await loadAdminFinance();
+  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
+}
+
+function switchFinanceTab(tab, btn) {
+  ['withdraws', 'commissions', 'trainerearnings'].forEach(t => {
+    const el = document.getElementById('financeTab-' + t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#financeSubTabs .admin-filter-pill').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'withdraws')      loadFinanceWithdraws();
+  if (tab === 'commissions')    loadFinanceCommissions();
+  if (tab === 'trainerearnings') loadFinanceTrainerEarnings();
+}
+
+
+// Exposer les fonctions Finance globalement
+window.loadAdminFinance         = loadAdminFinance;
+window.loadFinanceWithdraws     = loadFinanceWithdraws;
+window.loadFinanceCommissions   = loadFinanceCommissions;
+window.loadFinanceTrainerEarnings = loadFinanceTrainerEarnings;
+window.markTrainerEarningPaid   = markTrainerEarningPaid;
+window.switchFinanceTab         = switchFinanceTab;
+
 (function initNavbarScroll() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;

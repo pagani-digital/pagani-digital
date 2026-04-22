@@ -121,10 +121,11 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
-app.use(express.static(path.join(__dirname, '../frontend/pages')));
-app.use('/js',     express.static(path.join(__dirname, '../frontend/js')));
-app.use('/css',    express.static(path.join(__dirname, '../frontend/css')));
-app.use('/assets', express.static(path.join(__dirname, '../frontend/assets')));
+const _staticOpts = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
+app.use(express.static(path.join(__dirname, '../frontend/pages'), _staticOpts));
+app.use('/js',     express.static(path.join(__dirname, '../frontend/js'),      _staticOpts));
+app.use('/css',    express.static(path.join(__dirname, '../frontend/css'),     _staticOpts));
+app.use('/assets', express.static(path.join(__dirname, '../frontend/assets'),  _staticOpts));
 // Gestionnaire d'erreur CORS — renvoie 403 au lieu de planter le serveur
 app.use((err, req, res, next) => {
   if (err.message === 'CORS_ORIGIN_NON_AUTORISEE') {
@@ -891,6 +892,68 @@ app.put('/api/admin/module-purchases/:id', requireAuth, requireAdmin, async (req
     res.json(purchase);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
+// ══════════════════════════════════════════════════════════
+//  ADMIN — FINANCE SUMMARY
+// ══════════════════════════════════════════════════════════
+app.get('/api/admin/finance-summary', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const [sales, trainerEarnings, withdraws, commissions] = await Promise.all([
+      // Toutes les ventes approuvées (vidéos + modules + ebooks)
+      _migPool.query(`
+        SELECT
+          COALESCE(SUM(amount) FILTER (WHERE statut IN ('Approuvé','Approuve')), 0) AS total,
+          COUNT(*)            FILTER (WHERE statut IN ('Approuvé','Approuve'))      AS count
+        FROM (
+          SELECT amount, statut FROM video_purchases
+          UNION ALL
+          SELECT amount, statut FROM module_purchases
+          UNION ALL
+          SELECT amount, statut FROM ebook_purchases
+        ) t
+      `),
+      // Commissions dues aux formateurs (en attente + payées)
+      _migPool.query(`
+        SELECT
+          COALESCE(SUM(commission_amount), 0)                                    AS total_brut,
+          COALESCE(SUM(commission_amount) FILTER (WHERE statut='En attente'), 0) AS pending,
+          COALESCE(SUM(commission_amount) FILTER (WHERE statut='Payé'),       0) AS paid
+        FROM trainer_earnings
+      `),
+      // Retraits utilisateurs en attente
+      _migPool.query(`
+        SELECT
+          COALESCE(SUM(montant) FILTER (WHERE statut='En attente'), 0) AS pending,
+          COALESCE(SUM(montant) FILTER (WHERE statut='Versé'),      0) AS paid
+        FROM withdraws
+      `),
+      // Commissions affiliés en attente
+      _migPool.query(`
+        SELECT COALESCE(SUM(montant) FILTER (WHERE statut!='Versé'), 0) AS pending
+        FROM commissions
+      `)
+    ]);
+
+    const totalSales       = parseFloat(sales.rows[0].total);
+    const salesCount       = parseInt(sales.rows[0].count);
+    const trainerBrut      = parseFloat(trainerEarnings.rows[0].total_brut);
+    const trainerPending   = parseFloat(trainerEarnings.rows[0].pending);
+    const trainerPaid      = parseFloat(trainerEarnings.rows[0].paid);
+    const withdrawPending  = parseFloat(withdraws.rows[0].pending);
+    const withdrawPaid     = parseFloat(withdraws.rows[0].paid);
+    const commPending      = parseFloat(commissions.rows[0].pending);
+    // Net admin = ventes totales - commissions formateurs - commissions affiliés versées
+    const netAdmin = totalSales - trainerBrut - (withdrawPaid + withdrawPending);
+
+    res.json({
+      totalSales, salesCount,
+      trainerBrut, trainerPending, trainerPaid,
+      withdrawPending, withdrawPaid,
+      commPending,
+      netAdmin: Math.max(0, netAdmin)
+    });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
+});
+
 // ══════════════════════════════════════════════════════════
 //  ADMIN — VIDEOS, STATS, USERS
 // ══════════════════════════════════════════════════════════
