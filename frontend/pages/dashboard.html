@@ -148,6 +148,7 @@
       <button class="dash-tab" id="myVideosTabBtn" onclick="switchTab('myvideos', this)" style="display:none"><i class="fas fa-film"></i> Mes Vidéos <span class="admin-subnav-badge" id="myVideosPendingBadge" style="display:none">!</span></button>
       <button class="dash-tab admin-tab" id="adminTabBtn" onclick="switchTab('admin', this)" style="display:none"><i class="fas fa-shield-alt"></i> Admin</button>
 
+      <button class="dash-tab" id="trainerTabBtn" onclick="switchTab('trainer', this)" style="display:none"><i class="fas fa-chalkboard-teacher"></i> Formateur</button>
       <button class="dash-tab admin-tab" id="videosTabBtn" onclick="switchTab('videos', this)" style="display:none"><i class="fas fa-film"></i> Vidéos</button>
       <button class="dash-tab admin-tab" id="ebooksTabBtn" onclick="switchTab('ebooks', this)" style="display:none"><i class="fas fa-book-open"></i> Ebooks</button>
     </div>
@@ -399,7 +400,74 @@
         <div id="subUserList"></div>
       </div>
     </div>
-    <!-- TAB : WALLET -->
+    <!-- TAB : FORMATEUR -->
+    <div id="tab-trainer" style="display:none">
+      <div class="dash-section">
+        <div class="sub-user-header">
+          <div>
+            <h2><i class="fas fa-chalkboard-teacher" style="color:var(--accent)"></i> Espace Formateur</h2>
+            <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Gérez vos contenus soumis et suivez vos gains.</p>
+          </div>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadTrainerTab()">
+            <i class="fas fa-sync-alt"></i> Actualiser
+          </button>
+        </div>
+
+        <!-- STATUT DEMANDE -->
+        <div id="trainerRequestStatus" style="margin-bottom:1.5rem"></div>
+
+        <!-- FORMULAIRE DEMANDE (si pas encore formateur) -->
+        <div id="trainerRequestForm" style="display:block;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem">
+          <h3 style="font-size:1rem;margin-bottom:1rem"><i class="fas fa-paper-plane" style="color:var(--accent)"></i> Devenir Formateur Partenaire</h3>
+          <p style="font-size:0.85rem;color:var(--text2);margin-bottom:1rem">Soumettez votre candidature. L'admin examinera votre profil et vous contactera.</p>
+          <div class="form-group">
+            <label>Votre domaine d'expertise <span style="color:var(--red)">*</span></label>
+            <input type="text" id="trainerExpertise" placeholder="Ex: Crypto, Facebook Ads, Création de contenu..." />
+          </div>
+          <div class="form-group">
+            <label>Décrivez votre expérience et ce que vous souhaitez enseigner <span style="color:var(--red)">*</span></label>
+            <textarea id="trainerDescription" rows="4" placeholder="Parlez de votre expérience, vos formations prévues, votre audience..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Lien de démonstration <small style="color:var(--text2)">(optionnel — vidéo YouTube, PDF exemple...)</small></label>
+            <input type="url" id="trainerDemoUrl" placeholder="https://..." />
+          </div>
+          <p style="font-size:0.78rem;color:var(--text2);margin-bottom:1rem">
+            <i class="fas fa-info-circle" style="color:var(--accent)"></i>
+            En soumettant, vous acceptez les <a href="cgu-formateur.html" target="_blank" style="color:var(--accent)">CGU Formateur</a>.
+          </p>
+          <p id="trainerRequestMsg" style="font-size:0.82rem;min-height:1rem;color:var(--accent2)"></p>
+          <button class="btn-primary" style="padding:0.6rem 1.4rem" onclick="submitTrainerRequest()">
+            <i class="fas fa-paper-plane"></i> Envoyer ma candidature
+          </button>
+        </div>
+
+        <!-- SOUMETTRE UN CONTENU (si formateur accepté) -->
+        <div id="trainerSubmitSection" style="display:none;margin-bottom:1.5rem">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.6rem">
+            <h3 style="font-size:1rem;margin:0"><i class="fas fa-plus-circle" style="color:var(--accent2)"></i> Soumettre un contenu</h3>
+            <button class="btn-primary" style="padding:0.45rem 1rem;font-size:0.82rem" onclick="openTrainerSubmitModal()">
+              <i class="fas fa-plus"></i> Nouveau contenu
+            </button>
+          </div>
+        </div>
+
+        <!-- MES GAINS -->
+        <div id="trainerEarningsSection" style="display:none;margin-bottom:1.5rem">
+          <h3 style="font-size:1rem;margin-bottom:1rem"><i class="fas fa-coins" style="color:var(--gold)"></i> Mes Gains</h3>
+          <div class="aff-stats" id="trainerEarningsStats"></div>
+          <div id="trainerEarningsList" style="margin-top:1rem"></div>
+        </div>
+
+        <!-- MES SOUMISSIONS -->
+        <div id="trainerSubmissionsList" style="display:none">
+          <h3 style="font-size:1rem;margin-bottom:1rem"><i class="fas fa-list" style="color:var(--accent)"></i> Mes Contenus Soumis</h3>
+          <div id="trainerSubmissionsContent"></div>
+        </div>
+      </div>
+    </div>
+
+<!-- TAB : WALLET -->
     <div id="tab-wallet" style="display:none">
       <div class="dash-section">
         <h2>Mes Gains (AR)</h2>
@@ -479,12 +547,65 @@
             <i class="fas fa-shopping-bag" style="color:var(--accent2)"></i> Achats Ebooks
             <span class="admin-subnav-badge" id="ebookPurchasesBadge" style="display:none">0</span>
           </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('trainers', this)">
+            <i class="fas fa-chalkboard-teacher" style="color:var(--accent)"></i> Formateurs
+            <span class="admin-subnav-badge" id="trainerRequestsBadge" style="display:none">0</span>
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('trainersubmissions', this)">
+            <i class="fas fa-file-upload" style="color:var(--accent2)"></i> Contenus soumis
+            <span class="admin-subnav-badge" id="trainerSubmissionsBadge" style="display:none">0</span>
+          </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('trainerearnings', this)">
+            <i class="fas fa-coins" style="color:var(--gold)"></i> Gains formateurs
+          </button>
           <button class="admin-subnav-btn" onclick="switchAdminSection('leaderboard', this)">
             <i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard
           </button>
         </div>
         </div>
-        <!-- SECTION : LEADERBOARD -->
+        <!-- SECTION : FORMATEURS -->
+        <div id="adminSection-trainers" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-chalkboard-teacher" style="color:var(--accent)"></i> Demandes Formateurs</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Gérez les candidatures de partenariat formateur.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminTrainers()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <div id="adminTrainersList"></div>
+        </div>
+
+        <!-- SECTION : CONTENUS SOUMIS -->
+        <div id="adminSection-trainersubmissions" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-file-upload" style="color:var(--accent2)"></i> Contenus Soumis par les Formateurs</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Validez ou refusez les vidéos et ebooks soumis.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminTrainerSubmissions()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <div id="adminTrainerSubmissionsList"></div>
+        </div>
+
+        <!-- SECTION : GAINS FORMATEURS -->
+        <div id="adminSection-trainerearnings" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-coins" style="color:var(--gold)"></i> Gains des Formateurs</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Suivez et validez les commissions dues aux formateurs.</p>
+            </div>
+            <button class="btn-outline" style="padding:0.35rem 0.9rem;font-size:0.78rem" onclick="loadAdminTrainerEarnings()">
+              <i class="fas fa-sync-alt"></i> Actualiser
+            </button>
+          </div>
+          <div id="adminTrainerEarningsList"></div>
+        </div>
+
+<!-- SECTION : LEADERBOARD -->
         <div id="adminSection-leaderboard" class="admin-sub-section" style="display:none">
           <div class="admin-section-header" style="margin-bottom:1.2rem">
             <div>
@@ -1181,7 +1302,7 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       </div>
       <!-- Prévisualisation -->
       <div id="vPreviewWrap" class="video-preview-wrap" style="display:none">
-        <iframe id="vPreviewFrame" src="" allowfullscreen style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px"></iframe>
+        <iframe id="vPreviewFrame" src="" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation allow-forms" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px"></iframe>
       </div>
       <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
         <button id="vPreviewBtnYt" class="video-preview-btn" onclick="previewYoutube()">
@@ -1248,7 +1369,7 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
       <div class="video-container" id="videoContainer">
         <div id="ytPlayer"></div>
-        <iframe id="driveFrame" src="" allowfullscreen allow="autoplay; fullscreen" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:none"></iframe>
+        <iframe id="driveFrame" src="" allowfullscreen allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin allow-presentation allow-forms" style="display:none;position:absolute;inset:0;width:100%;height:100%;border:none"></iframe>
         <div id="videoError" style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;flex-direction:column;gap:1rem;background:var(--bg2);color:var(--text2);text-align:center;padding:2rem">
           <i class="fas fa-lock" style="font-size:2.5rem;color:var(--accent);opacity:0.6"></i>
           <p id="videoErrorMsg" style="font-size:0.95rem;max-width:320px;line-height:1.6"></p>
@@ -1309,7 +1430,106 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       </div>
     </div>
   </div>
-  <!-- MODAL PARTAGE PROFIL -->
+  <!-- MODAL SOUMISSION CONTENU FORMATEUR -->
+  <div id="trainerSubmitOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:3000;align-items:center;justify-content:center;padding:1rem;overflow-y:auto" onclick="if(event.target===this)closeTrainerSubmitModal()">
+    <div style="background:var(--bg);border-radius:16px;padding:1.5rem;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,0.4);max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem">
+        <h3 style="margin:0;font-size:1rem"><i class="fas fa-upload" style="color:var(--accent)"></i> Soumettre un contenu</h3>
+        <button onclick="closeTrainerSubmitModal()" style="background:none;border:none;color:var(--text2);font-size:1.2rem;cursor:pointer"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Type de contenu</label>
+        <div style="display:flex;gap:0.6rem">
+          <label style="flex:1;display:flex;align-items:center;gap:0.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.8rem;cursor:pointer">
+            <input type="radio" name="trainerContentType" value="video" checked onchange="toggleTrainerContentType('video')" /> <i class="fas fa-play-circle" style="color:var(--accent)"></i> Vidéo
+          </label>
+          <label style="flex:1;display:flex;align-items:center;gap:0.5rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:0.6rem 0.8rem;cursor:pointer">
+            <input type="radio" name="trainerContentType" value="ebook" onchange="toggleTrainerContentType('ebook')" /> <i class="fas fa-book-open" style="color:var(--accent2)"></i> Ebook
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Titre <span style="color:var(--red)">*</span></label>
+        <input type="text" id="tsTitle" placeholder="Titre de votre contenu" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="tsDescription" rows="3" placeholder="Décrivez votre contenu..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="tsCategory">
+          <option value="debutant">Débutant</option>
+          <option value="trading">Trading</option>
+          <option value="defi">DeFi</option>
+          <option value="nft">NFT</option>
+          <option value="contenu">Contenu</option>
+          <option value="facebook">Facebook</option>
+          <option value="General">Général</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Niveau</label>
+        <select id="tsLevel">
+          <option value="Débutant">Débutant</option>
+          <option value="Intermédiaire">Intermédiaire</option>
+          <option value="Avancé">Avancé</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Prix (AR) <span style="color:var(--red)">*</span></label>
+        <input type="number" id="tsPrice" placeholder="Ex: 10000" min="0" step="500" />
+      </div>
+      <!-- Champs vidéo -->
+      <div id="tsVideoFields">
+        <div class="form-group">
+          <label>Durée</label>
+          <input type="text" id="tsDuration" placeholder="Ex: 45 min" />
+        </div>
+        <div class="form-group">
+          <label>Source vidéo</label>
+          <select id="tsVideoSource">
+            <option value="youtube">YouTube</option>
+            <option value="drive">Google Drive</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>ID YouTube ou lien Drive</label>
+          <input type="text" id="tsVideoId" placeholder="ID YouTube ou lien Google Drive" />
+        </div>
+        <div class="form-group">
+          <label>URL Miniature</label>
+          <input type="url" id="tsThumbnail" placeholder="https://... (optionnel)" />
+        </div>
+      </div>
+      <!-- Champs ebook -->
+      <div id="tsEbookFields" style="display:none">
+        <div class="form-group">
+          <label>Nom de l'auteur</label>
+          <input type="text" id="tsAuthorName" placeholder="Votre nom" />
+        </div>
+        <div class="form-group">
+          <label>Nombre de pages</label>
+          <input type="number" id="tsPages" placeholder="Ex: 80" min="1" />
+        </div>
+        <div class="form-group">
+          <label>URL Couverture</label>
+          <input type="url" id="tsCover" placeholder="https://... (image de couverture)" />
+        </div>
+        <div class="form-group">
+          <label>URL Fichier PDF</label>
+          <input type="url" id="tsFileUrl" placeholder="https://drive.google.com/..." />
+        </div>
+      </div>
+      <p id="trainerSubmitMsg" style="font-size:0.82rem;min-height:1rem;color:var(--accent2)"></p>
+      <div style="display:flex;gap:0.6rem;margin-top:0.8rem">
+        <button class="btn-primary" style="flex:1;padding:0.6rem" onclick="submitTrainerContent()"><i class="fas fa-paper-plane"></i> Soumettre</button>
+        <button onclick="closeTrainerSubmitModal()" style="flex:1;padding:0.6rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;cursor:pointer;color:var(--text);font-family:inherit">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+<!-- MODAL PARTAGE PROFIL -->
   <div id="shareMyProfileModal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,0.5);align-items:center;justify-content:center" onclick="if(event.target===this)closeShareMyProfileModal()">
     <div style="background:var(--bg2);border-radius:16px;padding:1.5rem;width:min(400px,92vw);box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
@@ -1337,7 +1557,15 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   <footer class="footer">
     <div class="footer-content">
       <a href="index.html" class="logo">Pagani<span>Digital</span></a>
-      <p>© 2025 Pagani Digital. Tous droits réservés.</p>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <div style="display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:center">
+          <a href="cgu.html" style="color:var(--text2);font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">CGU</a>
+          <a href="cgu-formateur.html" style="color:var(--text2);font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">CGU Formateur</a>
+          <a href="affiliation.html" style="color:var(--text2);font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Parrainage</a>
+          <a href="dashboard.html?tab=trainer" style="color:var(--text2);font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--text2)'">Devenir Formateur</a>
+        </div>
+        <p style="color:var(--text2);font-size:0.8rem;margin:0">© 2025 Pagani Digital. Tous droits réservés.</p>
+      </div>
       <div class="social-links">
         <a id="footerFacebook" href="#" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a>
         <a id="footerTiktok" href="#" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
@@ -1633,6 +1861,9 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
     // Auto-login si token JWT présent
     (async function initDashboard() {
       const token = localStorage.getItem('pd_jwt');
+      // Sauvegarder le tab demandé avant login
+      const _urlP = new URLSearchParams(window.location.search);
+      if (_urlP.get('tab')) sessionStorage.setItem('pd_pending_tab', _urlP.get('tab'));
       if (token) {
         try {
           const user = await PaganiAPI.getMe();

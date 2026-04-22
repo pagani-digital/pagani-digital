@@ -1491,6 +1491,254 @@ app.post('/api/messages/:userId/:msgId/reaction', requireAuth, async (req, res) 
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 // ══════════════════════════════════════════════════════════
+//  POOL MIGRATIONS (déclaré tôt pour les routes formateur)
+// ══════════════════════════════════════════════════════════
+const { Pool } = require('pg');
+const _migPool = process.env.DATABASE_URL
+  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
+  : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
+
+// ══════════════════════════════════════════════════════════
+//  FORMATEURS PARTENAIRES
+// ══════════════════════════════════════════════════════════
+
+// Soumettre une demande de partenariat formateur
+app.post('/api/trainer/request', requireAuth, async (req, res) => {
+  const { expertise, description, demoUrl } = req.body;
+  if (!expertise || !description) return res.status(400).json({ error: 'CHAMPS_MANQUANTS' });
+  try {
+    const existing = await _migPool.query(
+      `SELECT id FROM trainer_requests WHERE user_id=$1 AND statut='En attente'`, [req.user.id]
+    );
+    if (existing.rows.length) return res.status(400).json({ error: 'DEMANDE_DEJA_EN_COURS' });
+    const user = await db.getUserById(req.user.id);
+    const r = await _migPool.query(
+      `INSERT INTO trainer_requests (user_id, user_name, expertise, description, demo_url)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.user.id, user.name, expertise, description, demoUrl || '']
+    );
+    await db.createNotification({ userId: 0, type: 'TRAINER_REQUEST',
+      message: `${user.name} demande à devenir formateur partenaire.`,
+      link: 'dashboard.html?tab=admin&section=trainers' });
+    sendPushToAdmin('Demande formateur', user.name + ' veut devenir formateur', 'dashboard.html?tab=admin&section=trainers');
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Statut de ma demande formateur
+app.get('/api/trainer/my-request', requireAuth, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT * FROM trainer_requests WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1`, [req.user.id]
+    );
+    res.json(r.rows[0] ? r.rows[0] : null);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Soumettre un contenu (vidéo ou ebook) — formateur uniquement
+app.post('/api/trainer/submit', requireAuth, async (req, res) => {
+  if (req.user.role !== 'formateur' && req.user.role !== 'admin')
+    return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
+  const { contentType, title, description, category, level, duration, price,
+          accessType, videoSource, videoId, driveId, thumbnail, cover, fileUrl, pages, authorName } = req.body;
+  if (!title) return res.status(400).json({ error: 'TITRE_REQUIS' });
+  try {
+    const user = await db.getUserById(req.user.id);
+    const r = await _migPool.query(
+      `INSERT INTO trainer_submissions
+       (trainer_id, trainer_name, content_type, title, description, category, level, duration,
+        price, access_type, video_source, video_id, drive_id, thumbnail, cover, file_url, pages, author_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *`,
+      [req.user.id, user.name, contentType || 'video', title, description || '',
+       category || 'debutant', level || 'Débutant', duration || '',
+       price || 0, accessType || 'unit', videoSource || 'youtube',
+       videoId || '', driveId || '', thumbnail || '', cover || '',
+       fileUrl || '', pages || null, authorName || user.name]
+    );
+    await db.createNotification({ userId: 0, type: 'TRAINER_SUBMISSION',
+      message: `${user.name} a soumis un contenu : "${title}"`,
+      link: 'dashboard.html?tab=admin&section=trainersubmissions' });
+    sendPushToAdmin('Nouveau contenu soumis', user.name + ' : "' + title + '"', 'dashboard.html?tab=admin&section=trainersubmissions');
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Mes soumissions (formateur)
+app.get('/api/trainer/my-submissions', requireAuth, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT * FROM trainer_submissions WHERE trainer_id=$1 ORDER BY created_at DESC`, [req.user.id]
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Mes gains formateur
+app.get('/api/trainer/my-earnings', requireAuth, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT * FROM trainer_earnings WHERE trainer_id=$1 ORDER BY created_at DESC`, [req.user.id]
+    );
+    const totals = await _migPool.query(
+      `SELECT
+         COALESCE(SUM(CASE WHEN statut='En attente' THEN commission_amount ELSE 0 END),0) AS pending,
+         COALESCE(SUM(CASE WHEN statut='Payé' THEN commission_amount ELSE 0 END),0) AS paid,
+         COALESCE(SUM(commission_amount),0) AS total
+       FROM trainer_earnings WHERE trainer_id=$1`, [req.user.id]
+    );
+    res.json({ earnings: r.rows, ...totals.rows[0] });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// ── ADMIN FORMATEURS ──
+
+// Toutes les demandes formateurs
+app.get('/api/admin/trainer-requests', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT tr.*, u.avatar_photo, u.avatar_color, u.plan
+       FROM trainer_requests tr
+       JOIN users u ON u.id = tr.user_id
+       ORDER BY tr.created_at DESC`
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Traiter une demande formateur (accepter/refuser)
+app.put('/api/admin/trainer-requests/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+  const { statut, rejectReason, commissionRate } = req.body;
+  try {
+    const r = await _migPool.query(
+      `UPDATE trainer_requests SET statut=$1, reject_reason=$2, treated_at=NOW() WHERE id=$3 RETURNING *`,
+      [statut, rejectReason || '', id]
+    );
+    const req2 = r.rows[0];
+    if (!req2) return res.status(404).json({ error: 'INTROUVABLE' });
+    if (statut === 'Approuvé') {
+      const rate = parseFloat(commissionRate) || 50;
+      await _migPool.query(
+        `UPDATE users SET role='formateur', trainer_commission_rate=$1, updated_at=NOW() WHERE id=$2`,
+        [rate, req2.user_id]
+      );
+      await db.createNotification({ userId: req2.user_id, type: 'TRAINER_REQUEST',
+        message: `🎉 Félicitations ! Votre demande de partenariat formateur a été acceptée. Vous pouvez maintenant soumettre vos contenus depuis votre dashboard.`,
+        link: 'dashboard.html?tab=trainer' });
+      sendPush(req2.user_id, 'Demande acceptée !', 'Vous êtes maintenant formateur partenaire sur Pagani Digital', 'dashboard.html?tab=trainer');
+    } else if (statut === 'Rejeté') {
+      const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+      await db.createNotification({ userId: req2.user_id, type: 'SUB_CANCELLED',
+        message: `Votre demande de partenariat formateur a été refusée.${reason}`,
+        link: 'dashboard.html' });
+    }
+    res.json(req2);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Toutes les soumissions de contenu
+app.get('/api/admin/trainer-submissions', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT ts.*, u.avatar_photo, u.avatar_color, u.trainer_commission_rate
+       FROM trainer_submissions ts
+       JOIN users u ON u.id = ts.trainer_id
+       ORDER BY ts.created_at DESC`
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Valider ou refuser une soumission — si validée, publie automatiquement le contenu
+app.put('/api/admin/trainer-submissions/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+  const { statut, rejectReason } = req.body;
+  try {
+    const subRes = await _migPool.query(`SELECT * FROM trainer_submissions WHERE id=$1`, [id]);
+    const sub = subRes.rows[0];
+    if (!sub) return res.status(404).json({ error: 'INTROUVABLE' });
+    const trainerRes = await _migPool.query(`SELECT trainer_commission_rate FROM users WHERE id=$1`, [sub.trainer_id]);
+    const commRate = parseFloat(trainerRes.rows[0]?.trainer_commission_rate) || 50;
+    let publishedId = null;
+    if (statut === 'Approuvé') {
+      if (sub.content_type === 'video') {
+        const v = await db.createVideo({
+          title: sub.title, desc: sub.description, category: sub.category,
+          level: sub.level, duration: sub.duration, free: false,
+          accessType: sub.access_type, price: sub.price, unitPrice: sub.price,
+          videoSource: sub.video_source, videoId: sub.video_id, driveId: sub.drive_id,
+          thumbnail: sub.thumbnail, icon: 'fas fa-play-circle', moduleId: null,
+          videoDescription: sub.description
+        });
+        await _migPool.query(
+          `UPDATE videos SET trainer_id=$1, trainer_commission=$2 WHERE id=$3`,
+          [sub.trainer_id, commRate, v.id]
+        );
+        publishedId = v.id;
+      } else {
+        const e = await db.createEbook({
+          title: sub.title, description: sub.description, cover: sub.cover,
+          price: sub.price, category: sub.category || 'General',
+          pages: sub.pages, author: sub.author_name, fileUrl: sub.file_url
+        });
+        await _migPool.query(
+          `UPDATE ebooks SET trainer_id=$1, trainer_commission=$2 WHERE id=$3`,
+          [sub.trainer_id, commRate, e.id]
+        );
+        publishedId = e.id;
+      }
+      await db.createNotification({ userId: sub.trainer_id, type: 'FORMATION_UNLOCKED',
+        message: `✅ Votre contenu "${sub.title}" a été validé et publié sur la plateforme !`,
+        link: sub.content_type === 'video' ? 'formations.html' : 'ebooks.html' });
+      sendPush(sub.trainer_id, 'Contenu publié !', '"' + sub.title + '" est maintenant en ligne', sub.content_type === 'video' ? 'formations.html' : 'ebooks.html');
+    } else {
+      const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+      await db.createNotification({ userId: sub.trainer_id, type: 'FORMATION_REJECTED',
+        message: `Votre contenu "${sub.title}" a été refusé.${reason}`,
+        link: 'dashboard.html?tab=trainer' });
+    }
+    await _migPool.query(
+      `UPDATE trainer_submissions SET statut=$1, reject_reason=$2, treated_at=NOW(), published_id=$3 WHERE id=$4`,
+      [statut, rejectReason || '', publishedId, id]
+    );
+    res.json({ ok: true, publishedId });
+  } catch(e) { console.error(e); res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Gains de tous les formateurs (admin)
+app.get('/api/admin/trainer-earnings', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const r = await _migPool.query(
+      `SELECT te.*, u.name as trainer_name, u.avatar_photo, u.avatar_color
+       FROM trainer_earnings te
+       JOIN users u ON u.id = te.trainer_id
+       ORDER BY te.created_at DESC LIMIT 200`
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// Marquer un gain formateur comme payé
+app.patch('/api/admin/trainer-earnings/:id/paid', requireAuth, requireAdmin, async (req, res) => {
+  const id = parseId(req.params.id);
+  if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+  try {
+    const r = await _migPool.query(
+      `UPDATE trainer_earnings SET statut='Payé', paid_at=NOW() WHERE id=$1 RETURNING *`, [id]
+    );
+    const earning = r.rows[0];
+    if (earning) {
+      await db.createNotification({ userId: earning.trainer_id, type: 'SUB_CONFIRMED',
+        message: `💰 Votre commission de ${Number(earning.commission_amount).toLocaleString('fr-FR')} AR pour "${earning.content_title}" a été versée !`,
+        link: 'dashboard.html?tab=trainer' });
+    }
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// ══════════════════════════════════════════════════════════
 //  FALLBACK SPA
 // ══════════════════════════════════════════════════════════
 
@@ -1654,12 +1902,6 @@ app.get('*', (req, res) => {
     res.status(404).json({ error: 'ROUTE_INTROUVABLE' });
   }
 });
-// Migrations automatiques au démarrage
-const { Pool } = require('pg');
-const _migPool = process.env.DATABASE_URL
-  ? new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } })
-  : new Pool({ user: process.env.DB_USER, host: process.env.DB_HOST, database: process.env.DB_NAME, password: process.env.DB_PASSWORD, port: process.env.DB_PORT || 5432 });
-
 async function runMigrations() {
   await require('./migrations').runMigrations(_migPool);
   // Migration table post_reactions

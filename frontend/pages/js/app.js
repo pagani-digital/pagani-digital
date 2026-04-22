@@ -2365,6 +2365,8 @@ function showDashboard(user) {
     if (myVideosTabBtn) myVideosTabBtn.style.display = 'flex';
     const myPostsTabBtn = document.getElementById('myPostsTabBtn');
     if (myPostsTabBtn) myPostsTabBtn.style.display = 'flex';
+    const trainerTabBtn = document.getElementById('trainerTabBtn');
+    if (trainerTabBtn) trainerTabBtn.style.display = 'flex';
     switchTab('myposts', myPostsTabBtn);
   }
   // Activer les notifications
@@ -2382,6 +2384,9 @@ function showDashboard(user) {
     // Rediriger vers la page ddie
     window.location.href = 'messages.html' + (withParam ? '?with=' + withParam : '');
     return;
+  }
+  if (tabParam === 'trainer' && user.role !== 'admin') {
+    switchTab('trainer', document.getElementById('trainerTabBtn'));
   }
   if (tabParam === 'admin' && user.role === 'admin') {
     const sectionParam = urlParams.get('section');
@@ -2768,9 +2773,205 @@ async function changePassword(e) {
   }
   setTimeout(() => msg.textContent = "", 4000);
 }
+// ===== ESPACE FORMATEUR =====
+async function loadTrainerTab() {
+  const user = getUser();
+  if (!user) return;
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  const token = localStorage.getItem('pd_jwt');
+  const statusEl   = document.getElementById('trainerRequestStatus');
+  const formEl     = document.getElementById('trainerRequestForm');
+  const submitEl   = document.getElementById('trainerSubmitSection');
+  const earningsEl = document.getElementById('trainerEarningsSection');
+  const subListEl  = document.getElementById('trainerSubmissionsList');
+  if (statusEl)   statusEl.innerHTML = '';
+  if (formEl)     formEl.style.display     = 'none';
+  if (submitEl)   submitEl.style.display   = 'none';
+  if (earningsEl) earningsEl.style.display = 'none';
+  if (subListEl)  subListEl.style.display  = 'none';
+  // Rafraîchir le user pour avoir le rôle à jour (ex: après acceptation formateur)
+  try {
+    const fresh = await PaganiAPI.getMe();
+    if (fresh) { user = fresh; window._currentUser = fresh; }
+  } catch(e) {}
+  if (user.role === 'formateur') {
+    if (submitEl)   submitEl.style.display   = 'block';
+    if (earningsEl) earningsEl.style.display = 'block';
+    if (subListEl)  subListEl.style.display  = 'block';
+    await _loadTrainerEarnings(API, token);
+    await _loadTrainerSubmissions(API, token);
+    return;
+  }
+  try {
+    const r = await fetch(API + '/trainer/my-request', { headers: { 'Authorization': 'Bearer ' + token } });
+    const req = await r.json();
+    if (!req) { if (formEl) formEl.style.display = 'block'; return; }
+    if (req.statut === 'En attente') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:0.8rem">' +
+        '<i class="fas fa-clock" style="color:var(--gold);font-size:1.4rem;flex-shrink:0"></i>' +
+        '<div><strong>Demande en cours d\'examen</strong>' +
+        '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Votre candidature a été reçue. L\'admin vous contactera prochainement.</p></div></div>';
+      return;
+    }
+    if (req.statut === 'Rejeté') {
+      if (statusEl) statusEl.innerHTML =
+        '<div style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.3);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem">' +
+        '<i class="fas fa-times-circle" style="color:var(--red);font-size:1.4rem;flex-shrink:0"></i>' +
+        '<div><strong>Demande refusée</strong>' +
+        (req.reject_reason ? '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Raison : ' + req.reject_reason + '</p>' : '') +
+        '<p style="font-size:0.82rem;color:var(--text2);margin-top:0.3rem">Vous pouvez soumettre une nouvelle candidature.</p></div></div>';
+      if (formEl) formEl.style.display = 'block';
+      return;
+    }
+    if (formEl) formEl.style.display = 'block';
+  } catch(e) { if (formEl) formEl.style.display = 'block'; }
+}
+
+async function submitTrainerRequest() {
+  const expertise   = document.getElementById('trainerExpertise')?.value.trim();
+  const description = document.getElementById('trainerDescription')?.value.trim();
+  const demoUrl     = document.getElementById('trainerDemoUrl')?.value.trim();
+  const msg         = document.getElementById('trainerRequestMsg');
+  if (!expertise)   { msg.style.color = 'var(--red)'; msg.textContent = 'Le domaine d\'expertise est obligatoire.'; return; }
+  if (!description) { msg.style.color = 'var(--red)'; msg.textContent = 'La description est obligatoire.'; return; }
+  msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
+  const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const r = await fetch(API + '/trainer/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ expertise, description, demoUrl })
+    });
+    const d = await r.json();
+    if (!r.ok) {
+      const errs = { DEMANDE_DEJA_EN_COURS: 'Vous avez déjà une demande en cours.', CHAMPS_MANQUANTS: 'Remplissez tous les champs obligatoires.' };
+      msg.style.color = 'var(--red)'; msg.textContent = errs[d.error] || 'Erreur : ' + d.error; return;
+    }
+    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Candidature envoyée ! L\'admin vous contactera prochainement.';
+    setTimeout(() => loadTrainerTab(), 2000);
+  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
+}
+
+async function _loadTrainerEarnings(API, token) {
+  const statsEl = document.getElementById('trainerEarningsStats');
+  const listEl  = document.getElementById('trainerEarningsList');
+  if (!statsEl || !listEl) return;
+  try {
+    const r = await fetch(API + '/trainer/my-earnings', { headers: { 'Authorization': 'Bearer ' + token } });
+    const d = await r.json();
+    const fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
+    statsEl.innerHTML =
+      '<div class="aff-stat"><i class="fas fa-coins" style="color:var(--gold)"></i><div><strong>' + fmt(d.total||0) + ' AR</strong><span>Total gagné</span></div></div>' +
+      '<div class="aff-stat"><i class="fas fa-clock" style="color:var(--accent2)"></i><div><strong>' + fmt(d.pending||0) + ' AR</strong><span>En attente</span></div></div>' +
+      '<div class="aff-stat"><i class="fas fa-check-circle" style="color:var(--green)"></i><div><strong>' + fmt(d.paid||0) + ' AR</strong><span>Versé</span></div></div>';
+    if (!d.earnings || !d.earnings.length) { listEl.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun gain pour le moment.</p>'; return; }
+    var statusColor = { 'En attente': 'var(--gold)', 'Payé': 'var(--green)' };
+    listEl.innerHTML = d.earnings.map(function(e) {
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 0;border-bottom:1px solid var(--border);font-size:0.85rem">' +
+        '<div><strong>' + e.content_title + '</strong>' +
+        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + e.buyer_name + ' · ' + new Date(e.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
+        '<div style="text-align:right"><strong style="color:var(--accent2)">' + fmt(e.commission_amount) + ' AR</strong>' +
+        '<span style="display:block;font-size:0.72rem;color:' + (statusColor[e.statut]||'var(--gold)') + '">' + e.statut + '</span></div></div>';
+    }).join('');
+  } catch(e) { if (listEl) listEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
+}
+
+async function _loadTrainerSubmissions(API, token) {
+  const listEl = document.getElementById('trainerSubmissionsContent');
+  if (!listEl) return;
+  try {
+    const r = await fetch(API + '/trainer/my-submissions', { headers: { 'Authorization': 'Bearer ' + token } });
+    const subs = await r.json();
+    if (!subs.length) { listEl.innerHTML = '<p style="color:var(--text2);font-size:0.85rem">Aucun contenu soumis.</p>'; return; }
+    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
+    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
+    listEl.innerHTML = subs.map(function(s) {
+      var c = sColor[s.statut] || 'var(--text2)';
+      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:0.8rem;flex-wrap:wrap">' +
+        '<div><strong style="font-size:0.92rem">' + s.title + '</strong>' +
+        '<span style="display:block;font-size:0.75rem;color:var(--text2);margin-top:0.2rem">' + s.content_type + ' · ' + s.category + ' · ' + Number(s.price).toLocaleString('fr-FR') + ' AR</span></div>' +
+        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px;white-space:nowrap">' +
+        '<i class="fas ' + (sIcon[s.statut]||'fa-clock') + '"></i> ' + s.statut + '</span></div>' +
+        (s.reject_reason ? '<p style="font-size:0.78rem;color:var(--red);margin-top:0.5rem">' + s.reject_reason + '</p>' : '') +
+        '</div>';
+    }).join('');
+  } catch(e) { if (listEl) listEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem">Erreur de chargement.</p>'; }
+}
+function openTrainerSubmitModal() {
+  var overlay = document.getElementById('trainerSubmitOverlay');
+  if (!overlay) return;
+  // Reset formulaire
+  var fields = ['tsTitle','tsDescription','tsPrice','tsDuration','tsVideoId','tsThumbnail','tsAuthorName','tsCover','tsFileUrl'];
+  fields.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  var pages = document.getElementById('tsPages'); if (pages) pages.value = '';
+  var msg = document.getElementById('trainerSubmitMsg'); if (msg) msg.textContent = '';
+  // Type vidéo par défaut
+  var radioVideo = document.querySelector('input[name="trainerContentType"][value="video"]');
+  if (radioVideo) { radioVideo.checked = true; toggleTrainerContentType('video'); }
+  overlay.style.display = 'flex';
+}
+
+function closeTrainerSubmitModal() {
+  var overlay = document.getElementById('trainerSubmitOverlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function toggleTrainerContentType(type) {
+  var videoFields = document.getElementById('tsVideoFields');
+  var ebookFields = document.getElementById('tsEbookFields');
+  if (videoFields) videoFields.style.display = type === 'video' ? 'block' : 'none';
+  if (ebookFields) ebookFields.style.display = type === 'ebook' ? 'block' : 'none';
+}
+
+async function submitTrainerContent() {
+  var typeEl = document.querySelector('input[name="trainerContentType"]:checked');
+  var contentType = typeEl ? typeEl.value : 'video';
+  var title       = (document.getElementById('tsTitle')?.value || '').trim();
+  var description = (document.getElementById('tsDescription')?.value || '').trim();
+  var category    = document.getElementById('tsCategory')?.value || 'debutant';
+  var level       = document.getElementById('tsLevel')?.value || 'Débutant';
+  var price       = parseInt(document.getElementById('tsPrice')?.value) || 0;
+  var msg         = document.getElementById('trainerSubmitMsg');
+  if (!title) { msg.style.color = 'var(--red)'; msg.textContent = 'Le titre est obligatoire.'; return; }
+  if (!price) { msg.style.color = 'var(--red)'; msg.textContent = 'Le prix est obligatoire.'; return; }
+  var payload = { contentType, title, description, category, level, price };
+  if (contentType === 'video') {
+    payload.duration    = (document.getElementById('tsDuration')?.value || '').trim();
+    payload.videoSource = document.getElementById('tsVideoSource')?.value || 'youtube';
+    payload.videoId     = (document.getElementById('tsVideoId')?.value || '').trim();
+    payload.thumbnail   = (document.getElementById('tsThumbnail')?.value || '').trim();
+    if (!payload.videoId) { msg.style.color = 'var(--red)'; msg.textContent = 'L\'ID vidéo est obligatoire.'; return; }
+  } else {
+    payload.authorName = (document.getElementById('tsAuthorName')?.value || '').trim();
+    payload.pages      = parseInt(document.getElementById('tsPages')?.value) || null;
+    payload.cover      = (document.getElementById('tsCover')?.value || '').trim();
+    payload.fileUrl    = (document.getElementById('tsFileUrl')?.value || '').trim();
+    if (!payload.fileUrl) { msg.style.color = 'var(--red)'; msg.textContent = 'L\'URL du fichier PDF est obligatoire.'; return; }
+  }
+  msg.style.color = 'var(--text2)'; msg.textContent = 'Envoi en cours...';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/trainer/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(payload)
+    });
+    var d = await r.json();
+    if (!r.ok) {
+      var errs = { FORMATEUR_REQUIS: 'Accès réservé aux formateurs acceptés.', TITRE_REQUIS: 'Le titre est obligatoire.' };
+      msg.style.color = 'var(--red)'; msg.textContent = errs[d.error] || 'Erreur : ' + d.error; return;
+    }
+    msg.style.color = 'var(--accent2)'; msg.textContent = '✅ Contenu soumis ! L\'admin va l\'examiner.';
+    setTimeout(function() { closeTrainerSubmitModal(); loadTrainerTab(); }, 2000);
+  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erreur serveur.'; }
+}
 // ===== TABS DASHBOARD =====
 function switchTab(tab, btn) {
-  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "myebooks", "admin", "videos", "ebooks"].forEach(t => {
+  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "myebooks", "trainer", "admin", "videos", "ebooks"].forEach(t => {
     const el = document.getElementById("tab-" + t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
@@ -2791,6 +2992,7 @@ function switchTab(tab, btn) {
   if (tab === "admin")  loadAdminStats();
   if (tab === "ebooks") loadAdminEbooks();
   if (tab === "videos") renderAdminVideos();
+  if (tab === "trainer") loadTrainerTab();
 }
 // ===== ADMIN STATS =====
 async function loadAdminStats() {
@@ -6412,6 +6614,251 @@ function switchAdminSection(section, btn) {
   if (section === 'shares')          loadAdminShares();
   if (section === 'ebooks')          loadAdminEbooks();
   if (section === 'ebookpurchases')  loadAdminEbookPurchases();
+  if (section === 'trainers')          loadAdminTrainers();
+  if (section === 'trainersubmissions') loadAdminTrainerSubmissions();
+  if (section === 'trainerearnings')    loadAdminTrainerEarnings();
+}
+// ===== ADMIN FORMATEURS =====
+async function loadAdminTrainers() {
+  var list = document.getElementById('adminTrainersList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-requests', { headers: { 'Authorization': 'Bearer ' + token } });
+    var reqs = await r.json();
+    // Mettre à jour le badge
+    var pending = reqs.filter(function(r) { return r.statut === 'En attente'; }).length;
+    var badge = document.getElementById('trainerRequestsBadge');
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!reqs.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucune demande pour le moment.</p>'; return; }
+    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
+    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
+    list.innerHTML = reqs.map(function(req) {
+      var av = req.avatar_photo
+        ? '<img src="' + req.avatar_photo + '" style="width:38px;height:38px;border-radius:50%;object-fit:cover" />'
+        : '<div class="avatar-circle avatar-sm" style="background:' + (req.avatar_color||'#6c63ff') + '">' + (req.user_name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+      var c = sColor[req.statut] || 'var(--text2)';
+      var isPending = req.statut === 'En attente';
+      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:0.8rem">' +
+        '<div style="display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
+        av +
+        '<div style="flex:1"><strong>' + req.user_name + '</strong>' +
+        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + new Date(req.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
+        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px">' +
+        '<i class="fas ' + (sIcon[req.statut]||'fa-clock') + '"></i> ' + req.statut + '</span></div>' +
+        '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.6rem"><strong style="color:var(--text)">Expertise :</strong> ' + req.expertise + '</div>' +
+        '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.8rem">' + req.description + '</div>' +
+        (req.demo_url ? '<div style="margin-bottom:0.8rem"><a href="' + req.demo_url + '" target="_blank" rel="noopener" style="font-size:0.8rem;color:var(--accent)"><i class="fas fa-link"></i> Voir la démo</a></div>' : '') +
+        (isPending ? (
+          '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center">' +
+          '<label style="font-size:0.78rem;color:var(--text2)">Commission % :</label>' +
+          '<input type="number" id="commRate-' + req.id + '" value="50" min="1" max="100" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.3rem 0.5rem;font-size:0.82rem" />' +
+          '<button onclick="_approveTrainer(' + req.id + ')" class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem"><i class="fas fa-check"></i> Accepter</button>' +
+          '<button onclick="_rejectTrainer(' + req.id + ')" style="padding:0.4rem 1rem;font-size:0.82rem;background:var(--red);border:none;color:#fff;border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times"></i> Refuser</button>' +
+          '</div>'
+        ) : '') +
+        '</div>';
+    }).join('');
+  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
+}
+
+async function _approveTrainer(id) {
+  var rate = parseInt(document.getElementById('commRate-' + id)?.value) || 50;
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-requests/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut: 'Approuvé', commissionRate: rate })
+    });
+    if (!r.ok) throw new Error('Erreur serveur');
+    loadAdminTrainers();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function _rejectTrainer(id) {
+  var reason = prompt('Raison du refus (optionnel) :') || '';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-requests/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut: 'Rejeté', rejectReason: reason })
+    });
+    if (!r.ok) throw new Error('Erreur serveur');
+    loadAdminTrainers();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerSubmissions() {
+  var list = document.getElementById('adminTrainerSubmissionsList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-submissions', { headers: { 'Authorization': 'Bearer ' + token } });
+    var subs = await r.json();
+    var pending = subs.filter(function(s) { return s.statut === 'En attente'; }).length;
+    var badge = document.getElementById('trainerSubmissionsBadge');
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? 'inline-flex' : 'none'; }
+    if (!subs.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucune soumission pour le moment.</p>'; return; }
+    var sColor = { 'En attente': 'var(--gold)', 'Approuvé': 'var(--green)', 'Rejeté': 'var(--red)' };
+    var sIcon  = { 'En attente': 'fa-clock', 'Approuvé': 'fa-check-circle', 'Rejeté': 'fa-times-circle' };
+    list.innerHTML = subs.map(function(s) {
+      var c = sColor[s.statut] || 'var(--text2)';
+      var isPending = s.statut === 'En attente';
+      var isVideo = s.content_type === 'video';
+
+      // Bloc prévisualisation
+      var previewBlock = '';
+      if (isVideo) {
+        var ytId = s.video_source === 'youtube' ? s.video_id : '';
+        var driveId = s.video_source === 'drive' ? s.drive_id : '';
+        var thumb = s.thumbnail || (ytId ? 'https://img.youtube.com/vi/' + ytId + '/hqdefault.jpg' : '');
+        previewBlock =
+          '<div style="margin-bottom:0.8rem">' +
+          (thumb ? '<img src="' + thumb + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:0.5rem;display:block" />' : '') +
+          '<div style="display:flex;gap:0.5rem;flex-wrap:wrap">' +
+          (ytId ? '<a href="https://www.youtube.com/watch?v=' + ytId + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(255,0,0,0.12);color:#ff4444;border:1px solid rgba(255,0,0,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fab fa-youtube"></i> Voir sur YouTube</a>' : '') +
+          (driveId ? '<a href="https://drive.google.com/file/d/' + driveId + '/view" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fas fa-play-circle"></i> Voir sur Drive</a>' : '') +
+          '</div></div>';
+      } else {
+        previewBlock =
+          '<div style="display:flex;gap:0.8rem;align-items:flex-start;margin-bottom:0.8rem">' +
+          (s.cover ? '<img src="' + s.cover + '" style="width:60px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1px solid var(--border)" />' : '') +
+          '<div>' +
+          (s.file_url ? '<a href="' + s.file_url + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(0,212,170,0.12);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.35rem 0.8rem;border-radius:8px;font-size:0.8rem;text-decoration:none"><i class="fas fa-file-pdf"></i> Voir le PDF</a>' : '') +
+          (s.pages ? '<span style="display:block;font-size:0.75rem;color:var(--text2);margin-top:0.4rem"><i class="fas fa-book"></i> ' + s.pages + ' pages</span>' : '') +
+          '</div></div>';
+      }
+
+      // Infos détaillées
+      var infoBlock =
+        '<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
+        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-tag"></i> ' + Number(s.price).toLocaleString('fr-FR') + ' AR</span>' +
+        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-layer-group"></i> ' + s.category + '</span>' +
+        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-signal"></i> ' + (s.level||'—') + '</span>' +
+        (isVideo && s.duration ? '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-clock"></i> ' + s.duration + '</span>' : '') +
+        '<span style="font-size:0.75rem;background:var(--bg3);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:50px"><i class="fas fa-' + (isVideo ? 'play-circle' : 'book-open') + '"></i> ' + s.content_type + '</span>' +
+        '</div>';
+
+      // Bloc actions (uniquement si En attente)
+      var actionsBlock = '';
+      if (isPending) {
+        actionsBlock =
+          '<div style="border-top:1px solid var(--border);padding-top:0.8rem;margin-top:0.4rem">' +
+          '<div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem">' +
+          '<button onclick="_approveSubmission(' + s.id + ', this)" class="btn-primary" style="padding:0.45rem 1.1rem;font-size:0.82rem"><i class="fas fa-check"></i> Valider et publier</button>' +
+          '<button onclick="_toggleRejectForm(' + s.id + ')" style="padding:0.45rem 1.1rem;font-size:0.82rem;background:transparent;border:1px solid var(--red);color:var(--red);border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times"></i> Refuser</button>' +
+          '</div>' +
+          '<div id="rejectForm-' + s.id + '" style="display:none;margin-top:0.4rem">' +
+          '<textarea id="rejectReason-' + s.id + '" rows="2" placeholder="Raison du refus (obligatoire)..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.82rem;font-family:inherit;resize:none;margin-bottom:0.5rem"></textarea>' +
+          '<button onclick="_rejectSubmission(' + s.id + ')" style="padding:0.4rem 1rem;font-size:0.82rem;background:var(--red);border:none;color:#fff;border-radius:10px;cursor:pointer;font-family:inherit"><i class="fas fa-times-circle"></i> Confirmer le refus</button>' +
+          '</div>' +
+          '</div>';
+      }
+
+      return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem">' +
+        // En-tête
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:0.8rem;flex-wrap:wrap;margin-bottom:0.8rem">' +
+        '<div><strong style="font-size:0.95rem">' + s.title + '</strong>' +
+        '<span style="display:block;font-size:0.78rem;color:var(--text2);margin-top:0.2rem"><i class="fas fa-user"></i> ' + s.trainer_name + ' · ' + new Date(s.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
+        '<span style="font-size:0.78rem;font-weight:700;color:' + c + ';background:' + c + '22;border:1px solid ' + c + '44;padding:0.2rem 0.7rem;border-radius:50px;white-space:nowrap">' +
+        '<i class="fas ' + (sIcon[s.statut]||'fa-clock') + '"></i> ' + s.statut + '</span></div>' +
+        // Description
+        (s.description ? '<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.8rem;line-height:1.5">' + s.description + '</div>' : '') +
+        // Infos
+        infoBlock +
+        // Prévisualisation
+        previewBlock +
+        // Raison refus si rejeté
+        (s.reject_reason ? '<div style="font-size:0.8rem;color:var(--red);background:rgba(255,77,109,0.08);border:1px solid rgba(255,77,109,0.2);border-radius:8px;padding:0.5rem 0.8rem;margin-bottom:0.6rem"><i class="fas fa-info-circle"></i> ' + s.reject_reason + '</div>' : '') +
+        // Actions
+        actionsBlock +
+        '</div>';
+    }).join('');
+  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
+}
+
+async function _approveSubmission(id, btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publication...'; }
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-submissions/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut: 'Approuvé' })
+    });
+    if (!r.ok) throw new Error('Erreur serveur');
+    loadAdminTrainerSubmissions();
+  } catch(e) { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Valider et publier'; } alert('Erreur : ' + e.message); }
+}
+
+function _toggleRejectForm(id) {
+  var form = document.getElementById('rejectForm-' + id);
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function _rejectSubmission(id) {
+  var reasonEl = document.getElementById('rejectReason-' + id);
+  var reason   = reasonEl ? reasonEl.value.trim() : '';
+  if (!reason) { if (reasonEl) { reasonEl.style.borderColor = 'var(--red)'; reasonEl.focus(); } return; }
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-submissions/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ statut: 'Rejeté', rejectReason: reason })
+    });
+    if (!r.ok) throw new Error('Erreur serveur');
+    loadAdminTrainerSubmissions();
+  } catch(e) { alert('Erreur : ' + e.message); }
+}
+
+async function loadAdminTrainerEarnings() {
+  var list = document.getElementById('adminTrainerEarningsList');
+  if (!list) return;
+  list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  try {
+    var r = await fetch(API + '/admin/trainer-earnings', { headers: { 'Authorization': 'Bearer ' + token } });
+    var earnings = await r.json();
+    if (!earnings.length) { list.innerHTML = '<p style="color:var(--text2);padding:1rem;font-size:0.88rem">Aucun gain pour le moment.</p>'; return; }
+    var fmt = function(n) { return Number(n).toLocaleString('fr-FR'); };
+    list.innerHTML = earnings.map(function(e) {
+      var isPending = e.statut === 'En attente';
+      return '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.8rem;background:var(--bg2);border:1px solid var(--border);border-radius:12px;margin-bottom:0.6rem;gap:0.8rem;flex-wrap:wrap">' +
+        '<div><strong>' + e.trainer_name + '</strong>' +
+        '<span style="display:block;font-size:0.75rem;color:var(--text2)">' + e.content_title + ' · ' + e.buyer_name + ' · ' + new Date(e.created_at).toLocaleDateString('fr-FR') + '</span></div>' +
+        '<div style="display:flex;align-items:center;gap:0.6rem">' +
+        '<strong style="color:var(--accent2)">' + fmt(e.commission_amount) + ' AR</strong>' +
+        (isPending
+          ? '<button onclick="_markTrainerEarningPaid(' + e.id + ', this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Marquer payé</button>'
+          : '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.2rem 0.5rem;border-radius:50px">✓ Payé</span>'
+        ) +
+        '</div></div>';
+    }).join('');
+  } catch(e) { list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>'; }
+}
+
+async function _markTrainerEarningPaid(id, btn) {
+  var API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  var token = localStorage.getItem('pd_jwt');
+  btn.disabled = true;
+  try {
+    await fetch(API + '/admin/trainer-earnings/' + id + '/paid', {
+      method: 'PATCH', headers: { 'Authorization': 'Bearer ' + token }
+    });
+    btn.outerHTML = '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.2rem 0.5rem;border-radius:50px">✓ Payé</span>';
+  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
 }
 // ===== TARIFS ADMIN — ONGLETS =====
 function switchPricingTab(tab, btn) {
@@ -8193,6 +8640,12 @@ async function loadMyPosts() {
       container.innerHTML = '<div class="history-empty"><i class="fas fa-newspaper"></i><p>Vous n\'avez pas encore publie.</p></div>';
       return;
     }
+    // Charger les réactions en batch
+    try {
+      const ids = posts.map(p => p.id);
+      const batchRes = await Promise.allSettled(ids.slice(0, 20).map(id => PaganiAPI.getPostReactions(id)));
+      batchRes.forEach((r, i) => { if (r.status === 'fulfilled') _reactionsCache[ids[i]] = r.value; });
+    } catch(e) {}
     container.innerHTML = '';
     posts.forEach(post => {
       const normalized = {

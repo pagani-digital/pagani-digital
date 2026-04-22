@@ -73,6 +73,8 @@ const NOTIF_TYPES = {
   COMMENT:            { icon: "fas fa-comment",         color: "#6c63ff", title: "Nouveau commentaire"         },
   REACTION:           { icon: "fas fa-heart",           color: "#ff4d6d", title: "Nouvelle réaction"           },
   NEW_FOLLOWER:       { icon: "fas fa-user-plus",       color: "#00d4aa", title: "Nouveau follower"            },
+  TRAINER_REQUEST:    { icon: "fas fa-chalkboard-teacher", color: "#6c63ff", title: "Demande formateur"           },
+  TRAINER_SUBMISSION: { icon: "fas fa-file-upload",        color: "#f59e0b", title: "Contenu soumis"              },
 };
 
 const ADMIN_USER_ID = 0;
