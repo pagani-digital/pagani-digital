@@ -9366,6 +9366,338 @@ function dismissPushBanner() {
   localStorage.setItem('pd_push_banner_dismissed', '1');
 }
 
+// ===== ACHAT MODULE =====
+async function openModuleBuyModal(moduleId) {
+      const user = getUser();
+      if (!user) { window.location.href = 'dashboard.html'; return; }
+      const mod = _modulesData.find(m => m.id == moduleId);
+      if (!mod) return;
+
+      _moduleBuyCurrentId  = mod.id;
+      _moduleBuyCurrentAmt = mod.modulePrice || 0;
+      _moduleBuyProofBase64 = '';
+
+      // Charger les comptes admin si pas encore en cache
+      if (!_paymentAccountsCache.length) {
+        try { _paymentAccountsCache = await fetch(API_URL + '/payment-accounts').then(r => r.json()); } catch(e) {}
+      }
+
+      // Remplir l'en-tête
+      const color = mod.color || '#6c63ff';
+      document.getElementById('moduleBuyIcon').innerHTML = `<i class="${mod.icon||'fas fa-layer-group'}" style="color:${color}"></i>`;
+      document.getElementById('moduleBuyIcon').style.background = color + '22';
+      document.getElementById('moduleBuyIcon').style.borderRadius = '14px';
+      document.getElementById('moduleBuyIcon').style.width = '56px';
+      document.getElementById('moduleBuyIcon').style.height = '56px';
+      document.getElementById('moduleBuyIcon').style.display = 'flex';
+      document.getElementById('moduleBuyIcon').style.alignItems = 'center';
+      document.getElementById('moduleBuyIcon').style.justifyContent = 'center';
+      document.getElementById('moduleBuyTitle').textContent = mod.title;
+      document.getElementById('moduleBuyDesc').textContent  = mod.description || 'Accès à toutes les vidéos de ce module.';
+      document.getElementById('moduleBuyMeta').innerHTML = `
+        <span><i class="fas fa-layer-group"></i> Module complet</span>
+        <span><i class="fas fa-tag" style="color:var(--accent2)"></i> <strong style="color:var(--accent2)">${_moduleBuyCurrentAmt.toLocaleString('fr-FR')} AR</strong></span>`;
+
+      // Réinitialiser les étapes
+      document.getElementById('moduleBuyPayment').style.display = 'none';
+      document.getElementById('moduleBuySuccess').style.display = 'none';
+      document.getElementById('moduleBuyHeader').style.display  = 'block';
+
+      // Ajouter le bouton "Acheter" dans l'en-tête si pas encore présent
+      let startBtn = document.getElementById('moduleBuyStartBtn');
+      if (!startBtn) {
+        startBtn = document.createElement('button');
+        startBtn.id = 'moduleBuyStartBtn';
+        startBtn.className = 'btn-primary';
+        startBtn.style.cssText = 'width:100%;padding:0.85rem;font-size:0.95rem;margin-top:1rem';
+        startBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Acheter ce module — ' + _moduleBuyCurrentAmt.toLocaleString('fr-FR') + ' AR';
+        document.getElementById('moduleBuyHeader').appendChild(startBtn);
+      } else {
+        startBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Acheter ce module — ' + _moduleBuyCurrentAmt.toLocaleString('fr-FR') + ' AR';
+      }
+      startBtn.onclick = _moduleBuyGoToPayment;
+
+      // Afficher la modale
+      const overlay = document.getElementById('moduleBuyOverlay');
+      overlay.style.display = 'flex';
+    }
+
+    async function _moduleBuyGoToPayment() {
+      const user = getUser();
+      const accounts = _paymentAccountsCache.filter(a => !a.disabled && a.phone);
+
+      // Construire les comptes MM de l'utilisateur
+      let userAccounts = [];
+      if (user) {
+        const raw = user.mmAccounts || [];
+        userAccounts = raw.filter(a => a.phone);
+        if (!userAccounts.length && user.mmPhone) {
+          userAccounts = [{ operator: user.mmOperator||'MVola', phone: user.mmPhone, name: user.mmName||user.name }];
+        }
+      }
+
+      // Montant
+      document.getElementById('moduleBuyAmountRepeat').textContent = _moduleBuyCurrentAmt.toLocaleString('fr-FR') + ' AR';
+      document.getElementById('moduleBuyPayTitle').textContent = 'Paiement — ' + _moduleBuyCurrentAmt.toLocaleString('fr-FR') + ' AR';
+
+      // Loader dans la zone admin
+      document.getElementById('moduleBuyAdminTargets').innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+
+      // Afficher les étapes
+      document.getElementById('moduleBuyHeader').style.display  = 'none';
+      document.getElementById('moduleBuyPayment').style.display = 'block';
+
+      // Construire le sélecteur utilisateur
+      _renderModuleBuyUserMm(user, userAccounts, accounts);
+
+      // Afficher les comptes admin
+      _renderModuleBuyAdminTargets(accounts, userAccounts.length ? userAccounts[0].operator : null);
+
+      // Pré-remplir les champs cachés
+      if (userAccounts.length) {
+        _moduleBuyUserOp    = userAccounts[0].operator;
+        _moduleBuyUserPhone = userAccounts[0].phone;
+      }
+
+      // Réinitialiser preuve
+      _removeModuleProof();
+      document.getElementById('moduleBuyMsg').textContent = '';
+      document.getElementById('moduleBuyTxRef').value = '';
+    }
+
+    function _moduleBuyBackToInfo() {
+      document.getElementById('moduleBuyPayment').style.display = 'none';
+      document.getElementById('moduleBuyHeader').style.display  = 'block';
+    }
+
+    function closeModuleBuyModal() {
+      const overlay = document.getElementById('moduleBuyOverlay');
+      if (overlay) overlay.style.display = 'none';
+      _moduleBuyProofBase64 = '';
+    }
+
+    function _previewModuleProof(input) {
+      const file = input.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); input.value = ''; return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        _moduleBuyProofBase64 = e.target.result;
+        document.getElementById('moduleBuyProofImg').src = _moduleBuyProofBase64;
+        document.getElementById('moduleBuyProofPreview').style.display = 'block';
+        document.getElementById('moduleBuyProofLabel').style.borderColor = 'var(--accent2)';
+        document.getElementById('moduleBuyProofText').textContent = file.name;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function _removeModuleProof() {
+      _moduleBuyProofBase64 = '';
+      const img     = document.getElementById('moduleBuyProofImg');
+      const preview = document.getElementById('moduleBuyProofPreview');
+      const input   = document.getElementById('moduleBuyProofInput');
+      const label   = document.getElementById('moduleBuyProofLabel');
+      const text    = document.getElementById('moduleBuyProofText');
+      if (img)     img.src = '';
+      if (preview) preview.style.display = 'none';
+      if (input)   input.value = '';
+      if (label)   label.style.borderColor = 'var(--border)';
+      if (text)    text.textContent = "Cliquez pour ajouter une capture d'\u00e9cran";
+    }
+
+    function _renderModuleBuyUserMm(user, userAccounts, adminAccounts) {
+      const wrap   = document.getElementById('moduleBuyUserMmWrap');
+      if (!wrap) return;
+      const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
+      const opOptions = adminAccounts.length
+        ? adminAccounts.map(a => `<option value="${a.operator}">${a.operator}</option>`).join('')
+        : '<option value="MVola">MVola</option><option value="Orange Money">Orange Money</option><option value="Airtel Money">Airtel Money</option>';
+
+      if (!user || !userAccounts.length) {
+        wrap.innerHTML = `
+          <div class="upgrade-mm-notice${!user ? '' : ' upgrade-mm-notice-warn'}">
+            <i class="fas fa-${user ? 'exclamation-triangle' : 'info-circle'}"></i>
+            <span>${user ? 'Aucun compte Mobile Money dans votre profil. <a href="dashboard.html?tab=profile#mm-accounts">Ajoutez-en un</a>.' : 'Connectez-vous pour utiliser votre compte enregistré.'}</span>
+          </div>
+          <div class="upgrade-form-manual">
+            <label class="upgrade-form-label">Votre opérateur</label>
+            <select class="upgrade-input" onchange="_moduleBuyUserOp=this.value;_renderModuleBuyAdminTargets(_paymentAccountsCache.filter(a=>!a.disabled&&a.phone),this.value)">${opOptions}</select>
+            <label class="upgrade-form-label" style="margin-top:0.5rem">Votre numéro Mobile Money</label>
+            <input type="tel" class="upgrade-input" placeholder="034 XX XXX XX" oninput="_moduleBuyUserPhone=this.value" />
+          </div>`;
+        _moduleBuyUserOp    = adminAccounts[0]?.operator || 'MVola';
+        _moduleBuyUserPhone = '';
+        return;
+      }
+
+      if (userAccounts.length === 1) {
+        const acc   = userAccounts[0];
+        const color = colors[acc.operator] || 'var(--accent)';
+        _moduleBuyUserOp    = acc.operator;
+        _moduleBuyUserPhone = acc.phone;
+        wrap.innerHTML = `
+          <div class="upgrade-user-mm-single">
+            <span class="upgrade-user-mm-icon" style="background:${color}22;color:${color}"><i class="fas fa-mobile-alt"></i></span>
+            <span class="upgrade-user-mm-details">
+              <strong>${acc.operator}</strong>
+              <span>${acc.phone}</span>
+              <span class="upgrade-user-mm-name">${acc.name}</span>
+            </span>
+            <span class="upgrade-user-mm-locked"><i class="fas fa-lock"></i> Votre compte</span>
+          </div>`;
+        return;
+      }
+
+      // Plusieurs comptes
+      const defAcc = userAccounts[0];
+      _moduleBuyUserOp    = defAcc.operator;
+      _moduleBuyUserPhone = defAcc.phone;
+      wrap.innerHTML = `
+        <div class="upgrade-user-mm-selector">
+          ${userAccounts.map((acc, i) => {
+            const color    = colors[acc.operator] || 'var(--accent)';
+            const hasAdmin = adminAccounts.some(a => a.operator === acc.operator);
+            return `<label class="upgrade-user-mm-option">
+              <input type="radio" name="moduleBuyUserMm" value="${i}" ${i===0?'checked':''}
+                onchange="_moduleBuyUserOp='${acc.operator}';_moduleBuyUserPhone='${acc.phone}';_renderModuleBuyAdminTargets(_paymentAccountsCache.filter(a=>!a.disabled&&a.phone),'${acc.operator}')" />
+              <span class="upgrade-user-mm-card ${!hasAdmin?'upgrade-mm-card-warn':''}">
+                <span class="upgrade-user-mm-icon" style="background:${color}22;color:${color}"><i class="fas fa-mobile-alt"></i></span>
+                <span class="upgrade-user-mm-details"><strong>${acc.operator}</strong><span>${acc.phone}</span><span class="upgrade-user-mm-name">${acc.name}</span></span>
+                <span class="upgrade-user-mm-right">
+                  ${hasAdmin ? '<span class="upgrade-mm-match"><i class="fas fa-check-circle"></i></span>' : '<span class="upgrade-mm-nomatch"><i class="fas fa-exclamation-circle"></i></span>'}
+                  <span class="upgrade-user-mm-check"><i class="fas fa-check-circle"></i></span>
+                </span>
+              </span>
+            </label>`;
+          }).join('')}
+        </div>`;
+    }
+
+    function _renderModuleBuyAdminTargets(adminAccounts, selectedOp) {
+      const wrap = document.getElementById('moduleBuyAdminTargets');
+      if (!wrap) return;
+      const colors = { 'MVola': '#e91e8c', 'Orange Money': '#ff6600', 'Airtel Money': '#e53935' };
+      const configured = adminAccounts.filter(a => a.phone && !a.disabled);
+
+      if (!configured.length) {
+        wrap.innerHTML = `<div class="upgrade-mm-no-admin"><i class="fas fa-exclamation-circle"></i> Aucun numéro de paiement configuré. Contactez l'administrateur.</div>`;
+        return;
+      }
+
+      const defaultAcc = selectedOp
+        ? (configured.find(a => a.operator === selectedOp) || configured[0])
+        : configured[0];
+
+      wrap.innerHTML = configured.map((acc, i) => {
+        const color    = colors[acc.operator] || 'var(--accent)';
+        const selected = acc.operator === defaultAcc.operator;
+        return `
+          <div style="${selected ? '' : 'display:none;'}margin-bottom:0.5rem">
+            <div style="display:flex;align-items:center;gap:0.8rem;background:${selected ? 'rgba(0,212,170,0.07)' : 'var(--bg2)'};border:2px solid ${selected ? 'var(--accent2)' : 'var(--border)'};border-radius:12px;padding:0.85rem 1rem;${selected ? 'box-shadow:0 0 0 3px rgba(0,212,170,0.12)' : ''}">
+              <span style="width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;background:${color}22;color:${color}">
+                <i class="fas fa-mobile-alt"></i>
+              </span>
+              <span style="flex:1;display:flex;flex-direction:column;gap:0.1rem">
+                <strong style="font-size:0.92rem">${acc.operator}</strong>
+                <span style="font-size:1.05rem;font-weight:700;color:var(--text);letter-spacing:0.04em">${acc.phone}</span>
+                <span style="font-size:0.72rem;color:var(--text2)">${acc.name}</span>
+              </span>
+              <span style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;flex-shrink:0">
+                ${selected ? `<span style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.72rem;font-weight:700;color:var(--accent2);background:rgba(0,212,170,0.12);border:1px solid rgba(0,212,170,0.25);padding:0.25rem 0.6rem;border-radius:50px;white-space:nowrap"><i class="fas fa-check-circle"></i> Envoyer ici</span>` : ''}
+                <button onclick="_copyModulePhone('${acc.phone}',this)" style="display:inline-flex;align-items:center;gap:0.3rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.25);color:var(--accent);padding:0.25rem 0.7rem;border-radius:8px;cursor:pointer;font-size:0.75rem;font-family:inherit;white-space:nowrap">
+                  <i class="fas fa-copy"></i> Copier
+                </button>
+              </span>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function _copyModulePhone(phone, btn) {
+      const orig = btn.innerHTML;
+      const copy = () => {
+        btn.innerHTML = '<i class="fas fa-check"></i> Copié !';
+        btn.style.background = 'rgba(0,212,170,0.15)';
+        btn.style.color = 'var(--accent2)';
+        setTimeout(() => { btn.innerHTML = orig; btn.style.background = 'rgba(108,99,255,0.1)'; btn.style.color = 'var(--accent)'; }, 2000);
+      };
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(phone).then(copy).catch(() => { btn.innerHTML = phone; setTimeout(() => btn.innerHTML = orig, 2000); });
+      } else {
+        const inp = document.createElement('input');
+        inp.value = phone; inp.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(inp); inp.select(); document.execCommand('copy');
+        document.body.removeChild(inp); copy();
+      }
+    }
+
+    async function submitModuleBuy() {
+      const msg    = document.getElementById('moduleBuyMsg');
+      const txRef  = document.getElementById('moduleBuyTxRef')?.value.trim() || '';
+      const proof  = _moduleBuyProofBase64;
+      const phone  = _moduleBuyUserPhone;
+      const operator = _moduleBuyUserOp;
+
+      if (!proof) {
+        msg.style.color = 'var(--red)';
+        msg.textContent = '\u26a0\ufe0f La preuve de paiement est obligatoire.';
+        const label = document.getElementById('moduleBuyProofLabel');
+        if (label) {
+          label.style.borderColor = 'var(--red)';
+          label.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => label.style.borderColor = 'var(--border)', 3000);
+        }
+        return;
+      }
+
+      const btn = document.getElementById('moduleBuySubmitBtn');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...'; }
+      msg.style.color = 'var(--text2)';
+      msg.textContent = 'Envoi en cours...';
+
+      try {
+        await PaganiAPI.buyModule({
+          moduleId:  _moduleBuyCurrentId,
+          amount:    _moduleBuyCurrentAmt,
+          phone, operator, txRef, proof
+        });
+        _moduleBuyProofBase64 = '';
+        document.getElementById('moduleBuyPayment').style.display = 'none';
+        const successEl = document.getElementById('moduleBuySuccess');
+        if (successEl) successEl.style.display = 'flex';
+      } catch(err) {
+        msg.style.color = 'var(--red)';
+        const errMsgs = {
+          DEJA_ACHETE:     'Vous avez d\u00e9j\u00e0 achet\u00e9 ce module.',
+          NON_AUTHENTIFIE: 'Session expir\u00e9e. Veuillez vous reconnecter.',
+          PREUVE_REQUISE:  'La preuve de paiement est obligatoire.',
+        };
+        msg.textContent = '\u274c ' + (errMsgs[err.message] || 'Erreur : ' + err.message);
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> J\'ai envoy\u00e9 le paiement'; }
+      }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+
+      if (window.PaganiAPI) {
+        try {
+          const vids = await PaganiAPI.getVideos();
+          if (vids && vids.length) _adminVideosCache = vids;
+        } catch(e) {}
+      }
+
+      await _loadModuleFilters();
+      updateFormationsStats();
+      _applyFiltersAndSearch();
+      loadFooterSocialLinks();
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    });
+
 // ===== ADMIN FINANCE =====
 async function loadAdminFinance() {
   const token = localStorage.getItem('pd_jwt');
