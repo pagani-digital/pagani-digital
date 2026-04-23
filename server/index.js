@@ -124,9 +124,9 @@ app.use(express.json({ limit: '15mb' }));
 const _staticOpts = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
 // /js, /css, /assets servis depuis frontend/ (source unique)
 // IMPORTANT : déclarés AVANT frontend/pages pour avoir la priorité
-app.use('/js',     express.static(path.join(__dirname, '../frontend/js'),      _staticOpts));
-app.use('/css',    express.static(path.join(__dirname, '../frontend/css'),     _staticOpts));
-app.use('/assets', express.static(path.join(__dirname, '../frontend/assets'),  _staticOpts));
+app.use('/js',     express.static(path.join(__dirname, '../frontend/pages/js'),     _staticOpts));
+app.use('/css',    express.static(path.join(__dirname, '../frontend/pages/css'),    _staticOpts));
+app.use('/assets', express.static(path.join(__dirname, '../frontend/pages/assets'), _staticOpts));
 app.use(express.static(path.join(__dirname, '../frontend/pages'), _staticOpts));
 // Gestionnaire d'erreur CORS — renvoie 403 au lieu de planter le serveur
 app.use((err, req, res, next) => {

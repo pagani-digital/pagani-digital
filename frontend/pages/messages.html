@@ -52,6 +52,12 @@
   <!-- App messagerie -->
   <div id="msgApp" class="mpx-app" style="display:none">
 
+    <!-- ── Colonne Stories Desktop ── -->
+    <div class="mpx-stories-col" id="mpxStoriesCol">
+      <div class="mpx-stories-col-label"><i class="fas fa-fire"></i> Stories</div>
+      <div class="mpx-stories-col-list" id="mpxStoriesColList"></div>
+    </div>
+
     <!-- ── Sidebar ── -->
     <aside class="mpx-sidebar" id="mpxSidebar">
 
@@ -63,6 +69,12 @@
         <button class="mpx-compose-btn" onclick="showNewMsgModal()" title="Nouveau message">
           <i class="fas fa-edit"></i>
         </button>
+      </div>
+
+      <!-- Barre stories mobile (dans la sidebar) -->
+      <div class="mpx-stories-mobile" id="mpxStoriesMobile">
+        <div class="mpx-stories-mobile-title"><i class="fas fa-fire"></i> Stories</div>
+        <div class="mpx-stories-mobile-list" id="mpxStoriesMobileList"></div>
       </div>
 
       <!-- Barre de recherche conversations -->
@@ -202,6 +214,10 @@
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
 
+  <style>
+    /* Masquer la barre stories globale sur la page messages */
+    #storiesBar { display: none !important; }
+  </style>
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js?v=1776608852428"></script>
   <script src="/js/api.js?v=1776608487261"></script>
@@ -209,6 +225,127 @@
   <script>
     // Cache conversations pour le filtre local
     let _allConvs = [];
+
+    // ===== STORIES MESSAGES =====
+    // Cache des stories filtrées (gens suivis uniquement)
+    let _msgStoriesData = [];
+    // Cache de toutes les stories (pour le viewer)
+    let _msgAllStories  = [];
+
+    async function loadMsgStories() {
+      const user = getUser();
+      if (!user) return;
+      const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+      const token = localStorage.getItem('pd_jwt');
+      try {
+        const [s, f] = await Promise.all([
+          fetch(API + '/stories', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json()),
+          PaganiAPI.getFollowing(user.id)
+        ]);
+        _msgAllStories = Array.isArray(s) ? s : [];
+        const followingIds = new Set((Array.isArray(f) ? f : []).map(u => u.id));
+        // Sa propre story en premier, puis les stories des gens suivis
+        const ownStory      = _msgAllStories.filter(g => g.userId === user.id);
+        const followStories = _msgAllStories.filter(g => g.userId !== user.id && followingIds.has(g.userId));
+        _msgStoriesData = [...ownStory, ...followStories];
+      } catch(e) { return; }
+
+      _renderStoriesDesktop(_msgStoriesData);
+      _renderStoriesMobile(_msgStoriesData);
+    }
+
+    function _buildStoryAvatar(group, size) {
+      if (group.avatarPhoto) return '<img src="' + group.avatarPhoto + '" />';
+      const initials = group.userName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const color    = group.avatarColor || '#6c63ff';
+      const fs       = size === 'sm' ? '0.7rem' : '0.8rem';
+      return '<div class="avatar-circle" style="background:' + color + ';width:100%;height:100%;font-size:' + fs + '">' + initials + '</div>';
+    }
+
+    function _renderStoriesDesktop(groups) {
+      const col  = document.getElementById('mpxStoriesCol');
+      const list = document.getElementById('mpxStoriesColList');
+      if (!col || !list) return;
+      col.style.display = 'flex';
+      const addBtn = '<div class="mpx-story-bubble" onclick="openCreateStory()" title="Ajouter une story">' +
+        '<div class="mpx-story-ring" style="background:rgba(108,99,255,0.25);border:2px dashed rgba(108,99,255,0.5)">' +
+          '<div class="mpx-story-ring-inner" style="background:rgba(108,99,255,0.1);border:none">' +
+            '<span style="font-size:1.2rem;color:var(--accent);font-weight:300;line-height:1">+</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="mpx-story-name">Story</span>' +
+      '</div>';
+      const storiesHtml = groups.map((g, i) => {
+        const viewed = g.allViewed ? ' viewed' : '';
+        const dot    = !g.allViewed ? '<span class="mpx-story-new-dot"></span>' : '';
+        const name   = g.userName.split(' ')[0];
+        return '<div class="mpx-story-bubble" style="animation-delay:' + (i*60) + 'ms" onclick="_openMsgStory(' + i + ')" title="' + g.userName + '">' +
+          '<div class="mpx-story-ring' + viewed + '">' +
+            '<div class="mpx-story-ring-inner">' + _buildStoryAvatar(g, 'sm') + '</div>' + dot +
+          '</div>' +
+          '<span class="mpx-story-name">' + name + '</span>' +
+        '</div>';
+      }).join('');
+      list.innerHTML = addBtn + storiesHtml;
+    }
+
+    function _renderStoriesMobile(groups) {
+      const wrap = document.getElementById('mpxStoriesMobile');
+      const list = document.getElementById('mpxStoriesMobileList');
+      if (!wrap || !list) return;
+      // Toujours afficher la bande (même sans stories, pour le bouton +)
+      wrap.style.display = 'block';
+      // Bouton + toujours en premier
+      const addBtn = '<div class="mpx-story-bubble-mobile" onclick="openCreateStory()">' +
+        '<div class="mpx-story-ring-mobile" style="background:rgba(108,99,255,0.25);border:2px dashed rgba(108,99,255,0.5)">' +
+          '<div class="mpx-story-ring-mobile-inner" style="background:rgba(108,99,255,0.1);border:none">' +
+            '<span style="font-size:1.4rem;color:var(--accent);font-weight:300;line-height:1">+</span>' +
+          '</div>' +
+        '</div>' +
+        '<span class="mpx-story-name-mobile">Ma story</span>' +
+      '</div>';
+      const storiesHtml = groups.map((g, i) => {
+        const viewed = g.allViewed ? ' viewed' : '';
+        const name   = g.userName.split(' ')[0];
+        return '<div class="mpx-story-bubble-mobile" style="animation-delay:' + (i*60) + 'ms" onclick="_openMsgStory(' + i + ')">' +
+          '<div class="mpx-story-ring-mobile' + viewed + '">' +
+            '<div class="mpx-story-ring-mobile-inner">' + _buildStoryAvatar(g, 'md') + '</div>' +
+          '</div>' +
+          '<span class="mpx-story-name-mobile">' + name + '</span>' +
+        '</div>';
+      }).join('');
+      list.innerHTML = addBtn + storiesHtml;
+    }
+
+    // Ouvre le viewer — charge les stories via loadStories() qui remplit _storiesData dans app.js
+    function _openMsgStory(idx) {
+      const group = _msgStoriesData[idx];
+      if (!group) return;
+      const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+      const token = localStorage.getItem('pd_jwt');
+      // Charger toutes les stories dans _storiesData de app.js via fetch direct
+      fetch(API + '/stories', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(all => {
+          if (!Array.isArray(all)) return;
+          // Injecter dans la variable globale de app.js
+          // _storiesData est let dans app.js mais loadStories() la remplit
+          // On passe par un storiesBar factice pour forcer le chargement
+          const realIdx = all.findIndex(g => g.userId === group.userId);
+          if (realIdx === -1) return;
+          // Créer un storiesBar temporaire pour que loadStories() fonctionne
+          let fakeBar = document.getElementById('storiesBar');
+          if (!fakeBar) {
+            fakeBar = document.createElement('div');
+            fakeBar.id = 'storiesBar';
+            fakeBar.style.display = 'none';
+            document.body.appendChild(fakeBar);
+          }
+          loadStories().then(() => {
+            openStoryViewer(realIdx);
+          });
+        }).catch(() => {});
+    }
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await refreshCurrentUser();
@@ -223,6 +360,9 @@
 
       document.getElementById('msgApp').style.display = 'flex';
       await loadConversations();
+
+      // Charger les stories des gens suivis
+      loadMsgStories();
 
       // Ouvrir depuis URL ?with=ID (refresh ou lien direct)
       const params = new URLSearchParams(window.location.search);

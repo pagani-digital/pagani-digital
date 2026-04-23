@@ -1990,7 +1990,7 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
     function openShareMyProfileModal() {
       const user = window._currentUser;
       if (!user) return;
-      const link = `https://pagani-digital.vercel.app /profil.html?id=${user.id}`;
+      const link = `https://pagani-digital.vercel.app/profil.html?id=${user.id}`;
       document.getElementById('shareMyProfileLinkInput').value = link;
       const text = encodeURIComponent(`Suivez-moi sur Pagani Digital ! ${link}`);
       document.getElementById('shareMyProfileWaBtn').href = `https://wa.me/?text=${text}`;

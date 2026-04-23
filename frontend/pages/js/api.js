@@ -185,7 +185,7 @@ window.PaganiAPI = {
   logout:          apiLogout,
   getMe:           apiGetMe,
   updateProfile:   apiUpdateProfile,
-  changéePassword:  apiChangePassword,
+  changePassword:  apiChangePassword,
   addMmAccount:    apiAddMmAccount,
   // Videos
   getVideos:         apiGetVideos,
