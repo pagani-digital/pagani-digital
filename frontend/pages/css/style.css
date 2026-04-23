@@ -9554,3 +9554,226 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 .notif-see-all:hover { background: rgba(108,99,255,0.08); }
 .notif-see-all i:last-child { font-size: 0.7rem; opacity: 0.7; transition: transform 0.2s; }
 .notif-see-all:hover i:last-child { transform: translateX(3px); }
+
+/* ── Commentaires paginés + tri ── */
+.comments-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0 0.7rem;
+  flex-wrap: wrap;
+}
+.comments-sort-label {
+  font-size: 0.72rem;
+  color: var(--text2);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: 0.2rem;
+}
+.comments-sort-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 0.22rem 0.7rem;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.comments-sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+.comments-sort-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.comments-load-more {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  margin-bottom: 0.6rem;
+  transition: opacity 0.2s;
+}
+.comments-load-more:hover { opacity: 0.75; }
+.comments-load-more i { font-size: 0.7rem; }
+
+/* Animation entrée commentaire */
+@keyframes commentIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.comment-animate {
+  animation: commentIn 0.25s ease both;
+}
+
+/* ── Comments section scroll ── */
+.comments-section {
+  max-height: 500px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+.comments-section::-webkit-scrollbar { width: 3px; }
+.comments-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ══════════════════════════════════════════════════════════
+   COMMENTAIRES — Style amélioré + champ fixé en bas
+══════════════════════════════════════════════════════════ */
+
+/* Section commentaires scrollable sur post.html */
+.post-page .comments-section {
+  display: flex;
+  flex-direction: column;
+  max-height: 600px;
+  border-radius: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  margin-top: 0.8rem;
+  overflow: hidden;
+}
+
+/* Zone scrollable des commentaires */
+.post-page .comments-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.8rem 1rem;
+  scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.post-page .comments-list::-webkit-scrollbar { width: 3px; }
+.post-page .comments-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Champ de saisie fixé en bas */
+.post-page .comment-input-row,
+.post-page .guest-comment-cta {
+  flex-shrink: 0;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky;
+  bottom: 0;
+}
+
+/* Bouton Voir précédents — style amélioré */
+.comments-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: rgba(108,99,255,0.06);
+  border: 1px dashed rgba(108,99,255,0.25);
+  border-radius: 10px;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  margin-bottom: 0.6rem;
+  transition: background 0.2s, border-color 0.2s;
+}
+.comments-load-more:hover {
+  background: rgba(108,99,255,0.12);
+  border-color: var(--accent);
+}
+.comments-load-more i { font-size: 0.72rem; }
+.comments-load-more-count {
+  font-size: 0.68rem;
+  background: rgba(108,99,255,0.15);
+  color: var(--accent);
+  padding: 0.1rem 0.45rem;
+  border-radius: 50px;
+  font-weight: 700;
+}
+
+/* Barre de tri — style amélioré */
+.comments-sort-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0 0.7rem;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.6rem;
+}
+.comments-sort-label {
+  font-size: 0.72rem;
+  color: var(--text2);
+  margin-right: 0.1rem;
+}
+.comments-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 0.25rem 0.7rem;
+  border-radius: 50px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.comments-sort-btn i { font-size: 0.65rem; }
+.comments-sort-btn:hover { border-color: var(--accent); color: var(--accent); }
+.comments-sort-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Animation entrée commentaire */
+@keyframes commentIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.comment-animate { animation: commentIn 0.22s ease both; }
+
+/* Champ de saisie amélioré */
+.post-page .comment-input-wrap {
+  background: var(--bg3);
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  padding: 0.3rem 0.3rem 0.3rem 0.9rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.post-page .comment-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,0.1);
+}
+.post-page .comment-input-wrap input {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0;
+}
+.post-page .comment-input-wrap input:focus { outline: none; }
+.post-page .comment-input-wrap button {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  box-shadow: 0 2px 8px rgba(108,99,255,0.3);
+}
+.post-page .comment-input-wrap button:hover {
+  transform: scale(1.08);
+  box-shadow: 0 4px 14px rgba(108,99,255,0.45);
+}
+
+@media (max-width: 580px) {
+  .post-page .comments-section { max-height: 70vh; }
+}

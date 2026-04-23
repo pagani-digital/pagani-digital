@@ -118,9 +118,17 @@
         container.innerHTML = '';
         container.appendChild(card);
 
-        // Ouvrir la section commentaires
+        // Ouvrir et structurer la section commentaires
         const commSection = document.getElementById('comments-' + post.id);
-        if (commSection) commSection.style.display = 'block';
+        if (commSection) {
+          commSection.style.cssText = 'display:flex;flex-direction:column;border-radius:16px;background:var(--bg2);border:1px solid var(--border);margin-top:0.8rem;overflow:hidden';
+          const listEl   = commSection.querySelector('.comments-list');
+          const inputRow = commSection.querySelector('.comment-input-row, .guest-comment-cta');
+          if (listEl)   listEl.style.cssText   = 'flex:1;overflow-y:auto;max-height:360px;padding:0.8rem 1rem;scroll-behavior:smooth';
+          if (inputRow) inputRow.style.cssText = 'flex-shrink:0;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg2)';
+        }
+        // Rendre les commentaires avec pagination
+        setTimeout(() => _renderCommentsList(post.id, true), 50);
 
         // Mettre à jour le titre de la page
         document.title = (post.title || 'Publication') + ' — Pagani Digital';

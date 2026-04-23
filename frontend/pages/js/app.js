@@ -663,6 +663,9 @@ const DEFAULT_NEWS = [];
 let _postsCache = [];
 let _feedRendering = false; // verrou anti-race condition
 let _pendingComments = new Map(); // postId -> [commentaires en attente de confirmation serveur]
+const _commentSort  = {}; // postId -> 'recent' | 'oldest' | 'top'
+const _commentPage  = {}; // postId -> nombre de commentaires affichés
+const COMMENTS_PER_PAGE = 3;
 function getNews() {
   return _postsCache.length ? _postsCache : DEFAULT_NEWS;
 }
@@ -985,7 +988,7 @@ function buildPostCard(post, user, isAdmin) {
     </div>
     <div class="post-stats">
       ${(() => { const r=_reactionsCache[post.id]||{}; const tot=Object.values(r).reduce((s,ids)=>s+ids.length,0); const top=Object.entries(r).sort((a,b)=>b[1].length-a[1].length)[0]; return tot>0 ? `<span style="cursor:pointer" onclick="showReactionDetails(${post.id})">${top[0]} ${tot} réaction${tot!==1?'s':''}</span>` : `<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 réaction</span>`; })()}
-      <span><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? "s" : ""}</span>
+      <span style="cursor:pointer" onclick="window.location.pathname.includes('post.html') ? toggleComments(${post.id}) : window.location.href='post.html?id=${post.id}'"><i class="fas fa-comment" style="color:var(--accent)"></i> ${totalComments} commentaire${totalComments !== 1 ? "s" : ""}</span>
     </div>
     <div class="post-actions">
       ${isGuest ? `
@@ -1014,11 +1017,7 @@ function buildPostCard(post, user, isAdmin) {
       `}
     </div>
     <div class="comments-section" id="comments-${post.id}" style="display:none">
-      <div class="comments-list" id="comments-list-${post.id}">
-        ${comments.length === 0
-          ? `<p class="no-comments">Aucun commentaire. Soyez le premier !</p>`
-          : comments.map(c => _buildCommentHTML(c, post.id, user, isGuest)).join("")}
-      </div>
+      <div class="comments-list" id="comments-list-${post.id}"></div>
       ${isGuest
         ? `<div class="guest-comment-cta">
              <i class="fas fa-lock"></i>
@@ -1073,72 +1072,144 @@ function shareOnFacebook(postId) {
     PaganiAPI.recordShare(postId).catch(() => {});
   }
 }
+// ── Rendu paginé + trié des commentaires ──────────────────────────────────
+function _sortComments(comments, sort) {
+  const arr = [...comments];
+  if (sort === 'oldest') return arr.sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (sort === 'top')    return arr.sort((a, b) => (b.replies||[]).length - (a.replies||[]).length);
+  return arr.sort((a, b) => new Date(a.date) - new Date(b.date)); // recent = plus ancien en haut, plus récent en bas
+}
+
+function _renderCommentsList(postId, resetPage) {
+  const post = _postsCache.find(p => p.id === postId) || (_profilePostsCache && _profilePostsCache.find(p => p.id === postId));
+  const listEl = document.getElementById('comments-list-' + postId);
+  if (!listEl) return;
+  const user    = getUser();
+  const isGuest = !user;
+  const comments = (post && post.comments) ? post.comments : [];
+
+  if (resetPage) _commentPage[postId] = COMMENTS_PER_PAGE;
+  const page = _commentPage[postId] || COMMENTS_PER_PAGE;
+  const sort = _commentSort[postId] || 'recent';
+
+  // Trier : recent = du plus ancien au plus récent (les récents en bas)
+  const sorted = _sortComments(comments, sort);
+  const total  = sorted.length;
+  // Prendre les N derniers (les plus récents sont en bas)
+  const shown  = sorted.slice(Math.max(0, total - page), total);
+  const hidden = total - shown.length;
+
+  if (comments.length === 0) {
+    listEl.innerHTML = '<p class="no-comments">Aucun commentaire. Soyez le premier !</p>';
+    return;
+  }
+
+  // Barre de tri (seulement si > 3 commentaires)
+  const sortBar = comments.length > 3 ? `
+    <div class="comments-sort-bar">
+      <span class="comments-sort-label"><i class="fas fa-sort"></i></span>
+      <button class="comments-sort-btn ${sort==='recent'?'active':''}" onclick="_setCommentSort(${postId},'recent')"><i class="fas fa-clock"></i> Récents</button>
+      <button class="comments-sort-btn ${sort==='top'?'active':''}"    onclick="_setCommentSort(${postId},'top')"><i class="fas fa-fire"></i> Pertinents</button>
+      <button class="comments-sort-btn ${sort==='oldest'?'active':''}" onclick="_setCommentSort(${postId},'oldest')"><i class="fas fa-history"></i> Anciens</button>
+    </div>` : '';
+
+  // Bouton "Voir les précédents" en haut
+  const loadMore = hidden > 0 ? `
+    <button class="comments-load-more" onclick="_loadMoreComments(${postId})">
+      <i class="fas fa-chevron-up"></i> Voir ${Math.min(hidden, 5)} commentaire${hidden>1?'s':''} précédent${hidden>1?'s':''}
+      <span class="comments-load-more-count">${hidden} restant${hidden>1?'s':''}</span>
+    </button>` : '';
+
+  // Sauvegarder scroll avant insertion
+  const section   = listEl.closest('.comments-section');
+  const oldScroll = listEl.scrollTop;
+  const oldHeight = listEl.scrollHeight;
+
+  listEl.innerHTML = sortBar + loadMore +
+    shown.map((c, i) => {
+      const el = _buildCommentHTML(c, postId, user, isGuest);
+      return '<div class="comment-animate" style="animation-delay:' + (i * 40) + 'ms">' + el + '</div>';
+    }).join('');
+
+  // Maintenir le scroll si on charge les anciens (pas un reset)
+  if (!resetPage && section) {
+    const newHeight = listEl.scrollHeight;
+    const diff = newHeight - oldHeight;
+    if (diff > 0) listEl.scrollTop = oldScroll + diff;
+  } else if (resetPage && section) {
+    // Reset : scroller vers le bas pour voir les plus récents
+    setTimeout(() => { listEl.scrollTop = listEl.scrollHeight; }, 50);
+  }
+}
+
+function _setCommentSort(postId, sort) {
+  _commentSort[postId] = sort;
+  _commentPage[postId] = COMMENTS_PER_PAGE;
+  _renderCommentsList(postId, false);
+}
+
+function _loadMoreComments(postId) {
+  _commentPage[postId] = (_commentPage[postId] || COMMENTS_PER_PAGE) + 5;
+  _renderCommentsList(postId, false);
+}
+
 function toggleComments(postId) {
-  const section = document.getElementById(`comments-${postId}`);
+  // Sur post.html : comportement complet avec commentaires
+  if (window.location.pathname.includes('post.html')) {
+    const section = document.getElementById('comments-' + postId);
+    if (!section) return;
+    const isOpen = section.style.display !== 'none';
+    section.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) {
+      section.style.animation = 'slideDown 0.25s ease';
+      _renderCommentsList(postId, true);
+      const input = document.getElementById('comment-input-' + postId);
+      if (input) setTimeout(() => input.focus(), 100);
+    }
+    return;
+  }
+  // Sur feed/profil : afficher seulement le champ de saisie
+  const section = document.getElementById('comments-' + postId);
   if (!section) return;
-  const isOpen = section.style.display !== "none";
-  section.style.display = isOpen ? "none" : "block";
+  const isOpen = section.style.display !== 'none';
+  section.style.display = isOpen ? 'none' : 'block';
   if (!isOpen) {
-    section.style.animation = "slideDown 0.25s ease";
-    const input = document.getElementById(`comment-input-${postId}`);
+    section.style.animation = 'slideDown 0.25s ease';
+    const input = document.getElementById('comment-input-' + postId);
     if (input) setTimeout(() => input.focus(), 100);
   }
 }
 async function submitComment(postId) {
   const user = getUser();
   if (!user) return;
-  const input = document.getElementById(`comment-input-${postId}`);
-  const text  = input.value.trim();
+  const input = document.getElementById('comment-input-' + postId);
+  const text  = input ? input.value.trim() : '';
   if (!text) return;
-  input.value = '';
-  const newComment = {
-    id: String(Date.now())+String(Math.floor(Math.random()*9999)),
-    author: user.name, authorId: user.id,
-    authorColor: getAvatarColor(user), authorPhoto: user.avatarPhoto||'',
-    text, replies: [], date: new Date().toISOString()
-  };
-  const pid     = Number(postId);
-  const listEl  = document.getElementById(`comments-list-${pid}`);
-  const section = document.getElementById(`comments-${pid}`);
-  if (listEl) {
-    const noComment = listEl.querySelector('.no-comments');
-    if (noComment) noComment.remove();
-    listEl.insertAdjacentHTML('beforeend', _buildCommentHTML(newComment, pid, user, false));
-  }
-  if (section) section.style.display = 'block';
-  const post = _postsCache.find(p => p.id === pid);
-  if (post) { post.comments.push(newComment); _updatePostStats(pid, post); }
-  // Marquer ce commentaire comme "en attente" pour bloquer l'ecrasement par _silentRefreshFeed
-  if (!_pendingComments.has(pid)) _pendingComments.set(pid, []);
-  _pendingComments.get(pid).push(newComment.id);
-  if (window.PaganiAPI) {
-    try {
-      const saved = await PaganiAPI.addComment(pid, text);
-      // Remplacer le commentaire temporaire par celui du serveur (vrai ID)
-      if (saved && saved.id && post) {
-        const idx = post.comments.findIndex(c => c.id === newComment.id);
-        if (idx !== -1) post.comments[idx] = { ...newComment, ...saved };
-      }
-    } catch(e) {
-      // echec serveur : retirer le commentaire temporaire du cache et du DOM
-      if (post) post.comments = post.comments.filter(c => c.id !== newComment.id);
-      const cid = String(newComment.id).replace(/[^a-zA-Z0-9_-]/g, '_');
-      document.getElementById('comment-' + cid)?.remove();
-      _updatePostStats(pid, post);
-
-    } finally {
-      // Retirer le verrou aprs un court dlai pour laisser le DOM se stabiliser
-      setTimeout(() => {
-        const pending = _pendingComments.get(pid);
-        if (pending) {
-          const i = pending.indexOf(newComment.id);
-          if (i !== -1) pending.splice(i, 1);
-          if (!pending.length) _pendingComments.delete(pid);
-        }
-      }, 800);
+  if (input) input.value = '';
+  const pid = Number(postId);
+  try {
+    await PaganiAPI.addComment(pid, text);
+  } catch(e) {}
+  // Sur post.html : rester sur la page et rafraîchir
+  if (window.location.pathname.includes('post.html')) {
+    const post = _postsCache.find(p => p.id === pid);
+    if (post) {
+      const newComment = {
+        id: String(Date.now()),
+        author: user.name, authorId: user.id,
+        authorColor: getAvatarColor(user), authorPhoto: user.avatarPhoto || '',
+        text, replies: [], date: new Date().toISOString()
+      };
+      post.comments.push(newComment);
+      _renderCommentsList(pid, false);
     }
+    return;
   }
+  // Sur feed/profil : rediriger vers post.html après envoi
+  setTimeout(() => { window.location.href = 'post.html?id=' + pid; }, 300);
 }
+
+
 function toggleReplyInput(commentId) {
   const row = document.getElementById(`reply-row-${commentId}`);
   if (!row) return;
