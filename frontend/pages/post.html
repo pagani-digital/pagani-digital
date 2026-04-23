@@ -8,28 +8,513 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
-    .post-page { max-width: 680px; margin: 0 auto; padding: 2rem 5% 4rem; }
-    .post-page-back {
-      display: inline-flex; align-items: center; gap: 0.5rem;
-      color: var(--text2); font-size: 0.88rem; margin-bottom: 1.5rem;
-      cursor: pointer; transition: color 0.2s;
-      background: none; border: none; font-family: inherit; padding: 0;
+    /* ── Layout post page ── */
+    body.post-body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
     }
-    .post-page-back:hover { color: var(--accent); }
+
+    /* Header compact */
+    .post-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.75rem 5%;
+      background: rgba(10,14,26,0.97);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+    .post-back-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2);
+      color: var(--text2); cursor: pointer; font-size: 0.95rem;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .post-back-btn:hover { background: rgba(108,99,255,0.2); color: var(--accent); }
+    .post-header-title {
+      flex: 1; font-size: 0.95rem; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Zone principale : publication + commentaires */
+    .post-main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 0;
+      gap: 0;
+    }
+
+    /* Colonne gauche : publication scrollable */
+    .post-content-col {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.2rem 1.5rem 1rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .post-content-col::-webkit-scrollbar { width: 4px; }
+    .post-content-col::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Sur desktop : layout côte à côte */
+    @media (min-width: 769px) {
+
+      /* Body scrollable normalement comme index.html */
+      body.post-body {
+        height: auto;
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      body.post-body .footer { display: none !important; }
+
+      /* Zone principale */
+      .post-main {
+        display: flex;
+        flex-direction: row;
+        padding: 1.2rem 3%;
+        gap: 1.5rem;
+        overflow: visible;
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        align-items: flex-start;
+        box-sizing: border-box;
+      }
+
+      /* Colonne publication : 42%, sticky */
+      .post-content-col {
+        flex: 0 0 42%;
+        min-width: 0;
+        overflow: visible;
+        padding: 0;
+        position: sticky;
+        top: 1rem;
+        align-self: flex-start;
+      }
+
+      .post-content-col .post-card {
+        margin: 0;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .post-content-col .post-image {
+        max-height: 280px;
+        object-fit: cover;
+      }
+
+      /* Colonne commentaires : 58%, hauteur fixe avec scroll interne */
+      .post-comments-col {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        overflow: hidden;
+        height: calc(100vh - 100px);
+        position: sticky;
+        top: 1rem;
+      }
+
+      /* Liste commentaires scrollable */
+      .post-comments-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.4rem 1rem;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+      }
+      .post-comments-list::-webkit-scrollbar { width: 3px; }
+      .post-comments-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+      /* Champ saisie dans le flux */
+      .post-comment-input,
+      #postCommentGuest {
+        position: static !important;
+        padding: 0.75rem 1rem !important;
+        flex-shrink: 0;
+        border-top: 1px solid var(--border);
+      }
+
+      /* Barre de tri */
+      .post-comments-sort {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .post-comments-sort::-webkit-scrollbar { display: none; }
+    }
+
+    
+
+    /* Mobile : un seul flux vertical */
+    @media (max-width: 768px) {
+      body.post-body { overflow: hidden; }
+
+      /* post-main = conteneur principal scrollable */
+      .post-main {
+        flex-direction: column !important;
+        padding: 0 !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      /* Publication dans le flux normal */
+      .post-content-col {
+        flex: 0 0 auto !important;
+        overflow: visible !important;
+        padding: 0.6rem 0 0.3rem !important;
+        border-bottom: none !important;
+        max-height: none !important;
+        width: 100% !important;
+      }
+
+      /* Commentaires dans le flux normal (pas de hauteur fixe) */
+      .post-comments-col {
+        flex: 0 0 auto !important;
+        flex-basis: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        border-radius: 0 !important;
+        border: none !important;
+        border-top: 1px solid var(--border) !important;
+        overflow: visible !important;
+        padding: 0 0 calc(160px + env(safe-area-inset-bottom, 16px)) 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      /* Liste commentaires dans le flux */
+      .post-comments-list {
+        overflow: visible !important;
+        max-height: none !important;
+        padding: 0.4rem 1rem 0.4rem !important;
+        flex: unset !important;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      /* Champ de saisie fixé en bas - MOBILE SEULEMENT */
+      .post-comment-input,
+      .post-comment-input#postCommentGuest {
+        position: fixed !important;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 0.65rem 1rem;
+        padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
+        background: var(--bg2);
+        border-top: 1px solid var(--border);
+        z-index: 100;
+      }
+
+      /* Post card pleine largeur sur mobile */
+      .post-content-col .post-card {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        margin: 0;
+      }
+      .post-content-col .post-card .post-image-wrap {
+        border-radius: 0;
+        margin: 0.6rem 0;
+      }
+
+      /* Cacher navbar et footer */
+      body.post-body .navbar { display: none !important; }
+      body.post-body .footer { display: none !important; }
+      .post-header-bar { display: flex; }
+    }
+
+    /* ── Composants commentaires dédiés ── */
+    .post-comments-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.9rem 1.2rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .post-comments-header-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .post-comments-header-title i { color: var(--accent); }
+
+    .post-comments-sort {
+      display: flex;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .post-sort-btn {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      padding: 0.3rem 0.75rem;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.2s;
+    }
+    .post-sort-btn.active,
+    .post-sort-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .post-comment-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .post-comment-input-wrap input {
+      flex: 1;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.55rem 0.9rem;
+      border-radius: 50px;
+      font-size: 0.88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .post-comment-input-wrap input:focus { border-color: var(--accent); }
+    .post-comment-send-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: transform 0.15s, opacity 0.2s;
+    }
+    .post-comment-send-btn:hover { transform: scale(1.08); opacity: 0.9; }
+
+    /* Espacement commentaires sur mobile */
+    .post-comments-list .comment {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin-bottom: 0;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .post-comments-list .comment:last-child { border-bottom: none; }
+
+    /* Avatar plus grand style FB */
+    .post-comments-list .comment .avatar-circle.avatar-sm,
+    .post-comments-list .comment .avatar-photo.avatar-sm {
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px;
+      font-size: 0.85rem !important;
+      flex-shrink: 0;
+    }
+
+    /* Bulle style Facebook */
+    .post-comments-list .comment-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .post-comments-list .comment-bubble {
+      background: var(--bg3);
+      border: none;
+      border-radius: 14px;
+      padding: 0.65rem 0.9rem 0.55rem;
+      display: inline-block;
+      max-width: 100%;
+    }
+    .post-comments-list .comment-bubble strong {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      display: inline;
+      margin-right: 0.3rem;
+      margin-bottom: 0;
+    }
+    .post-comments-list .comment-bubble p {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--text);
+      margin: 0;
+      display: inline;
+    }
+    /* Footer : date + répondre */
+    .post-comments-list .comment-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      margin-top: 0.35rem;
+      padding-left: 0.3rem;
+    }
+    .post-comments-list .comment-time {
+      font-size: 0.72rem;
+      color: var(--text2);
+      opacity: 0.8;
+    }
+    .post-comments-list .reply-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text2);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      transition: color 0.15s;
+    }
+    .post-comments-list .reply-btn:hover { color: var(--accent); background: none; }
+
+    /* Réponses (sous-commentaires) style FB */
+    .post-comments-list .replies-list {
+      margin-top: 0.4rem;
+      padding-left: 0.5rem;
+      border-left: 2px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .post-comments-list .reply {
+      display: flex;
+      gap: 0.6rem;
+      align-items: flex-start;
+    }
+    .post-comments-list .reply-bubble {
+      background: rgba(108,99,255,0.07) !important;
+      border: none !important;
+      border-radius: 12px !important;
+      padding: 0.55rem 0.85rem !important;
+    }
+    .post-comments-list .reply-bubble strong {
+      font-size: 0.82rem;
+      font-weight: 700;
+      display: inline;
+      margin-right: 0.3rem;
+    }
+    .post-comments-list .reply-bubble p {
+      font-size: 0.85rem;
+      display: inline;
+      margin: 0;
+    }
+
+    .post-comments-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      padding: 2.5rem 1rem;
+      color: var(--text2);
+      text-align: center;
+    }
+    .post-comments-empty i { font-size: 2rem; opacity: 0.3; }
+    .post-comments-empty p { font-size: 0.85rem; line-height: 1.5; }
+
+    @keyframes commentSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .comment-animate {
+      animation: commentSlideIn 0.25s ease both;
+    }
+    /* Gap entre commentaires animés */
+    #postCommentsList .comment-animate + .comment-animate {
+      margin-top: 0.6rem;
+    }
+
     .post-page-loader {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 4rem 2rem; gap: 1rem; color: var(--text2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      padding: 3rem 1rem;
+      color: var(--text2);
+      font-size: 0.88rem;
     }
     .post-page-error {
-      text-align: center; padding: 4rem 2rem; color: var(--text2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.8rem;
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text2);
     }
-    .post-page-error i { font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem; }
-    .post-page-error h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 0.5rem; }
+    .post-page-error i { font-size: 2.5rem; opacity: 0.4; }
+    .post-page-error h2 { font-size: 1.1rem; color: var(--text); }
+    .post-page-error p { font-size: 0.85rem; }
+
+    @media (min-width: 769px) {
+      .post-header-bar { display: none; }
+      /* Sur desktop : bouton retour dans la colonne publication */
+      .post-back-desktop {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        color: var(--text2); font-size: 0.85rem; margin-bottom: 1rem;
+        cursor: pointer; background: none; border: none;
+        font-family: inherit; padding: 0; transition: color 0.2s;
+      }
+      .post-back-desktop:hover { color: var(--accent); }
+    }
+    @media (max-width: 768px) {
+      .post-back-desktop { display: none; }
+    }
   </style>
 </head>
-<body>
+<body class="post-body">
 
-  <nav class="navbar">
+  <!-- Header mobile uniquement -->
+  <div class="post-header-bar">
+    <button class="post-back-btn" onclick="history.length > 1 ? history.back() : window.location.href='index.html'">
+      <i class="fas fa-arrow-left"></i>
+    </button>
+    <span class="post-header-title" id="postHeaderTitle">Publication</span>
+    <div style="display:flex;align-items:center;gap:0.5rem">
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications" style="width:34px;height:34px">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Navbar desktop -->
+  <nav class="navbar" id="desktopNav">
     <a href="index.html" class="logo">Pagani<span>Digital</span></a>
     <ul class="nav-links">
       <li><a href="index.html">Accueil</a></li>
@@ -48,34 +533,272 @@
         <i class="fas fa-envelope"></i>
         <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
       </a>
-      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+      <button class="notif-bell" id="notifBellDesktop" onclick="PaganiNotif.togglePanel()" title="Notifications">
         <i class="fas fa-bell"></i>
-        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        <span class="notif-badge" id="notifBadgeDesktop" style="display:none">0</span>
       </button>
       <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
     </div>
   </nav>
 
-  <div class="post-page">
-    <button class="post-page-back" onclick="history.length > 1 ? history.back() : window.location.href='index.html'">
-      <i class="fas fa-arrow-left"></i> Retour
-    </button>
-    <div id="postContainer">
-      <div class="post-page-loader">
-        <div class="feed-loader"><span></span><span></span><span></span></div>
-        <p>Chargement de la publication...</p>
+  <!-- Zone principale -->
+  <div class="post-main" id="postMain">
+
+    <!-- Colonne publication -->
+    <div class="post-content-col" id="postContentCol">
+      <button class="post-back-desktop" onclick="history.length > 1 ? history.back() : window.location.href='index.html'">
+        <i class="fas fa-arrow-left"></i> Retour
+      </button>
+      <div id="postContainer">
+        <div class="post-page-loader">
+          <div class="feed-loader"><span></span><span></span><span></span></div>
+          <p>Chargement...</p>
+        </div>
       </div>
+    </div>
+
+    <!-- Colonne commentaires -->
+    <div class="post-comments-col" id="postCommentsCol" style="display:none">
+
+      <!-- Header commentaires -->
+      <div class="post-comments-header">
+        <div class="post-comments-header-title">
+          <i class="fas fa-comment"></i>
+          <span id="postCommentsCount">Commentaires</span>
+        </div>
+      </div>
+
+      <!-- Barre de tri -->
+      <div class="post-comments-sort" id="postCommentsSort" style="display:none">
+        <button class="post-sort-btn active" data-sort="recent" onclick="_postSetSort('recent',this)"><i class="fas fa-clock"></i> Récents</button>
+        <button class="post-sort-btn" data-sort="top"    onclick="_postSetSort('top',this)"><i class="fas fa-fire"></i> Pertinents</button>
+        <button class="post-sort-btn" data-sort="oldest" onclick="_postSetSort('oldest',this)"><i class="fas fa-history"></i> Anciens</button>
+      </div>
+
+      <!-- Liste commentaires -->
+      <div class="post-comments-list" id="postCommentsList"></div>
+
+      <!-- Champ saisie fixé en bas -->
+      <div class="post-comment-input" id="postCommentInput" style="display:none">
+        <div class="post-comment-input-wrap">
+          <button class="comment-emoji-btn" type="button" onclick="_postToggleEmoji()" title="Emoji"><i class="fas fa-smile"></i></button>
+          <input type="text" id="postCommentField" placeholder="Écrire un commentaire..." onkeydown="if(event.key==='Enter') _postSubmitComment()" />
+          <button class="post-comment-send-btn" onclick="_postSubmitComment()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+
+      <!-- Guest -->
+      <div class="post-comment-input" id="postCommentGuest" style="display:none">
+        <a href="dashboard.html" class="btn-primary" style="width:100%;justify-content:center;font-size:0.85rem;padding:0.6rem">
+          <i class="fas fa-sign-in-alt"></i> Connectez-vous pour commenter
+        </a>
+      </div>
+
     </div>
   </div>
 
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
 
+  <!-- Footer desktop uniquement -->
+  <footer class="footer" id="postFooter">
+    <div class="footer-content">
+      <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+      <p style="color:var(--text2);font-size:0.8rem;margin:0">&copy; 2025 Pagani Digital. Tous droits r&eacute;serv&eacute;s.</p>
+      <div class="social-links">
+        <a id="footerFacebook" href="#" target="_blank" rel="noopener"><i class="fab fa-facebook"></i></a>
+        <a id="footerTiktok" href="#" target="_blank" rel="noopener"><i class="fab fa-tiktok"></i></a>
+        <a id="footerTelegram" href="#" target="_blank" rel="noopener"><i class="fab fa-telegram"></i></a>
+        <a id="footerYoutube" href="#" target="_blank" rel="noopener"><i class="fab fa-youtube"></i></a>
+      </div>
+    </div>
+  </footer>
+
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
   <script>
+    let _postId   = null;
+    let _postData = null;
+    let _postCommPage = 3;
+    let _postCommSort = 'recent';
+    let _postScrollLoading = false;
+
+    function _postSortedComments() {
+      if (!_postData) return [];
+      const arr = [...(_postData.comments || [])];
+      if (_postCommSort === 'oldest') return arr.sort((a,b) => new Date(a.date)-new Date(b.date)); // oldest = plus ancien en haut
+      if (_postCommSort === 'top')    return arr.sort((a,b) => (b.replies||[]).length-(a.replies||[]).length);
+      return arr.sort((a,b) => new Date(b.date)-new Date(a.date)); // recent = plus récent en haut
+    }
+
+    function _postRenderComments(resetPage) {
+      const list = document.getElementById('postCommentsList');
+      if (!list || !_postData) return;
+      const user    = getUser();
+      const isGuest = !user;
+      const sorted  = _postSortedComments();
+      const total   = sorted.length;
+
+      if (resetPage) _postCommPage = window.innerWidth > 768 ? 9999 : 3;
+      const shown  = sorted.slice(0, _postCommPage);
+      const hidden = total - shown.length; // anciens pas encore affichés
+
+      // Mettre à jour le compteur
+      const countEl = document.getElementById('postCommentsCount');
+      if (countEl) countEl.textContent = total + ' commentaire' + (total !== 1 ? 's' : '');
+
+      // Afficher/cacher la barre de tri
+      const sortBar = document.getElementById('postCommentsSort');
+      if (sortBar) sortBar.style.display = total > 3 ? 'flex' : 'none';
+
+      if (total === 0) {
+        list.innerHTML = '<div class="post-comments-empty"><i class="fas fa-comment-slash"></i><p>Aucun commentaire.<br>Soyez le premier !</p></div>';
+        return;
+      }
+
+      // Sauvegarder scroll avant insertion
+      const oldScroll = list.scrollTop;
+      const oldHeight = list.scrollHeight;
+
+      // Loader en haut si il y a des anciens
+      list.innerHTML = shown.map((c, i) => {
+        const html = _buildCommentHTML(c, _postId, user, isGuest);
+        return '<div class="comment-animate" style="animation-delay:' + (i*30) + 'ms">' + html + '</div>';
+      }).join('');
+
+      // Maintenir scroll ou aller en bas
+      // Scroll : sur mobile post-main scrolle, sur desktop list scrolle
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        // Sur mobile : scroller post-main vers le bas au reset
+        if (resetPage) {
+          const pm = document.getElementById('postMain');
+          if (pm) setTimeout(() => { pm.scrollTop = 0; }, 80);
+        }
+        // Pas de scroll artificiel au chargement des anciens (le scroll est maintenu naturellement)
+      } else {
+        // Desktop : scroller list
+        if (!resetPage) {
+          const newHeight = list.scrollHeight;
+          list.scrollTop = oldScroll + (newHeight - oldHeight);
+        } else {
+          setTimeout(() => { list.scrollTop = 0; }, 60);
+        }
+      }
+
+
+    }
+
+    function _postSetSort(sort, btn) {
+      _postCommSort = sort;
+      _postCommPage = 3;
+      document.querySelectorAll('.post-sort-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      _postRenderComments(true);
+    }
+
+    // Scroll infini vers le haut — charge les anciens automatiquement
+    function _postInitScrollLoad() {
+      const isMobile = window.innerWidth <= 768;
+      // Sur desktop : tous les commentaires sont affichés, pas besoin de scroll infini
+      if (!isMobile) return;
+      // Sur mobile : scroll vers le bas charge les anciens
+      const scrollEl = document.getElementById('postMain');
+      if (!scrollEl) return;
+      scrollEl.addEventListener('scroll', () => {
+        if (_postScrollLoading) return;
+        const atBottom = scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 80;
+        if (!atBottom) return;
+        const sorted = _postSortedComments();
+        const hidden = sorted.length - _postCommPage;
+        if (hidden <= 0) return;
+        _postScrollLoading = true;
+        _postCommPage += 5;
+        _postRenderComments(false);
+        setTimeout(() => { _postScrollLoading = false; }, 500);
+      });
+    }
+
+    async function _postSubmitComment() {
+      const user  = getUser();
+      if (!user) return;
+      const input = document.getElementById('postCommentField');
+      const text  = input ? input.value.trim() : '';
+      if (!text) return;
+      input.value = '';
+      try {
+        await PaganiAPI.addComment(_postId, text);
+        const newComment = {
+          id: String(Date.now()),
+          author: user.name, authorId: user.id,
+          authorColor: getAvatarColor(user), authorPhoto: user.avatarPhoto || '',
+          text, replies: [], date: new Date().toISOString()
+        };
+        if (_postData) _postData.comments.push(newComment);
+        _postsCache = [_postData];
+        // Mettre à jour la signature pour éviter double re-render par le polling
+        _postLastCommentSig = _postCommentSignature(_postData.comments);
+        _postRenderComments(false);
+        const list = document.getElementById('postCommentsList');
+        setTimeout(() => { list.scrollTop = 0; }, 60);
+      } catch(e) {}
+    }
+
+    // Polling silencieux : rafraîchit les commentaires toutes les 3s
+    let _postPollingTimer = null;
+    let _postLastCommentSig = '';
+
+    function _postCommentSignature(comments) {
+      // Signature basée sur le nombre total de commentaires + réponses + dernier ID
+      if (!comments || !comments.length) return '0';
+      const total = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+      const lastId = comments[comments.length - 1].id || '';
+      return total + '_' + lastId;
+    }
+
+    async function _postStartPolling() {
+      if (_postPollingTimer) return;
+      // Initialiser la signature de départ
+      _postLastCommentSig = _postCommentSignature(_postData ? _postData.comments : []);
+
+      _postPollingTimer = setInterval(async () => {
+        if (!_postId) return;
+        try {
+          const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+          const token = localStorage.getItem('pd_jwt');
+          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+          const fresh = await fetch(API + '/posts/' + _postId, { headers }).then(r => r.json());
+          if (!fresh || fresh.error) return;
+          fresh.comments = Array.isArray(fresh.comments) ? fresh.comments : [];
+          const newSig = _postCommentSignature(fresh.comments);
+          if (newSig !== _postLastCommentSig) {
+            _postLastCommentSig = newSig;
+            _postData = fresh;
+            _postsCache = [fresh];
+            _postRenderComments(false);
+            // Mettre à jour le compteur de réactions aussi
+            if (window.PaganiAPI) {
+              try {
+                const rx = await PaganiAPI.getPostReactions(fresh.id);
+                _reactionsCache[fresh.id] = rx;
+                const user = getUser();
+                const myEmoji = user ? Object.entries(rx).find(([,ids]) => ids.includes(user.id))?.[0] || null : null;
+                _updateReactionUI(fresh.id, rx, myEmoji);
+                _updateReactionCount(fresh.id, rx);
+              } catch(e) {}
+            }
+          }
+        } catch(e) {}
+      }, 3000);
+    }
+
+    function _postToggleEmoji() {
+      const input = document.getElementById('postCommentField');
+      if (input) toggleCommentEmoji('postCommentField', document.querySelector('.post-comment-input-wrap .comment-emoji-btn'));
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await refreshCurrentUser();
       updateNavbar(user);
@@ -83,57 +806,63 @@
       loadFooterSocialLinks();
       loadNavbarCustomBtn();
 
-      const params  = new URLSearchParams(window.location.search);
-      const postId  = parseInt(params.get('id'));
+      const params = new URLSearchParams(window.location.search);
+      _postId = parseInt(params.get('id'));
       const container = document.getElementById('postContainer');
 
-      if (!postId) {
-        container.innerHTML = `<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Publication introuvable</h2><p>L'identifiant du post est manquant.</p></div>`;
+      if (!_postId) {
+        container.innerHTML = '<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Publication introuvable</h2><p>Identifiant manquant.</p></div>';
         return;
       }
 
       try {
-        const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-        const token = localStorage.getItem('pd_jwt');
+        const API     = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+        const token   = localStorage.getItem('pd_jwt');
         const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-        const post  = await fetch(`${API}/posts/${postId}`, { headers }).then(r => r.json());
+        const post    = await fetch(API + '/posts/' + _postId, { headers }).then(r => r.json());
 
         if (!post || post.error) {
-          container.innerHTML = `<div class="post-page-error"><i class="fas fa-newspaper"></i><h2>Publication introuvable</h2><p>Ce post n'existe pas ou a été supprimé.</p></div>`;
+          container.innerHTML = '<div class="post-page-error"><i class="fas fa-newspaper"></i><h2>Publication introuvable</h2><p>Ce post n\'existe pas ou a été supprimé.</p></div>';
           return;
         }
 
-        // Normaliser
         post.likes    = Array.isArray(post.likes)    ? post.likes    : [];
         post.comments = Array.isArray(post.comments) ? post.comments : [];
-
-        // Mettre dans le cache pour que les fonctions (like, comment) fonctionnent
+        _postData = post;
         _postsCache = [post];
 
+        // Titre
+        document.title = (post.title || 'Publication') + ' — Pagani Digital';
+        const titleEl = document.getElementById('postHeaderTitle');
+        if (titleEl) titleEl.textContent = post.author === 'Admin' ? 'Pagani Digital' : (post.author || 'Publication');
+
+        // Rendre la carte post (sans section commentaires)
         const isAdmin = user && user.role === 'admin';
         const card    = buildPostCard(post, user, isAdmin);
         card.style.animation = 'postFadeIn 0.35s ease both';
-
-        // Ouvrir les commentaires directement
+        // Cacher la section commentaires générée par buildPostCard
         container.innerHTML = '';
         container.appendChild(card);
+        const builtComm = document.getElementById('comments-' + post.id);
+        if (builtComm) builtComm.remove(); // Supprimer l'ancien système
 
-        // Ouvrir et structurer la section commentaires
-        const commSection = document.getElementById('comments-' + post.id);
-        if (commSection) {
-          commSection.style.cssText = 'display:flex;flex-direction:column;border-radius:16px;background:var(--bg2);border:1px solid var(--border);margin-top:0.8rem;overflow:hidden';
-          const listEl   = commSection.querySelector('.comments-list');
-          const inputRow = commSection.querySelector('.comment-input-row, .guest-comment-cta');
-          if (listEl)   listEl.style.cssText   = 'flex:1;overflow-y:auto;max-height:360px;padding:0.8rem 1rem;scroll-behavior:smooth';
-          if (inputRow) inputRow.style.cssText = 'flex-shrink:0;padding:0.75rem 1rem;border-top:1px solid var(--border);background:var(--bg2)';
+        // Afficher la colonne commentaires dédiée
+        const commCol = document.getElementById('postCommentsCol');
+        if (commCol) commCol.style.display = 'flex';
+
+        // Champ saisie
+        if (user) {
+          document.getElementById('postCommentInput').style.display = 'block';
+        } else {
+          document.getElementById('postCommentGuest').style.display = 'block';
         }
-        // Rendre les commentaires avec pagination
-        setTimeout(() => _renderCommentsList(post.id, true), 50);
 
-        // Mettre à jour le titre de la page
-        document.title = (post.title || 'Publication') + ' — Pagani Digital';
+        // Rendre les commentaires
+        _postRenderComments(true);
+        _postInitScrollLoad();
+        _postStartPolling();
 
-        // Charger les réactions
+        // Réactions
         if (window.PaganiAPI) {
           try {
             const rx = await PaganiAPI.getPostReactions(post.id);
@@ -145,7 +874,7 @@
         }
 
       } catch(e) {
-        container.innerHTML = `<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Erreur de chargement</h2><p>Impossible de charger cette publication.</p></div>`;
+        container.innerHTML = '<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Erreur de chargement</h2><p>Impossible de charger cette publication.</p></div>';
       }
     });
   </script>
