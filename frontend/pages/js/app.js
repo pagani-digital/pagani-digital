@@ -179,6 +179,21 @@ function closeStoryViewer() {
   document.getElementById('storyViewerOverlay')?.remove();
 }
 
+async function deleteStory(storyId) {
+  if (!confirm('Supprimer cette story ?')) return;
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    const r = await fetch(API + '/stories/' + storyId, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!r.ok) { alert('Erreur lors de la suppression.'); return; }
+    closeStoryViewer();
+    await loadStories();
+  } catch(e) { alert('Erreur serveur.'); }
+}
+
 function _pollStoryViewCount(storyId) {
   clearInterval(_storyViewCountTimer);
   const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
@@ -1215,7 +1230,22 @@ function toggleReplyInput(commentId) {
   if (!row) return;
   const isOpen = row.style.display !== 'none';
   row.style.display = isOpen ? 'none' : 'flex';
-  if (!isOpen) { const input = document.getElementById(`reply-input-${commentId}`); if (input) setTimeout(() => input.focus(), 50); }
+  if (!isOpen) {
+    const input = document.getElementById(`reply-input-${commentId}`);
+    if (input) setTimeout(() => {
+      input.focus();
+      // Scroller pour que le champ réponse soit visible au-dessus du champ fixé
+      const scrollEl = window.location.pathname.includes('post.html')
+        ? (window.innerWidth <= 768 ? document.getElementById('postMain') : document.getElementById('postCommentsList'))
+        : null;
+      if (scrollEl) {
+        const rowRect = row.getBoundingClientRect();
+        const elRect  = scrollEl.getBoundingClientRect();
+        const offset  = rowRect.bottom - elRect.bottom + 120;
+        if (offset > 0) scrollEl.scrollTop += offset;
+      }
+    }, 50);
+  }
 }
 async function submitReply(postId, commentId) {
   const user = getUser();
