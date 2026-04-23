@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Publication — Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    .post-page { max-width: 680px; margin: 0 auto; padding: 2rem 5% 4rem; }
+    .post-page-back {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      color: var(--text2); font-size: 0.88rem; margin-bottom: 1.5rem;
+      cursor: pointer; transition: color 0.2s;
+      background: none; border: none; font-family: inherit; padding: 0;
+    }
+    .post-page-back:hover { color: var(--accent); }
+    .post-page-loader {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 4rem 2rem; gap: 1rem; color: var(--text2);
+    }
+    .post-page-error {
+      text-align: center; padding: 4rem 2rem; color: var(--text2);
+    }
+    .post-page-error i { font-size: 3rem; opacity: 0.3; display: block; margin-bottom: 1rem; }
+    .post-page-error h2 { font-size: 1.2rem; color: var(--text); margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="ebooks.html">Ebooks</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="explore.html">Explorer</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" title="Messages" id="msgNavBtn">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="post-page">
+    <button class="post-page-back" onclick="history.length > 1 ? history.back() : window.location.href='index.html'">
+      <i class="fas fa-arrow-left"></i> Retour
+    </button>
+    <div id="postContainer">
+      <div class="post-page-loader">
+        <div class="feed-loader"><span></span><span></span><span></span></div>
+        <p>Chargement de la publication...</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+      loadFooterSocialLinks();
+      loadNavbarCustomBtn();
+
+      const params  = new URLSearchParams(window.location.search);
+      const postId  = parseInt(params.get('id'));
+      const container = document.getElementById('postContainer');
+
+      if (!postId) {
+        container.innerHTML = `<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Publication introuvable</h2><p>L'identifiant du post est manquant.</p></div>`;
+        return;
+      }
+
+      try {
+        const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+        const token = localStorage.getItem('pd_jwt');
+        const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+        const post  = await fetch(`${API}/posts/${postId}`, { headers }).then(r => r.json());
+
+        if (!post || post.error) {
+          container.innerHTML = `<div class="post-page-error"><i class="fas fa-newspaper"></i><h2>Publication introuvable</h2><p>Ce post n'existe pas ou a été supprimé.</p></div>`;
+          return;
+        }
+
+        // Normaliser
+        post.likes    = Array.isArray(post.likes)    ? post.likes    : [];
+        post.comments = Array.isArray(post.comments) ? post.comments : [];
+
+        // Mettre dans le cache pour que les fonctions (like, comment) fonctionnent
+        _postsCache = [post];
+
+        const isAdmin = user && user.role === 'admin';
+        const card    = buildPostCard(post, user, isAdmin);
+        card.style.animation = 'postFadeIn 0.35s ease both';
+
+        // Ouvrir les commentaires directement
+        container.innerHTML = '';
+        container.appendChild(card);
+
+        // Ouvrir la section commentaires
+        const commSection = document.getElementById('comments-' + post.id);
+        if (commSection) commSection.style.display = 'block';
+
+        // Mettre à jour le titre de la page
+        document.title = (post.title || 'Publication') + ' — Pagani Digital';
+
+        // Charger les réactions
+        if (window.PaganiAPI) {
+          try {
+            const rx = await PaganiAPI.getPostReactions(post.id);
+            _reactionsCache[post.id] = rx;
+            const myEmoji = user ? Object.entries(rx).find(([,ids]) => ids.includes(user.id))?.[0] || null : null;
+            _updateReactionUI(post.id, rx, myEmoji);
+            _updateReactionCount(post.id, rx);
+          } catch(e) {}
+        }
+
+      } catch(e) {
+        container.innerHTML = `<div class="post-page-error"><i class="fas fa-exclamation-circle"></i><h2>Erreur de chargement</h2><p>Impossible de charger cette publication.</p></div>`;
+      }
+    });
+  </script>
+</body>
+</html>

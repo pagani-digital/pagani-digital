@@ -350,12 +350,12 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
         if (_uid !== null) await db.createNotification({
           userId: _uid, type: 'REACTION',
           message: `${user?.name} a réagi ${emoji} à votre publication.`,
-          link: `index.html#post-${post.id}`
+          link: `post.html?id=${post.id}`
         });
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'reactions_count');
         await db.incrementCategoryPref(req.user.id, post.category);
-        if (_uid !== null) sendPush(_uid, user.name + ' a réagi', 'Nouvelle réaction sur votre publication', `index.html#post-${post.id}`);
+        if (_uid !== null) sendPush(_uid, user.name + ' a réagi', 'Nouvelle réaction sur votre publication', `post.html?id=${post.id}`);
       }
     }
     res.json(result);
@@ -394,6 +394,17 @@ app.get('/api/posts/hashtag/:tag', async (req, res) => {
     res.json(filtered.map(p => ({ ...p, image: p.image ? '__HAS_IMAGE__' : '' })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+// RÃ©cupÃ©rer un post unique par ID
+app.get('/api/posts/:id', async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const post = await db.getPostById(id);
+    if (!post) return res.status(404).json({ error: 'POST_INTROUVABLE' });
+    res.json(post);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 app.get('/api/posts/:id/image', async (req, res) => {
   try {
     const id = parseId(req.params.id);
@@ -447,7 +458,7 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `index.html#post-${post.id}`));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `post.html?id=${post.id}`));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -465,12 +476,12 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     for (const u of allUsers.filter(u => u.role !== 'admin')) {
       await db.createNotification({ userId: u.id, type: 'NEW_POST',
         message: `${user.name} a publié : "${post.title}"`,
-        link: `index.html#post-${post.id}` });
+        link: `post.html?id=${post.id}` });
     }
     // Invalider le cache visiteurs
     _guestFeedCache = null;
     db.getAllUsers().then(users => {
-      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `index.html#post-${post.id}`));
+      users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `post.html?id=${post.id}`));
     }).catch(() => {});
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -515,11 +526,11 @@ app.post('/api/posts/:id/like', requireAuth, async (req, res) => {
         const _uid1 = await _resolveNotifUserId(post.authorId);
         if (_uid1 !== null) await db.createNotification({ userId: _uid1, type: 'REACTION',
           message: `${user?.name} a aimé votre publication.`,
-          link: `index.html#post-${post.id}` });
+          link: `post.html?id=${post.id}` });
         // ML : incrémenter l'affinité + préférence catégorie
         await db.incrementInteraction(req.user.id, post.authorId, 'likes_count');
         await db.incrementCategoryPref(req.user.id, post.category);
-        if (_uid1 !== null) sendPush(_uid1, user.name + ' a aimé', 'Votre publication a reçu un like', `index.html#post-${post.id}`);
+        if (_uid1 !== null) sendPush(_uid1, user.name + ' a aimé', 'Votre publication a reçu un like', `post.html?id=${post.id}`);
       }
     }
     res.json(result);
@@ -540,11 +551,11 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       const _uid2 = await _resolveNotifUserId(post.authorId);
       if (_uid2 !== null) await db.createNotification({ userId: _uid2, type: 'COMMENT',
         message: `${user.name} a commenté votre publication.`,
-        link: `index.html#post-${post.id}` });
+        link: `post.html?id=${post.id}` });
       // ML : incrémenter l'affinité + préférence catégorie
       await db.incrementInteraction(req.user.id, post.authorId, 'comments_count');
       await db.incrementCategoryPref(req.user.id, post.category);
-      if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', `index.html#post-${post.id}`);
+      if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', `post.html?id=${post.id}`);
     }
     res.json(comment);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -565,8 +576,8 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
       const _uid3 = await _resolveNotifUserId(comment.authorId);
       if (_uid3 !== null) await db.createNotification({ userId: _uid3, type: 'COMMENT',
         message: `${user.name} a repondu a votre commentaire sur "${post.title}"`,
-        link: `index.html#post-${post.id}` });
-      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `index.html#post-${post.id}`);
+        link: `post.html?id=${post.id}` });
+      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `post.html?id=${post.id}`);
     }
     res.json(reply);
   } catch(e) { res.status(400).json({ error: e.message }); }
@@ -599,7 +610,10 @@ app.put('/api/admin/social-links', requireAuth, requireAdmin, async (req, res) =
 app.get('/api/notifications', requireAuth, async (req, res) => {
   try {
     const userId = req.user.role === 'admin' ? 0 : req.user.id;
-    res.json(await db.getNotifications(userId));
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(50, parseInt(req.query.limit) || 50);
+    const offset = (page - 1) * limit;
+    res.json(await db.getNotificationsPaged(userId, limit, offset));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 

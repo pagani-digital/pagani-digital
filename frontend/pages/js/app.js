@@ -1063,9 +1063,9 @@ async function toggleLike(postId) {
 }
 function shareOnFacebook(postId) {
   const user = getUser();
-  const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/index.html');
+  const base = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '/post.html');
   const ref  = user ? user.refCode : '';
-  const url  = base + '?post=' + postId + (ref ? '&ref=' + encodeURIComponent(ref) : '') + '#post-' + postId;
+  const url  = base + '?id=' + postId + (ref ? '&ref=' + encodeURIComponent(ref) : '');
   const fbUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(url);
   window.open(fbUrl, '_blank', 'width=600,height=400,noopener,noreferrer');
   // Tracker le partage si connect
@@ -1731,24 +1731,43 @@ async function openPublicProfileByName(name) {
 }
 // Dfilement vers un post cible depuis une notification (ancre #post-ID)
 function scrollToTargetPost(retries) {
-  if (retries === undefined) retries = 10;
+  if (retries === undefined) retries = 30;
   const hash = window.location.hash;
   if (!hash || !hash.startsWith("#post-")) return;
-  const target = document.getElementById(hash.slice(1));
+  const postId = parseInt(hash.slice(6));
+  if (!postId) return;
+
+  // Chercher le post dans le cache et charger toutes les tranches jusqu'à lui
+  const container = document.getElementById('feedPosts');
+  const user = getUser();
+  const isAdmin = !!(user && user.role === 'admin');
+
+  // Si le post est dans le cache mais pas encore rendu, charger jusqu'à lui
+  if (container && _postsCache.length) {
+    const idx = _postsCache.findIndex(function(p) { return p.id === postId; });
+    if (idx !== -1) {
+      // Charger toutes les tranches nécessaires pour atteindre ce post
+      while (_feedPage * 5 <= idx) {
+        _loadMorePosts(container, user, isAdmin);
+      }
+    }
+  }
+
+  const target = document.getElementById('post-' + postId);
   if (!target) {
     if (retries > 0) setTimeout(function() { scrollToTargetPost(retries - 1); }, 300);
     return;
   }
+
   setTimeout(function() {
-    const offset = 80;
-    const top = target.getBoundingClientRect().top + window.scrollY - offset;
+    const top = target.getBoundingClientRect().top + window.scrollY - 80;
     window.scrollTo({ top: top, behavior: "smooth" });
     target.classList.add("post-highlight");
     setTimeout(function() { target.classList.remove("post-highlight"); }, 3000);
     const commSection = target.querySelector(".comments-section");
     if (commSection) commSection.style.display = "block";
     history.replaceState(null, "", window.location.pathname);
-  }, 100);
+  }, 150);
 }
 function renderNews() { renderFeed(); }
 
@@ -2388,6 +2407,13 @@ function showDashboard(user) {
   if (tabParam === 'trainer' && user.role !== 'admin') {
     switchTab('trainer', document.getElementById('trainerTabBtn'));
   }
+  if (tabParam === 'subscription' && user.role !== 'admin') {
+    const subTabBtn = document.getElementById('subTabBtn');
+    if (subTabBtn) switchTab('subscription', subTabBtn);
+    const subId = urlParams.get('sub');
+    if (subId) setTimeout(() => _scrollToSubCard(subId), 600);
+  }
+
   if (tabParam === 'admin' && user.role === 'admin') {
     const sectionParam = urlParams.get('section');
     switchTab('admin', document.getElementById('adminTabBtn'));
@@ -2395,6 +2421,10 @@ function showDashboard(user) {
       setTimeout(() => {
         const btn = document.querySelector(`.admin-subnav-btn[onclick*="'${sectionParam}'"]`);
         if (btn) btn.click();
+        const subId = urlParams.get('sub');
+        if (subId) setTimeout(() => _scrollToSubCard(subId), 800);
+        const purchaseId = urlParams.get('purchase');
+        if (purchaseId && sectionParam === 'videopurchases') setTimeout(() => _scrollToVideoPurchaseCard(purchaseId), 800);
       }, 300);
     }
   }

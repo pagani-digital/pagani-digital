@@ -32,7 +32,11 @@ function _showToast(title, message, icon, url) {
       '<div class="pagani-toast-msg">' + (message || '') + '</div>' +
     '</div>' +
     '<button class="pagani-toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
-  if (url) toast.onclick = function(e) { if (e.target.closest('.pagani-toast-close')) return; window.location.href = url; };
+  if (url) toast.onclick = function(e) {
+    if (e.target.closest('.pagani-toast-close')) return;
+    const pm = url.match(/(?:index\.html)?#post-(\d+)/);
+    window.location.href = pm ? 'post.html?id=' + pm[1] : url;
+  };
   wrap.appendChild(toast);
   setTimeout(function() {
     toast.classList.add('hiding');
@@ -208,7 +212,9 @@ async function renderNotifPanel(userId) {
             ${n.link ? '<span class="notif-arrow"><i class="fas fa-chevron-right"></i></span>' : ""}
           </div>`).join("")
       }
-    </div>`;
+    </div>
+    <a href="notifications.html" class="notif-see-all"><i class="fas fa-list"></i> Voir toutes les notifications <i class="fas fa-arrow-right"></i></a>`;
+
 
   const markAllBtn = document.getElementById("notifMarkAll");
   if (markAllBtn) markAllBtn.addEventListener("click", () => markAllAsRead(userId));
@@ -232,55 +238,46 @@ async function renderNotifPanel(userId) {
         if (panelEl) panelEl.classList.remove('open');
         if (overlay) overlay.style.display = 'none';
 
-        const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-        const linkBase    = link.split('?')[0].split('#')[0] || 'index.html';
-        const targetPage  = linkBase;
-        const anchor      = link.includes('#') ? link.split('#')[1] : null;
+        // Convertir tout lien post en post.html?id=X
+        const postMatch = link.match(/(?:index\.html)?#post-(\d+)/) || link.match(/post\.html\?id=(\d+)/);
+        if (postMatch) {
+          setTimeout(() => { window.location.href = 'post.html?id=' + postMatch[1]; }, 120);
+          return;
+        }
+
+        const currentPage  = window.location.pathname.split('/').pop() || 'index.html';
+        const linkBase     = link.split('?')[0].split('#')[0] || 'index.html';
+        const targetPage   = linkBase;
 
         // Même page : gérer les paramètres ?tab= et ?section= sans rechargement
         if (currentPage === targetPage || (currentPage === '' && targetPage === 'index.html')) {
-          // Extraire les paramètres de l'URL du lien
-          const linkUrl    = new URL(link, window.location.href);
-          const tabParam   = linkUrl.searchParams.get('tab');
+          const linkUrl      = new URL(link, window.location.href);
+          const tabParam     = linkUrl.searchParams.get('tab');
           const sectionParam = linkUrl.searchParams.get('section');
 
           if (tabParam && typeof switchTab === 'function') {
             const tabBtn = document.querySelector(`[onclick*="switchTab('${tabParam}'"]`);
             if (tabBtn && tabBtn.style.display !== 'none') {
               switchTab(tabParam, tabBtn);
-              // Sous-section admin si précisée
               if (sectionParam && typeof switchAdminSection === 'function') {
                 setTimeout(() => {
                   const subBtn = document.querySelector(`[onclick*="switchAdminSection('${sectionParam}'"]`);
                   if (subBtn) switchAdminSection(sectionParam, subBtn);
-                  // Scroller + surligner la transaction après chargement de la liste
                   const subId = linkUrl.searchParams.get('sub');
                   if (subId) setTimeout(() => _scrollToSubCard(subId), 800);
-                  // Scroller vers un achat vidéo spécifique
                   const purchaseId = linkUrl.searchParams.get('purchase');
                   if (purchaseId && sectionParam === 'videopurchases') setTimeout(() => _scrollToVideoPurchaseCard(purchaseId), 800);
                 }, 150);
               } else {
-                // Scroller + surligner la transaction spécifique si sub=ID
                 const subId = linkUrl.searchParams.get('sub');
-                if (subId) {
-                  setTimeout(() => _scrollToSubCard(subId), 400);
-                } else {
+                if (subId) setTimeout(() => _scrollToSubCard(subId), 400);
+                else {
                   const tabEl = document.getElementById('tab-' + tabParam);
                   if (tabEl) setTimeout(() => tabEl.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
                 }
               }
             }
-          } else if (anchor) {
-            const target = document.getElementById(anchor);
-            if (target) {
-              const top = target.getBoundingClientRect().top + window.scrollY - 80;
-              window.scrollTo({ top, behavior: 'smooth' });
-              target.classList.add('post-highlight');
-              setTimeout(() => target.classList.remove('post-highlight'), 3000);
-            }
           }
-
           if (typeof _silentRefreshFeed === 'function') _silentRefreshFeed();
         } else {
           // Page différente : naviguer

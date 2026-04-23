@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications — Pagani Digital</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    /* ── Page notifications ── */
+    .notif-page { max-width: 720px; margin: 0 auto; padding: 2rem 5% 4rem; }
+
+    /* Header */
+    .notif-page-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.8rem; flex-wrap: wrap; gap: 1rem;
+    }
+    .notif-page-title {
+      display: flex; align-items: center; gap: 0.7rem;
+      font-size: 1.6rem; font-weight: 800;
+    }
+    .notif-page-title i { color: var(--accent); font-size: 1.4rem; }
+    .notif-page-actions { display: flex; gap: 0.6rem; }
+    .notif-action-btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text2); padding: 0.45rem 1rem; border-radius: 10px;
+      cursor: pointer; font-size: 0.82rem; font-family: inherit;
+      transition: all 0.2s;
+    }
+    .notif-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Filtres */
+    .notif-filters {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+      overflow-x: auto; scrollbar-width: none; padding-bottom: 2px;
+    }
+    .notif-filters::-webkit-scrollbar { display: none; }
+    .notif-filter-btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--bg3); border: 1px solid var(--border);
+      color: var(--text2); padding: 0.4rem 1rem; border-radius: 50px;
+      cursor: pointer; font-size: 0.82rem; font-family: inherit;
+      white-space: nowrap; transition: all 0.2s;
+    }
+    .notif-filter-btn.active, .notif-filter-btn:hover {
+      background: var(--accent); border-color: var(--accent); color: #fff;
+    }
+    .notif-filter-btn .notif-filter-count {
+      background: rgba(255,255,255,0.25); border-radius: 50px;
+      padding: 0.05rem 0.45rem; font-size: 0.72rem; font-weight: 700;
+    }
+
+    /* Groupe date */
+    .notif-group { margin-bottom: 1.5rem; animation: fadeIn 0.3s ease both; }
+    .notif-group-label {
+      font-size: 0.72rem; font-weight: 700; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.6rem; padding: 0 0.2rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .notif-group-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    /* Carte notification */
+    .notif-card {
+      display: flex; align-items: flex-start; gap: 0.9rem;
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1rem 1.2rem;
+      margin-bottom: 0.6rem; cursor: pointer;
+      transition: background 0.15s, border-color 0.2s, transform 0.15s;
+      animation: notifCardIn 0.35s cubic-bezier(0.34,1.2,0.64,1) both;
+      position: relative; overflow: hidden;
+    }
+    @keyframes notifCardIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .notif-card:hover {
+      background: rgba(108,99,255,0.06);
+      border-color: rgba(108,99,255,0.25);
+      transform: translateX(3px);
+    }
+    .notif-card.unread {
+      background: rgba(108,99,255,0.05);
+      border-left: 3px solid var(--accent);
+    }
+    .notif-card.unread::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(90deg, rgba(108,99,255,0.04) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    /* Icône notification */
+    .notif-card-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+      transition: transform 0.2s;
+    }
+    .notif-card:hover .notif-card-icon { transform: scale(1.08); }
+
+    /* Contenu */
+    .notif-card-body { flex: 1; min-width: 0; }
+    .notif-card-title {
+      font-size: 0.88rem; font-weight: 700; margin-bottom: 0.2rem;
+      display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .notif-card-msg {
+      font-size: 0.82rem; color: var(--text2); line-height: 1.5;
+      margin-bottom: 0.3rem;
+    }
+    .notif-card-time {
+      font-size: 0.72rem; color: var(--text2); opacity: 0.6;
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    .notif-unread-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0; margin-top: 4px;
+    }
+    .notif-card-arrow {
+      color: var(--text2); font-size: 0.75rem; opacity: 0.4;
+      align-self: center; flex-shrink: 0;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .notif-card:hover .notif-card-arrow { opacity: 1; transform: translateX(3px); }
+
+    /* Badge type */
+    .notif-type-badge {
+      font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 50px; white-space: nowrap;
+    }
+
+    /* État vide */
+    .notif-empty-state {
+      text-align: center; padding: 4rem 2rem; color: var(--text2);
+      animation: fadeIn 0.3s ease;
+    }
+    .notif-empty-icon {
+      width: 80px; height: 80px; border-radius: 50%;
+      background: rgba(108,99,255,0.08); border: 2px solid rgba(108,99,255,0.15);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1.2rem; font-size: 2rem; color: var(--accent); opacity: 0.6;
+    }
+    .notif-empty-state h3 { font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+    .notif-empty-state p  { font-size: 0.88rem; line-height: 1.6; }
+
+    /* Loader */
+    .notif-page-loader {
+      display: flex; justify-content: center; padding: 2rem;
+    }
+
+    /* Skeleton */
+    .notif-skeleton {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 16px; padding: 1rem 1.2rem;
+      margin-bottom: 0.6rem; display: flex; gap: 0.9rem; align-items: center;
+    }
+    .notif-skeleton-icon {
+      width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--border) 50%, var(--bg2) 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+    }
+    .notif-skeleton-lines { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+    .notif-skeleton-line {
+      height: 10px; border-radius: 6px;
+      background: linear-gradient(90deg, var(--bg2) 25%, var(--border) 50%, var(--bg2) 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite;
+    }
+
+    /* Bouton charger plus */
+    .notif-load-more {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.5rem; width: 100%; padding: 0.8rem;
+      background: transparent; border: 1.5px dashed var(--border);
+      border-radius: 12px; color: var(--text2); cursor: pointer;
+      font-size: 0.85rem; font-family: inherit;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+      margin-top: 0.5rem;
+    }
+    .notif-load-more:hover {
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(108,99,255,0.05);
+    }
+
+    /* Compteur total */
+    .notif-total-badge {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2);
+      color: var(--accent); padding: 0.3rem 0.8rem; border-radius: 50px;
+      font-size: 0.78rem; font-weight: 700;
+    }
+
+    @media (max-width: 580px) {
+      .notif-page { padding: 1.2rem 4% 3rem; }
+      .notif-page-title { font-size: 1.3rem; }
+      .notif-card { padding: 0.85rem 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <a href="index.html" class="logo">Pagani<span>Digital</span></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Accueil</a></li>
+      <li><a href="formations.html">Formations</a></li>
+      <li><a href="ebooks.html">Ebooks</a></li>
+      <li><a href="affiliation.html">Affiliation</a></li>
+      <li><a href="explore.html">Explorer</a></li>
+      <li><a href="plans.html">Tarifs</a></li>
+      <li><a href="dashboard.html" class="btn-nav">Mon Espace</a></li>
+    </ul>
+    <div class="nav-right">
+      <a id="navCustomBtn" href="#" target="_blank" rel="noopener" class="notif-bell" style="display:none" title="">
+        <img id="navCustomBtnIcon" src="" alt="" style="width:18px;height:18px;object-fit:contain;border-radius:3px" />
+      </a>
+      <a href="messages.html" class="notif-bell msg-nav-btn" title="Messages" id="msgNavBtn">
+        <i class="fas fa-envelope"></i>
+        <span class="notif-badge" id="msgNavBadge" style="display:none">0</span>
+      </a>
+      <button class="notif-bell" id="notifBell" onclick="PaganiNotif.togglePanel()" title="Notifications">
+        <i class="fas fa-bell"></i>
+        <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+      </button>
+      <div class="hamburger" onclick="toggleMenu()"><i class="fas fa-bars"></i></div>
+    </div>
+  </nav>
+
+  <div class="notif-page">
+
+    <!-- Header -->
+    <div class="notif-page-header">
+      <div>
+        <div class="notif-page-title">
+          <i class="fas fa-bell"></i>
+          Notifications
+          <span class="notif-total-badge" id="notifTotalBadge" style="display:none">
+            <i class="fas fa-circle" style="font-size:0.45rem"></i>
+            <span id="notifUnreadCount">0</span> non lues
+          </span>
+        </div>
+      </div>
+      <div class="notif-page-actions">
+        <button class="notif-action-btn" id="btnMarkAll" onclick="markAllReadPage()">
+          <i class="fas fa-check-double"></i> Tout marquer lu
+        </button>
+      </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="notif-filters" id="notifFilters">
+      <button class="notif-filter-btn active" data-filter="all" onclick="setFilter('all', this)">
+        <i class="fas fa-th-large"></i> Tout
+      </button>
+      <button class="notif-filter-btn" data-filter="social" onclick="setFilter('social', this)">
+        <i class="fas fa-heart"></i> Social
+      </button>
+      <button class="notif-filter-btn" data-filter="subscription" onclick="setFilter('subscription', this)">
+        <i class="fas fa-crown"></i> Abonnements
+      </button>
+      <button class="notif-filter-btn" data-filter="finance" onclick="setFilter('finance', this)">
+        <i class="fas fa-coins"></i> Finance
+      </button>
+      <button class="notif-filter-btn" data-filter="formation" onclick="setFilter('formation', this)">
+        <i class="fas fa-play-circle"></i> Formations
+      </button>
+      <button class="notif-filter-btn" data-filter="system" onclick="setFilter('system', this)">
+        <i class="fas fa-cog"></i> Système
+      </button>
+    </div>
+
+    <!-- Liste notifications -->
+    <div id="notifPageList"></div>
+
+    <!-- Bouton charger plus -->
+    <button class="notif-load-more" id="notifLoadMore" style="display:none" onclick="loadMoreNotifs()">
+      <i class="fas fa-chevron-down"></i> Charger plus
+    </button>
+
+  </div>
+
+  <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
+  <div id="notifPanel" class="notif-panel"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/notifications.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+  <script>
+    const NOTIF_TYPES_MAP = {
+      NEW_USER:           { icon: 'fas fa-user-plus',       color: '#6c63ff', label: 'Nouvel inscrit',       filter: 'system' },
+      NEW_SUBSCRIPTION:   { icon: 'fas fa-id-card',         color: '#00d4aa', label: 'Abonnement',           filter: 'subscription' },
+      CANCEL_SUB:         { icon: 'fas fa-times-circle',    color: '#ff4d6d', label: 'Annulation',           filter: 'subscription' },
+      SUB_CONFIRMED:      { icon: 'fas fa-crown',           color: '#00d4aa', label: 'Abonnement confirmé',  filter: 'subscription' },
+      SUB_CANCELLED:      { icon: 'fas fa-ban',             color: '#ff4d6d', label: 'Abonnement annulé',    filter: 'subscription' },
+      NEW_FORMATION:      { icon: 'fas fa-play-circle',     color: '#f59e0b', label: 'Formation achetée',    filter: 'formation' },
+      FORMATION_UNLOCKED: { icon: 'fas fa-unlock',          color: '#f59e0b', label: 'Formation débloquée',  filter: 'formation' },
+      WITHDRAW_REQUEST:   { icon: 'fas fa-money-bill-wave', color: '#f59e0b', label: 'Retrait demandé',      filter: 'finance' },
+      WITHDRAW_APPROVED:  { icon: 'fas fa-check-circle',    color: '#00d4aa', label: 'Retrait approuvé',     filter: 'finance' },
+      WITHDRAW_REJECTED:  { icon: 'fas fa-times-circle',    color: '#ff4d6d', label: 'Retrait rejeté',       filter: 'finance' },
+      REACTION:           { icon: 'fas fa-heart',           color: '#ff4d6d', label: 'Réaction',             filter: 'social' },
+      REACTION_ON_POST:   { icon: 'fas fa-heart',           color: '#ff4d6d', label: 'Réaction sur post',    filter: 'social' },
+      COMMENT:            { icon: 'fas fa-comment',         color: '#6c63ff', label: 'Commentaire',          filter: 'social' },
+      NEW_COMMENT_POST:   { icon: 'fas fa-comment',         color: '#00d4aa', label: 'Commentaire',          filter: 'social' },
+      COMMENT_REPLY:      { icon: 'fas fa-reply',           color: '#6c63ff', label: 'Réponse',              filter: 'social' },
+      NEW_FOLLOWER:       { icon: 'fas fa-user-plus',       color: '#00d4aa', label: 'Nouveau follower',     filter: 'social' },
+      NEW_POST:           { icon: 'fas fa-newspaper',       color: '#6c63ff', label: 'Nouvelle publication', filter: 'social' },
+      TRAINER_REQUEST:    { icon: 'fas fa-chalkboard-teacher', color: '#6c63ff', label: 'Formateur',         filter: 'system' },
+      TRAINER_SUBMISSION: { icon: 'fas fa-file-upload',     color: '#f59e0b', label: 'Contenu soumis',       filter: 'system' },
+    };
+
+    const DEFAULT_TYPE = { icon: 'fas fa-bell', color: '#6c63ff', label: 'Notification', filter: 'system' };
+
+    let _allNotifs   = [];
+    let _page        = 1;
+    let _loading     = false;
+    let _hasMore     = true;
+    let _activeFilter = 'all';
+    const LIMIT = 20;
+
+    function _typeInfo(type) { return NOTIF_TYPES_MAP[type] || DEFAULT_TYPE; }
+
+    function _groupByDate(notifs) {
+      const groups = {};
+      const now    = new Date();
+      notifs.forEach(n => {
+        const d    = new Date(n.createdAt);
+        const diff = Math.floor((now - d) / 86400000);
+        let label;
+        if (diff === 0)      label = "Aujourd'hui";
+        else if (diff === 1) label = 'Hier';
+        else if (diff < 7)   label = 'Cette semaine';
+        else if (diff < 30)  label = 'Ce mois';
+        else                 label = 'Plus ancien';
+        if (!groups[label]) groups[label] = [];
+        groups[label].push(n);
+      });
+      return groups;
+    }
+
+    function _timeAgoFull(dateStr) {
+      const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+      if (diff < 60)    return "À l'instant";
+      if (diff < 3600)  return `Il y a ${Math.floor(diff/60)} min`;
+      if (diff < 86400) return `Il y a ${Math.floor(diff/3600)}h`;
+      const days = Math.floor(diff/86400);
+      if (days < 7)     return `Il y a ${days} jour${days>1?'s':''}`;
+      return new Date(dateStr).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+    }
+
+    function _filteredNotifs() {
+      if (_activeFilter === 'all') return _allNotifs;
+      return _allNotifs.filter(n => (_typeInfo(n.type).filter) === _activeFilter);
+    }
+
+    function renderNotifs(append = false) {
+      const list = document.getElementById('notifPageList');
+      const filtered = _filteredNotifs();
+
+      if (!append) list.innerHTML = '';
+
+      if (!filtered.length && !append) {
+        list.innerHTML = `
+          <div class="notif-empty-state">
+            <div class="notif-empty-icon"><i class="fas fa-bell-slash"></i></div>
+            <h3>Aucune notification</h3>
+            <p>Vous n'avez pas encore de notifications${_activeFilter !== 'all' ? ' dans cette catégorie' : ''}.</p>
+          </div>`;
+        return;
+      }
+
+      const groups = _groupByDate(filtered);
+      const order  = ["Aujourd'hui", 'Hier', 'Cette semaine', 'Ce mois', 'Plus ancien'];
+
+      order.forEach((label, gi) => {
+        if (!groups[label]) return;
+        const groupEl = document.createElement('div');
+        groupEl.className = 'notif-group';
+        groupEl.style.animationDelay = (gi * 60) + 'ms';
+        groupEl.innerHTML = `<div class="notif-group-label">${label}</div>`;
+
+        groups[label].forEach((n, i) => {
+          const info = _typeInfo(n.type);
+          const card = document.createElement('div');
+          card.className = 'notif-card' + (n.read ? '' : ' unread');
+          card.style.animationDelay = (gi * 60 + i * 40) + 'ms';
+          card.dataset.id   = n.id;
+          card.dataset.link = n.link || '';
+          card.innerHTML = `
+            <div class="notif-card-icon" style="background:${info.color}18;color:${info.color}">
+              <i class="${info.icon}"></i>
+            </div>
+            <div class="notif-card-body">
+              <div class="notif-card-title">
+                ${info.label}
+                <span class="notif-type-badge" style="background:${info.color}15;color:${info.color}">${n.type.replace(/_/g,' ')}</span>
+              </div>
+              <div class="notif-card-msg">${n.message || ''}</div>
+              <div class="notif-card-time"><i class="fas fa-clock"></i> ${_timeAgoFull(n.createdAt)}</div>
+            </div>
+            ${!n.read ? '<div class="notif-unread-dot"></div>' : ''}
+            ${n.link ? '<div class="notif-card-arrow"><i class="fas fa-chevron-right"></i></div>' : ''}`;
+
+          card.addEventListener('click', () => _onNotifClick(n));
+          groupEl.appendChild(card);
+        });
+
+        list.appendChild(groupEl);
+      });
+    }
+
+    function _onNotifClick(n) {
+      // Remapper les anciens liens comme dans notifications.js
+      let link = n.link || '';
+      if (n.type === 'SUB_CONFIRMED'    && (!link || link === 'formations.html'))  link = 'dashboard.html?tab=subscription';
+      if (n.type === 'SUB_CANCELLED'    && (!link || link === 'dashboard.html'))   link = 'dashboard.html?tab=subscription';
+      if (n.type === 'NEW_USER')                                                   link = 'dashboard.html?tab=admin&section=users';
+      if (n.type === 'NEW_FORMATION'    && (!link || link === 'dashboard.html'))   link = 'dashboard.html?tab=admin&section=videopurchases';
+      if ((n.type === 'NEW_SUBSCRIPTION' || n.type === 'CANCEL_SUB') && (!link || link === 'dashboard.html')) link = 'dashboard.html?tab=admin&section=subscriptions';
+      if ((n.type === 'FORMATION_UNLOCKED' || n.type === 'NEW_FORMATION') && link === 'formations.html') link = 'formations.html';
+      if (n.type === 'WITHDRAW_APPROVED' && (!link || link === 'dashboard.html')) link = 'affiliation.html';
+      if (n.type === 'WITHDRAW_REJECTED' && (!link || link === 'dashboard.html')) link = 'affiliation.html';
+      // Marquer comme lu visuellement
+      const card = document.querySelector(`.notif-card[data-id="${n.id}"]`);
+      if (card) { card.classList.remove('unread'); const dot = card.querySelector('.notif-unread-dot'); if (dot) dot.remove(); }
+      n.read = true;
+      _updateUnreadBadge();
+      PaganiAPI.markAllRead().catch(() => {});
+      // Convertir index.html#post-X en post.html?id=X
+      if (link) {
+        const postMatch = link.match(/index\.html#post-(\d+)/);
+        if (postMatch) link = 'post.html?id=' + postMatch[1];
+        setTimeout(() => { window.location.href = link; }, 120);
+      }
+    }
+
+    function _updateUnreadBadge() {
+      const unread = _allNotifs.filter(n => !n.read).length;
+      const badge  = document.getElementById('notifTotalBadge');
+      const count  = document.getElementById('notifUnreadCount');
+      if (unread > 0) {
+        badge.style.display = 'inline-flex';
+        count.textContent   = unread;
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function setFilter(filter, btn) {
+      _activeFilter = filter;
+      document.querySelectorAll('.notif-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderNotifs();
+    }
+
+    async function markAllReadPage() {
+      await PaganiAPI.markAllRead().catch(() => {});
+      _allNotifs.forEach(n => n.read = true);
+      document.querySelectorAll('.notif-card.unread').forEach(c => {
+        c.classList.remove('unread');
+        const dot = c.querySelector('.notif-unread-dot');
+        if (dot) dot.remove();
+      });
+      _updateUnreadBadge();
+      if (window.PaganiNotif) PaganiNotif.refreshBadge();
+    }
+
+    function _showSkeletons(n) {
+      const list = document.getElementById('notifPageList');
+      list.innerHTML = Array.from({length: n}, () => `
+        <div class="notif-skeleton">
+          <div class="notif-skeleton-icon"></div>
+          <div class="notif-skeleton-lines">
+            <div class="notif-skeleton-line" style="width:40%"></div>
+            <div class="notif-skeleton-line" style="width:75%"></div>
+            <div class="notif-skeleton-line" style="width:30%"></div>
+          </div>
+        </div>`).join('');
+    }
+
+    async function loadNotifs(append = false) {
+      if (_loading || (!_hasMore && append)) return;
+      _loading = true;
+      if (!append) _showSkeletons(5);
+
+      const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+      const token = localStorage.getItem('pd_jwt');
+      try {
+        const res  = await fetch(`${API}/notifications?page=${_page}&limit=${LIMIT}`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.length < LIMIT) { _hasMore = false; document.getElementById('notifLoadMore').style.display = 'none'; }
+        else { document.getElementById('notifLoadMore').style.display = 'flex'; }
+        if (append) _allNotifs = [..._allNotifs, ...data];
+        else        _allNotifs = data;
+        _page++;
+        renderNotifs(false);
+        _updateUnreadBadge();
+      } catch(e) {
+        document.getElementById('notifPageList').innerHTML = `<div class="notif-empty-state"><div class="notif-empty-icon"><i class="fas fa-exclamation-circle"></i></div><h3>Erreur de chargement</h3><p>Vérifiez votre connexion.</p></div>`;
+      }
+      _loading = false;
+    }
+
+    async function loadMoreNotifs() {
+      await loadNotifs(true);
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const user = await refreshCurrentUser();
+      updateNavbar(user);
+      if (window.PaganiNotif) PaganiNotif.startPolling();
+      loadFooterSocialLinks();
+      loadNavbarCustomBtn();
+      if (!user) { window.location.href = 'dashboard.html'; return; }
+      await loadNotifs();
+    });
+  </script>
+</body>
+</html>

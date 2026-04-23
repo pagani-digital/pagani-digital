@@ -282,8 +282,30 @@ async function getPosts() {
 }
 
 async function getPostById(id) {
-  const res = await query('SELECT * FROM posts WHERE id = $1', [id]);
-  return rowToCamel(res.rows[0]) || null;
+  const [postRes, usersRes] = await Promise.all([
+    query('SELECT * FROM posts WHERE id = $1', [id]),
+    query('SELECT id, avatar_photo FROM users')
+  ]);
+  if (!postRes.rows[0]) return null;
+  const photoMap = {};
+  for (const u of usersRes.rows) photoMap[u.id] = u.avatar_photo || '';
+  const p = rowToCamel(postRes.rows[0]);
+  return {
+    ...p,
+    authorPhoto: p.authorId ? (photoMap[p.authorId] ?? p.authorPhoto ?? '') : (p.authorPhoto || ''),
+    likes:    Array.isArray(p.likes)    ? p.likes    : [],
+    comments: Array.isArray(p.comments) ? p.comments.filter(c => c && typeof c === 'object').map(c => ({
+      ...c,
+      author: c.author || c.authorName || '',
+      authorPhoto: c.authorId ? (photoMap[c.authorId] ?? c.authorPhoto ?? '') : (c.authorPhoto || ''),
+      replies: Array.isArray(c.replies) ? c.replies.filter(r => r && typeof r === 'object').map(r => ({
+        ...r,
+        author: r.author || r.authorName || '',
+        authorPhoto: r.authorId ? (photoMap[r.authorId] ?? r.authorPhoto ?? '') : (r.authorPhoto || '')
+      })) : []
+    })) : [],
+    date: p.createdAt ? new Date(p.createdAt).toISOString() : (p.date ? new Date(p.date).toISOString() : new Date().toISOString()),
+  };
 }
 
 async function deletePost(id) {
@@ -396,6 +418,11 @@ async function createNotification({ userId, type, message, link }) {
 
 async function getNotifications(userId) {
   const res = await query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50', [userId]);
+  return rowsToCamel(res.rows);
+}
+
+async function getNotificationsPaged(userId, limit, offset) {
+  const res = await query('SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3', [userId, limit, offset]);
   return rowsToCamel(res.rows);
 }
 
@@ -1708,6 +1735,7 @@ module.exports = {
 
   createNotification,
   getNotifications,
+  getNotificationsPaged,
   countUnreadNotifications,
   markNotificationsRead,
   setSseNotifyHook,
