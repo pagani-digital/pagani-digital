@@ -18,6 +18,18 @@
     .mobile-community-bar { display: none; }
     .mobile-intro-bar { display: none; }
 
+    @media (min-width: 769px) {
+      .site-header { padding: 0.8rem 5% !important; }
+      .site-header-text h1 { font-size: clamp(1rem, 1.6vw, 1.35rem) !important; margin-bottom: 0.3rem; line-height: 1.3; }
+      .site-header-text p { font-size: 0.78rem !important; margin-bottom: 0.6rem !important; line-height: 1.45; max-width: 480px; }
+      .site-header-btns .btn-primary,
+      .site-header-btns .btn-outline { padding: 0.38rem 0.9rem !important; font-size: 0.78rem !important; }
+      .badge { font-size: 0.7rem !important; padding: 0.2rem 0.6rem !important; margin-bottom: 0.4rem !important; display: inline-block; }
+      .coin-wrapper { width: 100px !important; height: 100px !important; }
+      .coin { width: 70px !important; height: 70px !important; }
+      .coin-face { font-size: 2rem !important; }
+    }
+
     @media (max-width: 768px) {
       .feed-sidebar { display: none !important; }
       .feed-layout { grid-template-columns: 1fr !important; padding: 0 !important; gap: 0 !important; }
@@ -104,7 +116,7 @@
       <div class="site-header-text">
         <span class="badge">🚀 Plateforme #1 Business Digital</span>
         <h1>Développez votre <span>Business</span> en ligne avec Pagani Digital</h1>
-        <p>Formations en Crypto, Création de Contenu & Facebook — Générez des revenus passifs grâce à notre programme d'affiliation.</p>
+        <p>Réseau social &amp; plateforme de formation business pour les <strong style="color:var(--accent2)">MALAGASY</strong> ambitieux — Générez des revenus passifs grâce à notre programme d'affiliation.</p>
         <div class="site-header-btns">
           <a href="formations.html" class="btn-primary">Voir les Formations</a>
           <a href="affiliation.html" class="btn-outline">Programme Affiliation</a>
