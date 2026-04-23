@@ -45,6 +45,14 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { error: 'TROP_DE_TENTATIVES' }
 });
+// Limite : 5 achats par IP toutes les 10 minutes (anti-spam paiement)
+const purchaseLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'TROP_DE_TENTATIVES_ACHAT' }
+});
 // Validation du secret JWT au démarrage
 // Le serveur refuse de démarrer si le secret est absent ou trop court
 if (!JWT_SECRET || JWT_SECRET.length < 32) {
@@ -192,7 +200,14 @@ const _migPool = process.env.DATABASE_URL
 app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { name, email, password, refCode, mmPhone, mmOperator, mmName } = req.body;
   if (!name || !email || !password) return res.status(400).json({ error: 'CHAMPS_MANQUANTS' });
+  if (name.trim().length < 2 || name.trim().length > 60)
+    return res.status(400).json({ error: 'NOM_INVALIDE' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+    return res.status(400).json({ error: 'EMAIL_INVALIDE' });
+  if (email.trim().length > 100)
+    return res.status(400).json({ error: 'EMAIL_TROP_LONG' });
   if (password.length < 6)          return res.status(400).json({ error: 'MOT_DE_PASSE_TROP_COURT' });
+  if (password.length > 128)        return res.status(400).json({ error: 'MOT_DE_PASSE_TROP_LONG' });
   if (!mmPhone)                     return res.status(400).json({ error: 'MM_PHONE_REQUIS' });
   try {
     const user = await db.createUser({ name, email, password, refCode, mmPhone, mmOperator, mmName });
@@ -233,7 +248,14 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 });
 app.put('/api/auth/profile', requireAuth, async (req, res) => {
   try {
-    const user = await db.updateUser(req.user.id, req.body);
+    // Whitelist stricte — jamais de role/plan/email modifiable par l'utilisateur
+    const { name, bio, location, website, phone, avatarPhoto, avatarColor, following_privacy } = req.body;
+    if (avatarPhoto && avatarPhoto.length > 2 * 1024 * 1024 * 1.37)
+      return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
+    const allowed = { name, bio, location, website, phone, avatarPhoto, avatarColor, following_privacy };
+    // Supprimer les clés undefined pour ne pas écraser avec null
+    Object.keys(allowed).forEach(k => allowed[k] === undefined && delete allowed[k]);
+    const user = await db.updateUser(req.user.id, allowed);
     res.json(safeUser(user));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -340,6 +362,8 @@ app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     const { emoji } = req.body;
     if (!emoji) return res.status(400).json({ error: 'EMOJI_REQUIS' });
+    const ALLOWED_EMOJIS = ['❤️','😂','😮','😢','😡','👍'];
+    if (!ALLOWED_EMOJIS.includes(emoji)) return res.status(400).json({ error: 'EMOJI_INVALIDE' });
     const result = await db.togglePostReaction(id, req.user.id, emoji);
     // Notifier l'auteur du post si nouvelle réaction
     if (result.action === 'added') {
@@ -445,6 +469,8 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
     const user = await db.getUserById(req.user.id);
     const { title, content, image } = req.body;
     if (!content || !content.trim()) return res.status(400).json({ error: 'CONTENU_VIDE' });
+    if (content.trim().length > 1000) return res.status(400).json({ error: 'CONTENU_TROP_LONG' });
+    if (title && title.length > 200) return res.status(400).json({ error: 'TITRE_TROP_LONG' });
     const post = await db.createPost({
       title: title || (user.name + ' a publié'),
       content,
@@ -490,7 +516,10 @@ app.put('/api/posts/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    const updated = await db.updatePost(id, req.body);
+    const { title, content, category, image, link, linkLabel } = req.body;
+    const allowed = { title, content, category, image, link, linkLabel };
+    Object.keys(allowed).forEach(k => allowed[k] === undefined && delete allowed[k]);
+    const updated = await db.updatePost(id, allowed);
     res.json(updated);
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -540,6 +569,9 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
   try {
     const id   = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ error: 'CONTENU_VIDE' });
+    if (text.length > 500) return res.status(400).json({ error: 'COMMENTAIRE_TROP_LONG' });
     const user = await db.getUserById(req.user.id);
     const comment = await db.addComment(id, {
       authorId: req.user.id, authorName: user.name,
@@ -564,6 +596,9 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
   try {
     const id   = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const text = (req.body.text || '').trim();
+    if (!text) return res.status(400).json({ error: 'CONTENU_VIDE' });
+    if (text.length > 500) return res.status(400).json({ error: 'REPONSE_TROP_LONGUE' });
     const user  = await db.getUserById(req.user.id);
     const reply = await db.addReply(id, req.params.cid, {
       authorId: req.user.id, authorName: user.name,
@@ -669,6 +704,16 @@ app.get('/api/commissions', requireAuth, async (req, res) => {
 });
 app.post('/api/withdraws', requireAuth, async (req, res) => {
   try {
+    const { montant, phone, operator } = req.body;
+    const ALLOWED_OPERATORS = ['MVola', 'Orange Money', 'Airtel Money'];
+    if (!montant || isNaN(montant) || Number(montant) <= 0)
+      return res.status(400).json({ error: 'MONTANT_INVALIDE' });
+    if (Number(montant) > 10000000)
+      return res.status(400).json({ error: 'MONTANT_TROP_ELEVE' });
+    if (!operator || !ALLOWED_OPERATORS.includes(operator))
+      return res.status(400).json({ error: 'OPERATEUR_INVALIDE' });
+    if (!phone || phone.trim().length < 7)
+      return res.status(400).json({ error: 'TELEPHONE_INVALIDE' });
     const w    = await db.requestWithdraw({ userId: req.user.id, ...req.body });
     const user = await db.getUserById(req.user.id);
     await db.createNotification({ userId: 0, type: 'WITHDRAW_REQUEST',
@@ -681,9 +726,18 @@ app.post('/api/withdraws', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  COMPTES DE PAIEMENT
 // ══════════════════════════════════════════════════════════
-app.get('/api/payment-accounts', async (req, res) => {
-  try { res.json(await db.getPaymentAccounts()); }
-  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+app.get('/api/payment-accounts', requireAuth, async (req, res) => {
+  try {
+    const accounts = await db.getPaymentAccounts();
+    // Membres : masquer le nom du compte, ne retourner que opérateur + numéro actif
+    if (req.user.role !== 'admin') {
+      return res.json(accounts
+        .filter(a => a.phone && !a.disabled)
+        .map(a => ({ operator: a.operator, phone: a.phone, name: a.name, disabled: false }))
+      );
+    }
+    res.json(accounts);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 app.put('/api/admin/payment-accounts/:operator', requireAuth, requireAdmin, async (req, res) => {
   try {
@@ -712,7 +766,7 @@ app.get('/api/my-subscriptions', requireAuth, async (req, res) => {
     res.json(all.filter(r => r.userId === req.user.id));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
-app.post('/api/upgrade-request', requireAuth, async (req, res) => {
+app.post('/api/upgrade-request', requireAuth, purchaseLimiter, async (req, res) => {
   const { plan, amount, phone, operator, txRef, proof } = req.body;
   const user = await db.getUserById(req.user.id);
   if (!user) return res.status(404).json({ error: 'INTROUVABLE' });
@@ -866,7 +920,7 @@ app.get('/api/trainer/available-modules', requireAuth, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  ACHATS MODULE
 // ══════════════════════════════════════════════════════════
-app.post('/api/module-purchase', requireAuth, async (req, res) => {
+app.post('/api/module-purchase', requireAuth, purchaseLimiter, async (req, res) => {
   const { moduleId, amount, phone, operator, txRef, proof } = req.body;
   if (!proof) return res.status(400).json({ error: 'PREUVE_REQUISE' });
   const mod = (await db.getVideoModules()).find(m => m.id === parseInt(moduleId));
@@ -1013,10 +1067,14 @@ app.put('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    const updated = await db.adminUpdateUser(id, req.body);
-    if (req.body.plan) {
+    // Whitelist admin : seuls ces champs sont modifiables
+    const { plan, role, isActive, earningsAR, pendingAR, paidAR, refs, unlockedCourses } = req.body;
+    const allowed = { plan, role, isActive, earningsAR, pendingAR, paidAR, refs, unlockedCourses };
+    Object.keys(allowed).forEach(k => allowed[k] === undefined && delete allowed[k]);
+    const updated = await db.adminUpdateUser(id, allowed);
+    if (allowed.plan) {
       await db.createNotification({ userId: id, type: 'SUB_CONFIRMED',
-        message: `Votre plan a ete mis a jour : ${req.body.plan}.`,
+        message: `Votre plan a ete mis a jour : ${allowed.plan}.`,
         link: 'formations.html' });
     }
     res.json(safeUser(updated));
@@ -1059,7 +1117,7 @@ app.put('/api/admin/pricing', requireAuth, requireAdmin, async (req, res) => {
 // ══════════════════════════════════════════════════════════
 //  ACHATS VIDEO UNITAIRES
 // ══════════════════════════════════════════════════════════
-app.post('/api/video-purchase', requireAuth, async (req, res) => {
+app.post('/api/video-purchase', requireAuth, purchaseLimiter, async (req, res) => {
   const { courseId, videoId: rawVideoId, amount, phone, operator, txRef, proof } = req.body;
   const vid = parseInt(courseId || rawVideoId);
   if (!proof) return res.status(400).json({ error: 'PREUVE_REQUISE' });
@@ -1158,6 +1216,8 @@ app.get('/api/stories', requireAuth, async (req, res) => {
 app.post('/api/stories', requireAuth, async (req, res) => {
   const { content, image, bgColor } = req.body;
   if (!content && !image) return res.status(400).json({ error: 'CONTENU_VIDE' });
+  if (content && content.length > 300) return res.status(400).json({ error: 'TEXTE_TROP_LONG' });
+  if (image && image.length > 5 * 1024 * 1024 * 1.37) return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
   try {
     const r = await _migPool.query(
       `INSERT INTO stories (user_id, content, image, bg_color) VALUES ($1,$2,$3,$4) RETURNING *`,
@@ -1249,7 +1309,7 @@ app.post('/api/stories/:id/react', requireAuth, async (req, res) => {
         `INSERT INTO story_reactions (story_id, user_id, emoji) VALUES ($1,$2,$3)`,
         [id, req.user.id, emoji]
       );
-      // Notifier le créateur
+      // Notifier le créateur — reactor déclaré ici dans le bon scope
       if (storyOwnerId !== req.user.id) {
         const reactor = await db.getUserById(req.user.id);
         await db.createNotification({
@@ -1257,9 +1317,9 @@ app.post('/api/stories/:id/react', requireAuth, async (req, res) => {
           message: `${reactor?.name} a réagi ${emoji} à votre story.`,
           link: 'index.html'
         });
+        sendPush(storyOwnerId, (reactor?.name || '') + ' a réagi', 'Nouvelle réaction sur votre story', 'index.html');
       }
     }
-      if (storyOwnerId !== req.user.id) sendPush(storyOwnerId, reactor?.name + ' a réagi', 'Nouvelle réaction sur votre story', 'index.html');
     res.json({ action: 'added', emoji });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -1438,7 +1498,7 @@ app.get('/api/users/:id', async (req, res) => {
     if (!user || !user.isActive) return res.status(404).json({ error: 'INTROUVABLE' });
     const posts = await db.getPostsByUser(user.id);
     res.json({
-      id: user.id, name: user.name, plan: user.plan, refCode: user.refCode,
+      id: user.id, name: user.name, plan: user.plan,
       avatarColor: user.avatarColor, avatarPhoto: user.avatarPhoto || '',
       bio: user.bio || '', location: user.location || '', website: user.website || '',
       createdAt: user.createdAt, role: user.role,
@@ -1595,6 +1655,7 @@ app.post('/api/messages/:userId', requireAuth, async (req, res) => {
     const receiverId = parseId(req.params.userId);
     const { content, image, replyToId } = req.body;
     if ((!content || !content.trim()) && !image) return res.status(400).json({ error: 'CONTENU_VIDE' });
+    if (content && content.trim().length > 2000) return res.status(400).json({ error: 'MESSAGE_TROP_LONG' });
     if (!receiverId) return res.status(400).json({ error: 'ID_INVALIDE' });
     // Limite taille image : ~2 Mo en base64
     if (image && image.length > 2 * 1024 * 1024 * 1.37) return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
@@ -1784,7 +1845,7 @@ app.get('/api/admin/trainer-requests', requireAuth, requireAdmin, async (req, re
        ORDER BY tr.created_at DESC`
     );
     res.json(r.rows);
-  } catch(e) { console.error('trainer-requests error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
+  } catch(e) { if (!IS_PROD) console.error('trainer-requests error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
 // Traiter une demande formateur (accepter/refuser)
@@ -1829,7 +1890,7 @@ app.get('/api/admin/trainer-submissions', requireAuth, requireAdmin, async (req,
        ORDER BY ts.created_at DESC`
     );
     res.json(r.rows);
-  } catch(e) { console.error('trainer-submissions error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
+  } catch(e) { if (!IS_PROD) console.error('trainer-submissions error:', e.message); res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
 // Valider ou refuser une soumission — si validée, publie automatiquement le contenu
@@ -1886,7 +1947,7 @@ app.put('/api/admin/trainer-submissions/:id', requireAuth, requireAdmin, async (
       [statut, rejectReason || '', publishedId, id]
     );
     res.json({ ok: true, publishedId });
-  } catch(e) { console.error(e); res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+  } catch(e) { if (!IS_PROD) console.error(e); res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
 // Gains de tous les formateurs (admin)
@@ -2011,7 +2072,7 @@ app.delete('/api/admin/ebooks/:id', requireAuth, requireAdmin, async (req, res) 
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
-app.post('/api/ebook-purchase', requireAuth, async (req, res) => {
+app.post('/api/ebook-purchase', requireAuth, purchaseLimiter, async (req, res) => {
   const { ebookId, amount, phone, operator, mmName, txRef, proof } = req.body;
   if (!proof) return res.status(400).json({ error: 'PREUVE_REQUISE' });
   const ebook = await db.getEbookById(parseInt(ebookId));

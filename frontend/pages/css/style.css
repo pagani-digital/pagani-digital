@@ -9745,6 +9745,92 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 }
 .comment-animate { animation: commentIn 0.22s ease both; }
 
+/* ── Items commentaires post.html ─────────────────────── */
+.post-page .comments-list { gap: 0.1rem; }
+
+.post-page .comment {
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
+  transition: background 0.15s;
+}
+.post-page .comment:hover { background: rgba(255,255,255,0.03); }
+
+.post-page .comment img.avatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.post-page .comment-bubble {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 0 14px 14px 14px;
+  padding: 0.5rem 0.85rem;
+}
+
+.post-page .comment-bubble strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text1);
+  margin-bottom: 0.15rem;
+}
+.post-page .comment-bubble strong:hover { color: var(--accent); }
+
+.post-page .comment-bubble p {
+  font-size: 0.86rem;
+  color: var(--text2);
+  line-height: 1.45;
+  margin: 0;
+  word-break: break-word;
+}
+
+.post-page .comment-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.28rem;
+}
+
+.post-page .comment-time {
+  font-size: 0.7rem;
+  color: var(--text2);
+  opacity: 0.6;
+}
+
+.post-page .reply-btn {
+  font-size: 0.72rem;
+  color: var(--text2);
+  opacity: 0.65;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.15s, opacity 0.15s;
+}
+.post-page .reply-btn:hover { color: var(--accent); opacity: 1; }
+
+/* Réponses imbriquées */
+.post-page .replies-list {
+  margin-top: 0.35rem;
+  margin-left: 1rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid rgba(108,99,255,0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.post-page .replies-list .comment-bubble {
+  background: rgba(108,99,255,0.05);
+  border-color: rgba(108,99,255,0.15);
+}
+
+
 /* Champ de saisie amélioré */
 .post-page .comment-input-wrap {
   background: var(--bg3);

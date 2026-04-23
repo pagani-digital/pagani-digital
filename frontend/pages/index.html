@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Pagani Digital</title>
+  <meta name="description" content="Réseau social & plateforme de formation business pour les MALAGASY ambitieux — Crypto, Contenu, Facebook & Affiliation." />
+  <meta property="og:title" content="Pagani Digital — Plateforme #1 Business Digital" />
+  <meta property="og:description" content="Formations en Crypto, Création de Contenu & Facebook. Générez des revenus passifs grâce à notre programme d'affiliation." />
+  <meta property="og:image" content="https://pagani-digital.vercel.app/assets/favicon.svg" />
+  <meta property="og:url" content="https://pagani-digital.vercel.app" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Pagani Digital" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/css/style.css?v=1776608500000" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -28,6 +35,20 @@
       .coin-wrapper { width: 100px !important; height: 100px !important; }
       .coin { width: 70px !important; height: 70px !important; }
       .coin-face { font-size: 2rem !important; }
+
+      /* Animation entree header */
+      @keyframes headerSlideUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      .site-header .badge             { animation: headerSlideUp 0.45s ease both; animation-delay: 0.05s; }
+      .site-header h1                 { animation: headerSlideUp 0.45s ease both; animation-delay: 0.15s; }
+      .site-header p                  { animation: headerSlideUp 0.45s ease both; animation-delay: 0.25s; }
+      .site-header .site-header-btns  { animation: headerSlideUp 0.45s ease both; animation-delay: 0.35s; }
+      .crypto-coin-anim               { animation: headerSlideUp 0.5s ease both;  animation-delay: 0.2s; }
+
+      /* Feed central : largeur max pour lisibilite */
+      .feed-main { max-width: 680px; }
     }
 
     @media (max-width: 768px) {
@@ -118,7 +139,7 @@
         <h1>Développez votre <span>Business</span> en ligne avec Pagani Digital</h1>
         <p>Réseau social &amp; plateforme de formation business pour les <strong style="color:var(--accent2)">MALAGASY</strong> ambitieux — Générez des revenus passifs grâce à notre programme d'affiliation.</p>
         <div class="site-header-btns">
-          <a href="formations.html" class="btn-primary">Voir les Formations</a>
+          <a href="dashboard.html" class="btn-primary">Voir les Formations</a>
           <a href="affiliation.html" class="btn-outline">Programme Affiliation</a>
         </div>
       </div>
@@ -158,11 +179,11 @@
   <!-- BANDEAU MOBILE -->
   <div class="mobile-community-bar">
     <div class="mobile-community-stats">
-      <div class="mobile-community-stat"><strong>2 500+</strong><span>Membres</span></div>
+      <a href="explore.html" class="mobile-community-stat" style="text-decoration:none"><strong>2 500+</strong><span>Membres</span></a>
       <div class="mobile-community-divider"></div>
-      <div class="mobile-community-stat"><strong>80+</strong><span>Formations</span></div>
+      <a href="formations.html" class="mobile-community-stat" style="text-decoration:none"><strong>80+</strong><span>Formations</span></a>
       <div class="mobile-community-divider"></div>
-      <div class="mobile-community-stat"><strong>50%</strong><span>Commission max</span></div>
+      <a href="affiliation.html" class="mobile-community-stat" style="text-decoration:none"><strong>50%</strong><span>Commission max</span></a>
     </div>
     <a href="plans.html" style="font-size:0.75rem;color:var(--accent);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:0.3rem"><i class="fas fa-tag"></i> Offres</a>
   </div>
@@ -457,8 +478,8 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1776608487261"></script>
-  <script src="/js/app.js?v=1776608487261"></script>
+  <script src="/js/api.js?v=1776608500000"></script>
+  <script src="/js/app.js?v=1776608500000"></script>
   <script>
     (async function init() {
       // Sauvegarder ref + post depuis l'URL de partage Facebook
@@ -485,10 +506,20 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
         PaganiNotif.refreshBadge();
         PaganiNotif.startPolling();
       }
-      setInterval(async () => {
+      window._feedRefreshTimer = setInterval(async () => {
         await _silentRefreshFeed();
         if (_postsCache.length) renderTrendingHashtags(_postsCache);
       }, 30000);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          clearInterval(window._feedRefreshTimer);
+        } else {
+          window._feedRefreshTimer = setInterval(async () => {
+            await _silentRefreshFeed();
+            if (_postsCache.length) renderTrendingHashtags(_postsCache);
+          }, 30000);
+        }
+      });
       loadFooterSocialLinks();
     })();
   </script>
