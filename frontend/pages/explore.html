@@ -52,6 +52,15 @@
       .explore-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
     }
   </style>
+  <script>
+    // Guard : page reservee aux membres connectes
+    (function() {
+      var token = localStorage.getItem('pd_jwt');
+      if (!token) {
+        window.location.replace('dashboard.html?redirect=' + encodeURIComponent(window.location.pathname.split('/').pop()));
+      }
+    })();
+  </script>
 </head>
 <body>
 

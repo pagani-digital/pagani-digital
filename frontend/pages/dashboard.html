@@ -2023,12 +2023,23 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       // Sauvegarder le tab demandé avant login
       const _urlP = new URLSearchParams(window.location.search);
       if (_urlP.get('tab')) sessionStorage.setItem('pd_pending_tab', _urlP.get('tab'));
+      if (_urlP.get('redirect')) {
+        sessionStorage.setItem('pd_redirect', _urlP.get('redirect'));
+        // Afficher un message contextuel dans le formulaire login
+        const loginMsg = document.getElementById('loginError');
+        const pageNames = { 'formations.html': 'Formations', 'ebooks.html': 'Ebooks', 'explore.html': 'Explorer', 'plans.html': 'Tarifs' };
+        const pageName = pageNames[_urlP.get('redirect')] || 'cette page';
+        if (loginMsg) { loginMsg.style.color = 'var(--accent)'; loginMsg.textContent = '🔒 Connectez-vous pour accéder à ' + pageName + '.'; }
+      }
       if (token) {
         try {
           const user = await PaganiAPI.getMe();
           if (user) {
             window._currentUser = user;
             _startPresencePing();
+            // Rediriger vers la page d'origine si demande
+            const _redir = sessionStorage.getItem('pd_redirect');
+            if (_redir) { sessionStorage.removeItem('pd_redirect'); window.location.href = _redir; return; }
             showDashboard(user);
             loadFooterSocialLinks();
             return;
