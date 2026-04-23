@@ -5130,7 +5130,7 @@ function updateNavbar(user) {
     const av = user.avatarPhoto
       ? `<img src="${user.avatarPhoto}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
       : `<div class="avatar-circle" style="width:24px;height:24px;min-width:24px;font-size:0.62rem;background:${getAvatarColor(user)}">${getInitials(user.name)}</div>`;
-    btn.innerHTML = `${av}<span class="nav-name">${user.name.split(" ")[0]}</span>`;
+    btn.innerHTML = `${av}<span class="nav-name">${esc(user.name.split(' ')[0])}</span>`;
   } else {
     btn.innerHTML = "Mon Espace";
   }
