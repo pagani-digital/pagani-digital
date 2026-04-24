@@ -596,7 +596,9 @@ function formatPostContent(text) {
         return txt.replace(urlRegex, url => {
           const display = url.length > 50 ? url.slice(0, 47) + '...' : url;
           return `<a href="${url}" target="_blank" rel="noopener" class="post-auto-link">${display}</a>`;
-        }).replace(/#([\w\u00C0-\u024F]+)/g, (_, tag) =>
+        }).replace(/@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g, (_, name) =>
+          `<a href="javascript:void(0)" class="post-mention" onclick="_openMentionProfile('${name.replace(/'/g, "\\\'")}')">@${name}</a>`
+        ).replace(/#([\w\u00C0-\u024F]+)/g, (_, tag) =>
           `<a href="javascript:void(0)" class="post-hashtag" onclick="filterByHashtag('${tag}')">#${tag}</a>`
         );
       });
@@ -910,7 +912,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
         </div>
         <div class="comment-bubble reply-bubble">
           <strong style="cursor:pointer" onclick="${rClickHandler}">${esc(r.author)}</strong>
-          <p><span class="mention">@${esc(r.replyTo)}</span> ${esc(r.text)}</p>
+          <p><span class="mention">@${esc(r.replyTo)}</span> ${_renderCommentText(r.text)}</p>
           <span class="comment-time">${timeAgo(r.date)}</span>
         </div>
       </div>`;
@@ -935,7 +937,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
       <div class="comment-main">
         <div class="comment-bubble">
           <strong style="cursor:pointer" onclick="${clickHandler}">${esc(c.author)}</strong>
-          <p>${esc(c.text)}</p>
+          <p>${_renderCommentText(c.text)}</p>
           <div class="comment-footer">
             <span class="comment-time">${timeAgo(c.date)}</span>
             ${!isGuest ? `<button class="reply-btn" onclick="toggleReplyInput('${cid}')"><i class="fas fa-reply"></i> Repondre</button>` : ""}
@@ -1179,7 +1181,7 @@ function toggleComments(postId) {
       section.style.animation = 'slideDown 0.25s ease';
       _renderCommentsList(postId, true);
       const input = document.getElementById('comment-input-' + postId);
-      if (input) setTimeout(() => input.focus(), 100);
+      if (input) setTimeout(() => { input.focus(); _initMentionAutocomplete(input); }, 100);
     }
     return;
   }
@@ -1191,7 +1193,7 @@ function toggleComments(postId) {
   if (!isOpen) {
     section.style.animation = 'slideDown 0.25s ease';
     const input = document.getElementById('comment-input-' + postId);
-    if (input) setTimeout(() => input.focus(), 100);
+    if (input) setTimeout(() => { input.focus(); _initMentionAutocomplete(input); }, 100);
   }
 }
 async function submitComment(postId) {
@@ -9995,3 +9997,166 @@ window.loadFinanceCommissions    = loadFinanceCommissions;
 window.loadFinanceTrainerEarnings= loadFinanceTrainerEarnings;
 window.markTrainerEarningPaid    = markTrainerEarningPaid;
 window.switchFinanceTab          = switchFinanceTab;
+
+
+
+// Rend le texte d'un commentaire avec @mentions cliquables
+function _renderCommentText(text) {
+  if (!text) return '';
+  return esc(text).replace(/@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g, (_, name) =>
+    '<a href="javascript:void(0)" class="post-mention" onclick="_openMentionProfile(\'' + name.replace(/'/g, "\\'") + '\')">' + '@' + name + '</a>'
+  );
+}
+
+// ===== MENTIONS @ =====
+let _mentionUsersCache = null;
+
+async function _getMentionUsers() {
+  if (_mentionUsersCache) return _mentionUsersCache;
+  try {
+    const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    const r = await fetch(API + '/members');
+    _mentionUsersCache = await r.json();
+  } catch(e) { _mentionUsersCache = []; }
+  return _mentionUsersCache;
+}
+
+async function _openMentionProfile(name) {
+  try {
+    const users = await _getMentionUsers();
+    const found = users.find(u => u.name.toLowerCase() === name.toLowerCase());
+    if (found) window.location.href = 'profil.html?id=' + found.id;
+  } catch(e) {}
+}
+
+function _initMentionAutocomplete(input) {
+  if (!input || input._mentionInit) return;
+  input._mentionInit = true;
+
+  // Créer le dropdown une seule fois, attaché au body
+  const dropdown = document.createElement('div');
+  dropdown.style.cssText = [
+    'position:fixed',
+    'z-index:99999',
+    'background:var(--bg2)',
+    'border:1px solid var(--border)',
+    'border-radius:10px',
+    'box-shadow:0 8px 24px rgba(0,0,0,0.4)',
+    'min-width:220px',
+    'max-width:300px',
+    'overflow:hidden',
+    'display:none'
+  ].join(';');
+  document.body.appendChild(dropdown);
+
+  let _mentionStart = -1;
+
+  function _closeDropdown() {
+    dropdown.style.display = 'none';
+    dropdown.innerHTML = '';
+    _mentionStart = -1;
+  }
+
+  function _positionDropdown() {
+    // Positionner sous le champ input
+    const rect = input.getBoundingClientRect();
+    dropdown.style.left = rect.left + 'px';
+    dropdown.style.top  = (rect.bottom + 4) + 'px';
+    // Si déborde en bas, afficher au-dessus
+    const ddH = dropdown.offsetHeight || 200;
+    if (rect.bottom + ddH + 4 > window.innerHeight) {
+      dropdown.style.top = (rect.top - ddH - 4) + 'px';
+    }
+  }
+
+  function _buildDropdown(users, query) {
+    const filtered = users
+      .filter(u => u.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, 6);
+
+    if (!filtered.length) { _closeDropdown(); return; }
+
+    dropdown.innerHTML = '';
+    filtered.forEach(u => {
+      const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      const av = u.avatarPhoto
+        ? '<img src="' + u.avatarPhoto + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
+        : '<div style="width:34px;height:34px;border-radius:50%;background:' + (u.avatarColor || '#6c63ff') + ';display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0">' + initials + '</div>';
+
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;cursor:pointer;transition:background 0.15s';
+      item.innerHTML = av + '<div style="min-width:0"><div style="font-size:0.88rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(u.name) + '</div><div style="font-size:0.72rem;color:var(--text2)">' + u.plan + '</div></div>';
+
+      item.addEventListener('mouseenter', () => item.style.background = 'rgba(108,99,255,0.1)');
+      item.addEventListener('mouseleave', () => item.style.background = '');
+      item.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        _insertMention(u.name);
+      });
+      dropdown.appendChild(item);
+    });
+
+    dropdown.style.display = 'block';
+    _positionDropdown();
+  }
+
+  function _insertMention(name) {
+    const val    = input.value;
+    const before = val.slice(0, _mentionStart);
+    const after  = val.slice(input.selectionStart);
+    input.value  = before + '@' + name + ' ' + after;
+    input.focus();
+    const pos = _mentionStart + name.length + 2;
+    input.selectionStart = input.selectionEnd = pos;
+    _closeDropdown();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  input.addEventListener('input', async function() {
+    const val   = this.value;
+    const caret = this.selectionStart;
+    const before = val.slice(0, caret);
+    const atIdx  = before.lastIndexOf('@');
+
+    if (atIdx === -1) { _closeDropdown(); return; }
+
+    const query = before.slice(atIdx + 1);
+    // Bloquer si espace après plus de 2 mots (prénom + nom max)
+    const parts = query.split(' ');
+    if (parts.length > 2 || query.length > 40) { _closeDropdown(); return; }
+
+    _mentionStart = atIdx;
+    if (query.trim().length === 0) { _closeDropdown(); return; }
+
+    const users = await _getMentionUsers();
+    _buildDropdown(users, query.trim());
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (dropdown.style.display === 'none') return;
+    if (e.key === 'Escape') { e.preventDefault(); _closeDropdown(); }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const first = dropdown.querySelector('div');
+      if (first) first.focus();
+    }
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(_closeDropdown, 200);
+  });
+
+  window.addEventListener('scroll', _positionDropdown, { passive: true });
+  window.addEventListener('resize', _closeDropdown);
+}
+
+
+// Brancher sur les champs commentaire à l'ouverture
+const _origToggleComments = window.toggleComments || toggleComments;
+window.toggleComments = function(postId) {
+  _origToggleComments(postId);
+  setTimeout(() => {
+    const input = document.getElementById('comment-input-' + postId);
+    if (input) _initMentionAutocomplete(input);
+  }, 150);
+};

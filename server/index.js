@@ -178,6 +178,33 @@ function makeToken(user) {
     { expiresIn: '7d' }
   );
 }
+
+// Détecte les @mentions dans un texte et envoie une notification à chaque utilisateur mentionné
+// authorId = celui qui écrit, link = lien vers l'endroit précis
+async function _notifyMentions(text, authorId, link) {
+  if (!text) return;
+  const tags = [...new Set((text.match(/@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g) || []).map(t => t.slice(1).trim()))];
+  if (!tags.length) return;
+  const author = await db.getUserById(authorId);
+  for (const tag of tags) {
+    try {
+      // Chercher par nom exact ou par prénom (insensible à la casse)
+      const res = await _migPool.query(
+        `SELECT id FROM users WHERE (LOWER(name) = LOWER($1) OR LOWER(SPLIT_PART(name,' ',1)) = LOWER($1)) AND id != $2 LIMIT 1`,
+        [tag, authorId]
+      );
+      if (!res.rows.length) continue;
+      const mentionedId = res.rows[0].id;
+      await db.createNotification({
+        userId: mentionedId,
+        type: 'MENTION',
+        message: `${author?.name || 'Quelqu\'un'} vous a mentionné : "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}"`,
+        link
+      });
+      sendPush(mentionedId, author?.name + ' vous a mentionné', text.slice(0, 80), link);
+    } catch(e) {}
+  }
+}
 function safeUser(u) {
   if (!u) return null;
   const { passwordHash, password_hash, ...safe } = u;
@@ -486,6 +513,7 @@ app.post('/api/user-posts', requireAuth, async (req, res) => {
     db.getAllUsers().then(users => {
       users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `post.html?id=${post.id}`));
     }).catch(() => {});
+    await _notifyMentions(content, req.user.id, `post.html?id=${post.id}`);
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -509,6 +537,7 @@ app.post('/api/posts', requireAuth, requireAdmin, async (req, res) => {
     db.getAllUsers().then(users => {
       users.filter(u => u.role !== 'admin').forEach(u => sendPush(u.id, user.name, 'Nouvelle publication : "' + post.title + '"', `post.html?id=${post.id}`));
     }).catch(() => {});
+    await _notifyMentions(req.body.content || '', req.user.id, `post.html?id=${post.id}`);
     res.json(post);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -589,6 +618,8 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       await db.incrementCategoryPref(req.user.id, post.category);
       if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', `post.html?id=${post.id}`);
     }
+    // Mentions dans le commentaire
+    await _notifyMentions(text, req.user.id, `post.html?id=${id}#comment-${comment.id}`);
     res.json(comment);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -614,6 +645,8 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
         link: `post.html?id=${post.id}` });
       if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `post.html?id=${post.id}`);
     }
+    // Mentions dans la réponse
+    await _notifyMentions(text, req.user.id, `post.html?id=${id}#comment-${req.params.cid}`);
     res.json(reply);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });

@@ -17,6 +17,8 @@
   <style>
     .post-hashtag { color:var(--accent); font-weight:600; text-decoration:none; cursor:pointer; transition:opacity 0.15s; }
     .post-hashtag:hover { opacity:0.75; text-decoration:underline; }
+    .post-mention { color:var(--accent); font-weight:700; text-decoration:none; cursor:pointer; background:rgba(108,99,255,0.12); border-radius:4px; padding:0 3px; transition:background 0.2s; }
+    .post-mention:hover { background:rgba(108,99,255,0.25); }
     .hashtag-pill { display:inline-flex; align-items:center; gap:0.35rem; padding:0.35rem 0.75rem; background:rgba(108,99,255,0.1); border:1px solid rgba(108,99,255,0.2); border-radius:50px; font-size:0.8rem; font-weight:600; color:var(--accent); cursor:pointer; transition:all 0.2s; font-family:inherit; }
     .hashtag-pill:hover, .hashtag-pill.active { background:rgba(108,99,255,0.22); border-color:var(--accent); }
     .hashtag-pill span { font-size:0.7rem; color:var(--text2); font-weight:400; }
@@ -478,8 +480,8 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1776608500000"></script>
-  <script src="/js/app.js?v=1776608500000"></script>
+  <script src="/js/api.js?v=1777019637507"></script>
+  <script src="/js/app.js?v=1777019637507"></script>
   <script>
     (async function init() {
       // Sauvegarder ref + post depuis l'URL de partage Facebook
@@ -493,6 +495,11 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       if (fab && !user && window.innerWidth <= 768) fab.style.display = 'flex';
       await renderFeed();
       await loadStories();
+      // Brancher autocomplete mentions
+      setTimeout(() => {
+        const upc = document.getElementById('userPostContent');
+        if (upc && typeof _initMentionAutocomplete === 'function') _initMentionAutocomplete(upc);
+      }, 800);
       // Hashtags tendance
       if (_postsCache.length) {
         renderTrendingHashtags(_postsCache);

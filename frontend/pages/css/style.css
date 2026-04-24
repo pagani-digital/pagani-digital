@@ -9863,3 +9863,17 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 @media (max-width: 580px) {
   .post-page .comments-section { max-height: 70vh; }
 }
+
+/* ===== MENTIONS @ ===== */
+.post-mention {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  background: rgba(108,99,255,0.12);
+  border-radius: 4px;
+  padding: 0 3px;
+  transition: background 0.2s;
+  display: inline;
+}
+.post-mention:hover { background: rgba(108,99,255,0.25); }
