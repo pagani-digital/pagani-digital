@@ -19,27 +19,37 @@ async function loadStories() {
   } catch(e) { _storiesData = []; }
   let html = '';
 
-  // Bouton ajouter story (si connecté)
+  // Carte "Créer une story" style Facebook
   if (user) {
-    html += `<div class="story-bubble" onclick="openCreateStory()">
-      <div class="story-add-wrap"><div class="story-add-icon">+</div></div>
-      <span class="story-name">Ma story</span>
+    const avInner = user.avatarPhoto
+      ? `<img src="${user.avatarPhoto}" />`
+      : `<div class="avatar-circle" style="background:${user.avatarColor||'#6c63ff'}">${getInitials(user.name)}</div>`;
+    html += `<div class="story-card story-card-create" onclick="openCreateStory()">
+      <div class="story-card-bg" style="background:linear-gradient(160deg,#1a2235,#0d1b2a)"></div>
+      <div class="story-card-avatar-wrap">${avInner}</div>
+      <div class="story-card-create-btn"><i class="fas fa-plus"></i></div>
+      <div class="story-card-footer"><span>Créer une story</span></div>
     </div>`;
   }
 
-  // Stories (toutes, y compris les siennes)
+  // Cartes stories style Facebook
   _storiesData.forEach((group, gi) => {
     const isOwn = user && group.userId === user.id;
-    const av = group.avatarPhoto
+    const firstStory = group.stories[0];
+    const bgStyle = firstStory && firstStory.image
+      ? `background:url('${firstStory.image}') center/cover no-repeat`
+      : `background:${firstStory ? firstStory.bgColor : group.avatarColor || '#6c63ff'}`;
+    const avInner = group.avatarPhoto
       ? `<img src="${group.avatarPhoto}" />`
       : `<div class="avatar-circle" style="background:${group.avatarColor||'#6c63ff'}">${group.userName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}</div>`;
+    const viewed = group.allViewed ? ' viewed' : '';
     const viewCount = group.viewCount || 0;
-    html += `<div class="story-bubble" onclick="openStoryViewer(${gi})">
-      <div class="story-ring${group.allViewed?' viewed':''}">
-        <div class="story-ring-inner">${av}</div>
-      </div>
-      <span class="story-name">${isOwn ? 'Ma story' : group.userName.split(' ')[0]}</span>
-      ${isOwn && viewCount > 0 ? `<span class="story-view-count"><i class="fas fa-eye"></i> ${viewCount}</span>` : ''}
+    html += `<div class="story-card${viewed}" onclick="openStoryViewer(${gi})">
+      <div class="story-card-bg" style="${bgStyle}"></div>
+      <div class="story-card-overlay"></div>
+      <div class="story-card-avatar-wrap story-card-avatar-ring${viewed}">${avInner}</div>
+      ${isOwn && viewCount > 0 ? `<div class="story-card-views"><i class="fas fa-eye"></i> ${viewCount}</div>` : ''}
+      <div class="story-card-footer"><span>${isOwn ? 'Ma story' : group.userName.split(' ')[0]}</span></div>
     </div>`;
   });
 

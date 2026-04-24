@@ -153,7 +153,11 @@
       <button class="dash-tab admin-tab" id="ebooksTabBtn" onclick="switchTab('ebooks', this)" style="display:none"><i class="fas fa-book-open"></i> Ebooks</button>
     </div>
     <!-- STORIES BAR -->
-    <div id="storiesBar" style="display:none"></div>
+    <div class="stories-bar-wrap" id="storiesBarWrap">
+      <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
+      <div id="storiesBar" style="display:none"></div>
+      <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
+    </div>
     <!-- TAB : MES PUBLICATIONS -->
     <div id="tab-myposts">
       <div class="dash-section">
@@ -2168,6 +2172,34 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
         showRegister();
       }
     })();
+  </script>
+
+  <script>
+    // Stories nav desktop
+    function _scrollStories(dir) {
+      var bar = document.getElementById('storiesBar');
+      if (!bar) return;
+      bar.scrollBy({ left: dir * 320, behavior: 'smooth' });
+    }
+    function _updateStoryNavBtns() {
+      var bar  = document.getElementById('storiesBar');
+      var prev = document.getElementById('storiesNavPrev');
+      var next = document.getElementById('storiesNavNext');
+      if (!bar || !prev || !next) return;
+      var atStart = bar.scrollLeft <= 4;
+      var atEnd   = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 4;
+      prev.style.opacity       = atStart ? '0' : '1';
+      prev.style.pointerEvents = atStart ? 'none' : 'auto';
+      next.style.opacity       = atEnd   ? '0' : '1';
+      next.style.pointerEvents = atEnd   ? 'none' : 'auto';
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+      var bar = document.getElementById('storiesBar');
+      if (bar) bar.addEventListener('scroll', _updateStoryNavBtns);
+      // Observer pour détecter quand les stories sont chargées
+      var obs = new MutationObserver(function() { _updateStoryNavBtns(); });
+      if (bar) obs.observe(bar, { childList: true });
+    });
   </script>
 </body>
 </html>

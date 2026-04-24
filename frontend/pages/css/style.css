@@ -234,7 +234,7 @@ ul { list-style: none; }
   flex-wrap: wrap;
   position: relative;
 }
-.site-header-text { flex: 1; min-width: 260px; }
+.site-header-text { flex: 1; min-width: 0; }
 .site-header-text h1 {
   font-size: clamp(1.4rem, 2.8vw, 2.2rem);
   font-weight: 800;
@@ -1593,8 +1593,8 @@ ul { list-style: none; }
   background: var(--bg2); border: 1px solid var(--border); color: var(--text);
   padding: 0.7rem 1rem; border-radius: 10px; font-size: 0.9rem; font-family: inherit;
 }
-.admin-form-row input { flex: 1; min-width: 200px; }
-.admin-form-row select { min-width: 150px; }
+.admin-form-row input { flex: 1; min-width: 0; }
+.admin-form-row select { min-width: 0; }
 .admin-panel textarea { width: 100%; resize: vertical; margin-bottom: 0.8rem; }
 .admin-form-row input:focus, .admin-panel textarea:focus, .admin-form-row select:focus { outline: none; border-color: var(--accent); }
 
@@ -2180,7 +2180,7 @@ ul { list-style: none; }
   position: fixed;
   top: 68px;
   right: 1rem;
-  width: 360px;
+  width: min(360px, calc(100vw - 1rem));
   max-width: calc(100vw - 2rem);
   max-height: 520px;
   background: var(--bg3);
@@ -2871,7 +2871,7 @@ ul { list-style: none; }
   gap: 3rem;
   flex-wrap: wrap;
 }
-.formations-hero-text { flex: 1; min-width: 280px; }
+.formations-hero-text { flex: 1; min-width: 0; }
 .formations-badge {
   display: inline-flex;
   align-items: center;
@@ -8762,88 +8762,190 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   to   { transform: translateY(0);    opacity: 1; }
 }
 
-/* ===== STORIES ===== */
+/* ===== STORIES — Style Facebook (cartes rectangulaires) ===== */
+.story-card {
+  position: relative;
+  width: 110px;
+  height: 180px;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  animation: storyCardIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.story-card:hover {
+  transform: translateY(-4px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+}
+@keyframes storyCardIn {
+  from { opacity: 0; transform: scale(0.88) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* Fond image ou couleur */
+.story-card-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform 0.3s;
+}
+.story-card:hover .story-card-bg { transform: scale(1.06); }
+
+/* Dégradé sombre en bas */
+.story-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 40%, rgba(0,0,0,0.65) 100%);
+}
+
+/* Avatar en haut à gauche avec anneau */
+.story-card-avatar-wrap {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--bg);
+  z-index: 2;
+}
+.story-card-avatar-wrap img,
+.story-card-avatar-wrap .avatar-circle {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50%;
+  object-fit: cover;
+  font-size: 0.65rem !important;
+}
+.story-card-avatar-ring {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.story-card-avatar-ring.viewed {
+  border-color: var(--border) !important;
+  box-shadow: none;
+}
+
+/* Bouton + pour créer */
+.story-card-create-btn {
+  position: absolute;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.85rem;
+  z-index: 2;
+  transition: transform 0.2s;
+}
+.story-card-create:hover .story-card-create-btn { transform: translateX(-50%) scale(1.15); }
+
+/* Nom en bas */
+.story-card-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0; right: 0;
+  padding: 0.5rem 0.5rem 0.55rem;
+  z-index: 2;
+}
+.story-card-footer span {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+/* Compteur vues (owner) */
+.story-card-views {
+  position: absolute;
+  top: 10px;
+  right: 8px;
+  font-size: 0.65rem;
+  color: #fff;
+  background: rgba(0,0,0,0.45);
+  padding: 0.15rem 0.4rem;
+  border-radius: 50px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Carte créer : fond dégradé spécial */
+.story-card-create .story-card-bg {
+  background: linear-gradient(160deg, var(--bg3) 0%, var(--bg2) 100%) !important;
+}
+.story-card-create .story-card-footer span { color: var(--accent); }
+
+/* Barre stories */
 #storiesBar {
   display: flex;
-  gap: 0.75rem;
-  padding: 1rem 1.2rem 0.5rem;
-  overflow-x: auto;
+  gap: 0.6rem;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding: 0.8rem 0 0.4rem;
   scrollbar-width: none;
-  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  will-change: scroll-position;
 }
 #storiesBar::-webkit-scrollbar { display: none; }
 
-.story-bubble {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-  cursor: pointer;
-  flex-shrink: 0;
-  width: 64px;
-}
-.story-bubble:hover .story-ring,
-.story-bubble:hover .story-add-wrap { transform: scale(1.06); }
-
-.story-ring {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  padding: 2.5px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  transition: transform 0.18s;
-}
-.story-ring.viewed {
-  background: var(--border);
-}
-.story-ring-inner {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: var(--bg2);
-  border: 2px solid var(--bg2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.stories-bar-wrap {
   overflow: hidden;
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: var(--text);
-}
-.story-ring-inner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
+  overscroll-behavior-x: contain;
+  position: relative;
 }
 
-.story-add-wrap {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(108,99,255,0.12);
-  border: 2px dashed var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.18s, background 0.18s;
+/* Flèches navigation stories (desktop uniquement) */
+.stories-nav-btn {
+  display: none;
 }
-.story-add-wrap:hover { background: rgba(108,99,255,0.22); }
-.story-add-icon {
-  font-size: 1.6rem;
-  font-weight: 300;
-  color: var(--accent);
-  line-height: 1;
-}
-
-.story-name {
-  font-size: 0.7rem;
-  color: var(--text2);
-  text-align: center;
-  max-width: 60px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+@media (min-width: 769px) {
+  .stories-bar-wrap:hover .stories-nav-btn {
+    display: flex;
+  }
+  .stories-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    transition: opacity 0.2s, background 0.2s, transform 0.2s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .stories-nav-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: translateY(-50%) scale(1.08);
+  }
+  .stories-nav-prev { left: -4px; }
+  .stories-nav-next { right: -4px; }
 }
 
 /* ── Viewer overlay ── */
@@ -9877,3 +9979,193 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   display: inline;
 }
 .post-mention:hover { background: rgba(108,99,255,0.25); }
+
+/* ===== RESPONSIVE GLOBAL FIXES ===== */
+
+/* Base : empêcher tout débordement horizontal */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+* { box-sizing: border-box; }
+
+/* ── Corrections petits écrans (≤ 480px) ── */
+@media (max-width: 480px) {
+
+  /* Navbar */
+  .navbar { padding: 0.6rem 3%; }
+  .btn-nav { max-width: 110px; font-size: 0.78rem; padding: 0.3rem 0.6rem; }
+  .btn-nav span.nav-name { max-width: 55px; }
+
+  /* Header site */
+  .site-header { padding: 1.2rem 3%; }
+  .site-header-text { min-width: 0; width: 100%; }
+  .site-header-text h1 { font-size: 1.3rem; }
+  .site-header-stats { gap: 1rem; }
+
+  /* Feed */
+  .feed-section { padding: 0.8rem 3%; }
+  .feed-layout { grid-template-columns: 1fr; }
+  .post-card { border-radius: 12px; }
+  .post-header { padding: 0.8rem 0.9rem 0.5rem; }
+  .post-body { padding: 0 0.9rem 0.8rem; }
+  .post-stats { padding: 0.4rem 0.9rem; font-size: 0.75rem; gap: 0.8rem; }
+  .post-actions { padding: 0.3rem 0.5rem; gap: 0.2rem; }
+  .reaction-btn, .comment-toggle-btn { padding: 0.45rem 0.5rem; font-size: 0.8rem; }
+  .reaction-label { font-size: 0.75rem; }
+  .share-fb-btn { padding: 0.45rem 0.5rem; font-size: 0.8rem; }
+
+  /* Commentaires */
+  .comments-section { padding: 0.8rem 0.9rem; }
+  .comment-input-wrap input { font-size: 0.82rem; padding: 0.45rem 0.7rem; }
+
+  /* Stories */
+  .story-card { width: 95px; height: 155px; }
+  #storiesBar { padding: 0.6rem 0 0.3rem; gap: 0.5rem; }
+
+  /* Dashboard */
+  .dashboard-header { padding: 1.2rem 3% 0.6rem; }
+  .dash-stats { padding: 0.6rem 3%; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .dash-stat { padding: 0.8rem; }
+  .dash-stat strong { font-size: 1rem; }
+  .dash-section { padding: 0.8rem 3%; }
+  .dash-tabs { padding: 0 3%; }
+  .dash-tab { font-size: 0.75rem; padding: 0.45rem 0.6rem; }
+
+  /* Profil */
+  .profile-section { padding: 0.8rem 3%; }
+  .profile-card { max-width: 100%; }
+  .profile-cover { height: 90px; }
+  .profile-body { padding: 0 1rem 1rem; }
+  .profile-stats { flex-wrap: wrap; }
+  .profile-stat { min-width: 70px; padding: 0.6rem 0.4rem; }
+  .profile-stat strong { font-size: 1rem; }
+  .profile-details { padding: 0.6rem 1rem; font-size: 0.78rem; gap: 0.5rem; }
+
+  /* Profil public */
+  .public-profile-page { padding: 0 0.5rem; margin: 1rem auto; }
+  .public-profile-header { padding: 0 1rem 1rem; gap: 0.8rem; }
+  .public-name-row h1 { font-size: 1.15rem; }
+  .public-stat { padding: 0.7rem 0.3rem; }
+  .public-stat strong { font-size: 0.95rem; }
+  .public-actions { padding: 0.8rem 1rem; gap: 0.4rem; flex-wrap: wrap; }
+
+  /* Notifications */
+  .notif-panel { right: 0.3rem; left: 0.3rem; width: auto; top: 62px; }
+  .notif-item { padding: 0.7rem 0.9rem; }
+
+  /* Formations */
+  .formations-hero { padding: 2rem 3% 1.5rem; }
+  .formations-hero-text h1 { font-size: 1.4rem; }
+  .formations-hero-text { min-width: 0; }
+  .formations-search-wrap { flex: 1 1 100%; }
+  .courses-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+  .course-card { border-radius: 12px; }
+
+  /* Plans */
+  .plans-compact-grid { grid-template-columns: 1fr; }
+  .plans-compact { padding: 1rem 3%; }
+  .plans-grid { grid-template-columns: 1fr; }
+
+  /* Affiliation */
+  .affiliation-section { padding: 1rem 3% 3rem; }
+  .steps { flex-direction: column; align-items: center; }
+  .step { min-width: 100%; max-width: 100%; }
+  .comm-header, .comm-row { grid-template-columns: 1fr 1fr; font-size: 0.75rem; padding: 0.6rem 0.8rem; }
+  .comm-header span:nth-child(3), .comm-row span:nth-child(3),
+  .comm-header span:nth-child(4), .comm-row span:nth-child(4),
+  .comm-header span:nth-child(5), .comm-row span:nth-child(5) { display: none; }
+
+  /* Messagerie */
+  .mpx-app { padding: 0; height: calc(100vh - 70px); }
+  .mpx-sidebar { width: 100%; min-width: 0; border-radius: 0; border: none; }
+  .mpx-chat { border-radius: 0; border: none; }
+
+  /* Modales */
+  .upgrade-modal { border-radius: 14px; max-height: 95vh; }
+  .upgrade-plans { grid-template-columns: 1fr; padding: 1rem; }
+  .upgrade-payment { padding: 1rem; }
+  .story-viewer { border-radius: 0; }
+
+  /* Admin */
+  .admin-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
+  .admin-kpi { padding: 0.8rem; }
+  .admin-kpi strong { font-size: 1rem; }
+  .admin-form-row { flex-direction: column; }
+  .admin-form-row input, .admin-form-row select { min-width: 0; width: 100%; }
+
+  /* Footer */
+  .footer { padding: 1.2rem 3%; }
+}
+
+/* ── Corrections très petits écrans (≤ 360px) ── */
+@media (max-width: 360px) {
+  .navbar { padding: 0.5rem 2.5%; }
+  .btn-nav { max-width: 95px; font-size: 0.72rem; }
+  .btn-nav span.nav-name { max-width: 45px; }
+  .notif-bell { width: 30px; height: 30px; font-size: 0.82rem; }
+  .msg-nav-btn { width: 30px; height: 30px; font-size: 0.82rem; }
+
+  .feed-section { padding: 0.6rem 2.5%; }
+  .post-header { padding: 0.7rem 0.7rem 0.4rem; }
+  .post-body { padding: 0 0.7rem 0.7rem; }
+  .post-title { font-size: 0.95rem; }
+  .post-content { font-size: 0.85rem; }
+
+  .story-card { width: 82px; height: 138px; }
+  .story-card-footer span { font-size: 0.65rem; }
+
+  .dash-stats { grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+  .dash-stat { padding: 0.65rem; }
+  .dash-stat strong { font-size: 0.9rem; }
+  .dash-tab { font-size: 0.7rem; padding: 0.4rem 0.5rem; }
+
+  .profile-stat strong { font-size: 0.88rem; }
+  .profile-stat span { font-size: 0.68rem; }
+
+  .courses-grid { grid-template-columns: 1fr; }
+  .course-info h3 { font-size: 0.9rem; }
+
+  .admin-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .admin-kpi strong { font-size: 0.9rem; }
+}
+
+/* ── Corrections tablettes (481px – 768px) ── */
+@media (min-width: 481px) and (max-width: 768px) {
+  .feed-section { padding: 1rem 4%; }
+  .feed-layout { grid-template-columns: 1fr; }
+  .site-header { padding: 1.5rem 4%; }
+  .dashboard-header { padding: 1.5rem 4% 0.8rem; }
+  .dash-stats { padding: 0.8rem 4%; }
+  .dash-section { padding: 1rem 4%; }
+  .profile-section { padding: 1rem 4%; }
+  .formations-hero { padding: 2.5rem 4% 2rem; }
+  .affiliation-section { padding: 1.5rem 4% 4rem; }
+  .courses-grid { grid-template-columns: repeat(2, 1fr); }
+  .plans-compact-grid { grid-template-columns: repeat(2, 1fr); }
+  .admin-kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ── Empêcher les images de déborder ── */
+img, video, iframe, embed, object {
+  max-width: 100%;
+}
+
+/* ── Tableaux responsives ── */
+.history-table, .admin-users-table, .video-admin-list, .video-price-list {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Textes longs ── */
+.post-title, .post-content p, .comment-bubble p, .notif-content p {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ── Plans compact sur mobile ── */
+@media (max-width: 480px) {
+  .plans-compact-grid { grid-template-columns: 1fr; }
+  .plan-compact-card { padding: 1rem; }
+  .plan-compact-price { font-size: 1rem; }
+}

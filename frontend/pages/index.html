@@ -281,7 +281,11 @@
       <main class="feed-main">
 
         <!-- STORIES -->
-      <div id="storiesBar" class="stories-bar" style="display:none"></div>
+      <div class="stories-bar-wrap" id="storiesBarWrap">
+        <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
+        <div id="storiesBar" class="stories-bar" style="display:none"></div>
+        <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
+      </div>
 
       <!-- PANNEAU PUBLICATION UTILISATEUR -->
         <div id="userPostPanel" class="user-post-panel" style="display:none">
@@ -495,6 +499,33 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       if (fab && !user && window.innerWidth <= 768) fab.style.display = 'flex';
       await renderFeed();
       await loadStories();
+      _updateStoryNavBtns();
+
+      // Fix scroll horizontal stories sur mobile
+      (function() {
+        var bar = document.getElementById('storiesBar');
+        if (!bar) return;
+        var startX = 0, startY = 0, startScroll = 0, isHoriz = null;
+        bar.addEventListener('touchstart', function(e) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          startScroll = bar.scrollLeft;
+          isHoriz = null;
+        }, { passive: true });
+        bar.addEventListener('touchmove', function(e) {
+          var dx = Math.abs(e.touches[0].clientX - startX);
+          var dy = Math.abs(e.touches[0].clientY - startY);
+          if (isHoriz === null) isHoriz = dx > dy;
+          if (isHoriz) {
+            e.preventDefault();
+            bar.scrollLeft = startScroll - (e.touches[0].clientX - startX);
+          }
+        }, { passive: false });
+
+        // Desktop : mettre à jour la visibilité des flèches au scroll
+        bar.addEventListener('scroll', _updateStoryNavBtns);
+      })();
+
       // Brancher autocomplete mentions
       setTimeout(() => {
         const upc = document.getElementById('userPostContent');
@@ -529,6 +560,25 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       });
       loadFooterSocialLinks();
     })();
+
+    function _scrollStories(dir) {
+      var bar = document.getElementById('storiesBar');
+      if (!bar) return;
+      bar.scrollBy({ left: dir * 320, behavior: 'smooth' });
+    }
+
+    function _updateStoryNavBtns() {
+      var bar  = document.getElementById('storiesBar');
+      var prev = document.getElementById('storiesNavPrev');
+      var next = document.getElementById('storiesNavNext');
+      if (!bar || !prev || !next) return;
+      var atStart = bar.scrollLeft <= 4;
+      var atEnd   = bar.scrollLeft + bar.clientWidth >= bar.scrollWidth - 4;
+      prev.style.opacity  = atStart ? '0' : '1';
+      prev.style.pointerEvents = atStart ? 'none' : 'auto';
+      next.style.opacity  = atEnd ? '0' : '1';
+      next.style.pointerEvents = atEnd ? 'none' : 'auto';
+    }
   </script>
 </body>
 </html>
