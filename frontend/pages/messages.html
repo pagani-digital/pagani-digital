@@ -220,8 +220,8 @@
   </style>
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js?v=1776608852428"></script>
-  <script src="/js/api.js?v=1777051471290"></script>
-  <script src="/js/app.js?v=1777051471290"></script>
+  <script src="/js/api.js?v=1777054050674"></script>
+  <script src="/js/app.js?v=1777054050674"></script>
   <script>
     // Cache conversations pour le filtre local
     let _allConvs = [];
@@ -317,19 +317,19 @@
       list.innerHTML = addBtn + storiesHtml;
     }
 
-    // Ouvre le viewer — charge les stories via loadStories() qui remplit _storiesData dans app.js?v=1777051471290
+    // Ouvre le viewer — charge les stories via loadStories() qui remplit _storiesData dans app.js?v=1777054050674
     function _openMsgStory(idx) {
       const group = _msgStoriesData[idx];
       if (!group) return;
       const API   = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
       const token = localStorage.getItem('pd_jwt');
-      // Charger toutes les stories dans _storiesData de app.js?v=1777051471290 via fetch direct
+      // Charger toutes les stories dans _storiesData de app.js?v=1777054050674 via fetch direct
       fetch(API + '/stories', { headers: { 'Authorization': 'Bearer ' + token } })
         .then(r => r.json())
         .then(all => {
           if (!Array.isArray(all)) return;
-          // Injecter dans la variable globale de app.js?v=1777051471290
-          // _storiesData est let dans app.js?v=1777051471290 mais loadStories() la remplit
+          // Injecter dans la variable globale de app.js?v=1777054050674
+          // _storiesData est let dans app.js?v=1777054050674 mais loadStories() la remplit
           // On passe par un storiesBar factice pour forcer le chargement
           const realIdx = all.findIndex(g => g.userId === group.userId);
           if (realIdx === -1) return;

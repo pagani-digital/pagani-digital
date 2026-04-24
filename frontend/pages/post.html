@@ -617,8 +617,8 @@
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1777051471290"></script>
-  <script src="/js/app.js?v=1777051471290"></script>
+  <script src="/js/api.js?v=1777054050674"></script>
+  <script src="/js/app.js?v=1777054050674"></script>
   <script>
     let _postId   = null;
     let _postData = null;
@@ -853,7 +853,7 @@
       if (input) toggleCommentEmoji('postCommentField', document.querySelector('.post-comment-input-wrap .comment-emoji-btn'));
     }
 
-    // Exposer sur window pour app.js?v=1777051471290
+    // Exposer sur window pour app.js?v=1777054050674
     window._postRenderComments = _postRenderComments;
     window._postCommentSignature = _postCommentSignature;
 
@@ -925,16 +925,14 @@
         // Scroll vers l'ancre #reply-ID ou #comment-ID
 
         if (_anchorHash) {
-          // Supprimer le hash de l'URL immédiatement pour éviter le scroll natif du navigateur
+          // Nettoyer l'URL pour que le polling ne relise pas anchor
           history.replaceState(null, '', window.location.pathname + '?id=' + _postId);
-          // Délai plus long sur mobile pour attendre le rendu complet
-          const _anchorDelay = window.innerWidth <= 768 ? 1200 : 800;
-          // Nettoyer l'URL immédiatement pour que le polling ne relise pas anchor
-          history.replaceState(null, '', window.location.pathname + '?id=' + _postId);
+          // Attendre que le navigateur finisse son scroll initial
+          const _anchorDelay = window.innerWidth <= 768 ? 300 : 1000;
           setTimeout(() => {
             const _target = document.getElementById(_anchorHash);
             if (!_target) return;
-            _target.scrollIntoView({ behavior: 'instant', block: 'center' });
+            _target.scrollIntoView({ behavior: 'auto', block: 'center' });
             _target.style.background = 'rgba(108,99,255,0.18)';
             _target.style.borderRadius = '12px';
             _target.style.outline = '2px solid rgba(108,99,255,0.5)';
@@ -943,7 +941,8 @@
           }, _anchorDelay);
         }
         _postInitScrollLoad();
-        _postStartPolling();
+        // Démarrer le polling avec délai si anchor présent (éviter vibration)
+        setTimeout(() => { _postStartPolling(); }, _anchorHash ? 2000 : 0);
         // Autocomplete mentions
         setTimeout(() => {
           const cf = document.getElementById('postCommentField');
