@@ -617,12 +617,13 @@
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1777048180096"></script>
-  <script src="/js/app.js?v=1777048180096"></script>
+  <script src="/js/api.js?v=1777051471290"></script>
+  <script src="/js/app.js?v=1777051471290"></script>
   <script>
     let _postId   = null;
     let _postData = null;
     let _postCommPage = 3;
+    let _postFirstLoad = true;
     let _postCommSort = 'recent';
     let _postScrollLoading = false;
 
@@ -643,7 +644,9 @@
       const total   = sorted.length;
 
       // Charger tous les commentaires si ancre dans l'URL
-      if (resetPage) _postCommPage = window.innerWidth > 768 ? 9999 : 3;
+      // Ne pas réinitialiser _postCommPage si on est dans le scroll infini
+      if (resetPage && !_postScrollLoading) _postCommPage = window.innerWidth > 768 ? 9999 : (_postFirstLoad ? 3 : _postCommPage);
+      _postFirstLoad = false;
       const shown  = sorted.slice(0, _postCommPage);
       const hidden = total - shown.length; // anciens pas encore affichés
 
@@ -681,8 +684,8 @@
             const wrap = document.createElement('div');
             wrap.className = 'comment-animate';
             wrap.innerHTML = _buildCommentHTML(c, _postId, user, isGuest);
-            // Insérer en haut si tri récent, sinon en bas
-            if (_postCommSort === 'recent' || !_postCommSort) {
+            // Insérer en haut si tri récent ET pas dans le scroll infini, sinon en bas
+            if ((_postCommSort === 'recent' || !_postCommSort) && !_postScrollLoading) {
               list.prepend(wrap);
             } else {
               list.appendChild(wrap);
@@ -850,7 +853,7 @@
       if (input) toggleCommentEmoji('postCommentField', document.querySelector('.post-comment-input-wrap .comment-emoji-btn'));
     }
 
-    // Exposer sur window pour app.js?v=1777048180096
+    // Exposer sur window pour app.js?v=1777051471290
     window._postRenderComments = _postRenderComments;
     window._postCommentSignature = _postCommentSignature;
 

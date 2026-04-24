@@ -195,8 +195,11 @@ async function _notifyMentions(text, authorId, link) {
       );
       if (!res.rows.length) continue;
       const mentionedId = res.rows[0].id;
+      // Si l'utilisateur mentionné est admin, notifier via userId=0
+      const mentionedUser = await db.getUserById(mentionedId);
+      const notifUserId = mentionedUser && mentionedUser.role === 'admin' ? 0 : mentionedId;
       await db.createNotification({
-        userId: mentionedId,
+        userId: notifUserId,
         type: 'MENTION',
         message: `${author?.name || 'Quelqu\'un'} vous a mentionné : "${text.slice(0, 80)}${text.length > 80 ? '...' : ''}"`,
         link
