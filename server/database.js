@@ -385,12 +385,11 @@ async function addReply(postId, commentId, { authorId, authorName, authorColor, 
      SET comments = jsonb_set(
        comments,
        $1::text[],
-       COALESCE(comments->$2->'replies', '[]'::jsonb) || $3::jsonb
+       COALESCE(comments->${idx}->'replies', '[]'::jsonb) || $2::jsonb
      )
-     WHERE id = $4`,
+     WHERE id = $3`,
     [
       `{${idx},replies}`,
-      idx,
       JSON.stringify([reply]),
       postId
     ]

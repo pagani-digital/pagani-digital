@@ -495,6 +495,7 @@
     @media (max-width: 768px) {
       .post-back-desktop { display: none; }
     }
+
   </style>
 </head>
 <body class="post-body">
@@ -616,8 +617,8 @@
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1777021959533"></script>
-  <script src="/js/app.js?v=1777021959533"></script>
+  <script src="/js/api.js?v=1777048180096"></script>
+  <script src="/js/app.js?v=1777048180096"></script>
   <script>
     let _postId   = null;
     let _postData = null;
@@ -641,8 +642,8 @@
       const sorted  = _postSortedComments();
       const total   = sorted.length;
 
-      // Si ancre #comment-X dans l'URL, charger tous les commentaires
-      if (resetPage) _postCommPage = (window.innerWidth > 768 || window.location.hash.startsWith('#comment-')) ? 9999 : 3;
+      // Charger tous les commentaires si ancre dans l'URL
+      if (resetPage) _postCommPage = window.innerWidth > 768 ? 9999 : 3;
       const shown  = sorted.slice(0, _postCommPage);
       const hidden = total - shown.length; // anciens pas encore affichés
 
@@ -664,10 +665,47 @@
       const oldHeight = list.scrollHeight;
 
       // Loader en haut si il y a des anciens
-      list.innerHTML = shown.map((c, i) => {
-        const html = _buildCommentHTML(c, _postId, user, isGuest);
-        return '<div class="comment-animate" style="animation-delay:' + (i*30) + 'ms">' + html + '</div>';
-      }).join('');
+      // Render basé sur les IDs — préserve les éléments existants
+      if (resetPage) {
+        // Reset complet : premier chargement ou changement de tri
+        list.innerHTML = shown.map((c, i) => {
+          const html = _buildCommentHTML(c, _postId, user, isGuest);
+          return '<div class="comment-animate" style="animation-delay:' + (i*30) + 'ms">' + html + '</div>';
+        }).join('');
+      } else {
+        // Mise à jour incrémentale par ID
+        shown.forEach(c => {
+          const cid = String(c.id||(c.author+c.date)).replace(/[^a-zA-Z0-9_-]/g,'_');
+          if (!document.getElementById('comment-' + cid)) {
+            // Nouveau commentaire : l'ajouter
+            const wrap = document.createElement('div');
+            wrap.className = 'comment-animate';
+            wrap.innerHTML = _buildCommentHTML(c, _postId, user, isGuest);
+            // Insérer en haut si tri récent, sinon en bas
+            if (_postCommSort === 'recent' || !_postCommSort) {
+              list.prepend(wrap);
+            } else {
+              list.appendChild(wrap);
+            }
+          } else {
+            // Commentaire existant : ajouter seulement les nouvelles réponses
+            const repliesContainer = document.querySelector('#comment-' + cid + ' .replies-list');
+            if (repliesContainer && c.replies && c.replies.length) {
+              c.replies.forEach(r => {
+                const rid = String(r.id||r.date).replace(/[^a-zA-Z0-9_-]/g,'_');
+                if (!document.getElementById('reply-' + rid)) {
+                  // Construire la réponse via _buildCommentHTML avec un faux commentaire
+                  const fakeComment = Object.assign({}, c, { replies: [r] });
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = _buildCommentHTML(fakeComment, _postId, user, isGuest);
+                  const newReplyEl = tempDiv.querySelector('.reply');
+                  if (newReplyEl) repliesContainer.appendChild(newReplyEl);
+                }
+              });
+            }
+          }
+        });
+      }
 
       // Maintenir scroll ou aller en bas
       // Scroll : sur mobile post-main scrolle, sur desktop list scrolle
@@ -698,9 +736,11 @@
       document.querySelectorAll('.post-sort-btn').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
       _postRenderComments(true);
-    }
+
+
 
     // Scroll infini vers le haut — charge les anciens automatiquement
+    }
     function _postInitScrollLoad() {
       const isMobile = window.innerWidth <= 768;
       // Sur desktop : tous les commentaires sont affichés, pas besoin de scroll infini
@@ -730,20 +770,20 @@
       if (!text) return;
       input.value = '';
       try {
-        await PaganiAPI.addComment(_postId, text);
-        const newComment = {
-          id: String(Date.now()),
-          author: user.name, authorId: user.id,
+        const confirmedComment = await PaganiAPI.addComment(_postId, text);
+        const newComment = confirmedComment || {
+          id: String(Date.now()), author: user.name, authorId: user.id,
           authorColor: getAvatarColor(user), authorPhoto: user.avatarPhoto || '',
           text, replies: [], date: new Date().toISOString()
         };
         if (_postData) _postData.comments.push(newComment);
+        window._postData = _postData;
         _postsCache = [_postData];
-        // Mettre à jour la signature pour éviter double re-render par le polling
         _postLastCommentSig = _postCommentSignature(_postData.comments);
-        _postRenderComments(false);
+        window._postLocalUpdate = Date.now();
+        _postRenderComments(true);
         const list = document.getElementById('postCommentsList');
-        setTimeout(() => { list.scrollTop = 0; }, 60);
+        if (list) setTimeout(() => { list.scrollTop = 0; }, 60);
       } catch(e) {}
     }
 
@@ -774,9 +814,19 @@
           if (!fresh || fresh.error) return;
           fresh.comments = Array.isArray(fresh.comments) ? fresh.comments : [];
           const newSig = _postCommentSignature(fresh.comments);
-          if (newSig !== _postLastCommentSig) {
+          if (newSig !== _postLastCommentSig && Date.now() - (window._postLocalUpdate || 0) > 5000) {
             _postLastCommentSig = newSig;
+            // Fusionner : garder les réponses locales non encore confirmées
+            if (_postData) {
+              fresh.comments.forEach(fc => {
+                const local = _postData.comments.find(lc => lc.id === fc.id);
+                if (local && local.replies && local.replies.length > fc.replies.length) {
+                  fc.replies = local.replies; // garder les réponses locales plus récentes
+                }
+              });
+            }
             _postData = fresh;
+            window._postData = fresh;
             _postsCache = [fresh];
             _postRenderComments(false);
             // Mettre à jour le compteur de réactions aussi
@@ -792,7 +842,7 @@
             }
           }
         } catch(e) {}
-      }, 3000);
+      }, 5000);
     }
 
     function _postToggleEmoji() {
@@ -800,35 +850,9 @@
       if (input) toggleCommentEmoji('postCommentField', document.querySelector('.post-comment-input-wrap .comment-emoji-btn'));
     }
 
-
-    // Scroller vers un commentaire précis depuis une ancre #comment-ID
-    function _scrollToCommentAnchor() {
-      const hash = window.location.hash;
-      if (!hash || !hash.startsWith('#comment-')) return;
-      const rawCommentId = hash.slice(9); // enlever "#comment-"
-      // Appliquer la même sanitisation que _buildCommentHTML (cid)
-      const commentId = String(rawCommentId).replace(/[^a-zA-Z0-9_-]/g, '_');
-      setTimeout(() => {
-        const target = document.getElementById('comment-' + commentId);
-        if (!target) return;
-        // Scroller vers le commentaire
-        const isMobile = window.innerWidth <= 768;
-        const scrollEl = isMobile ? document.getElementById('postMain') : document.getElementById('postCommentsList');
-        if (scrollEl) {
-          const rect = target.getBoundingClientRect();
-          const elRect = scrollEl.getBoundingClientRect();
-          const offset = rect.top - elRect.top + scrollEl.scrollTop - 80;
-          scrollEl.scrollTo({ top: offset, behavior: 'smooth' });
-        }
-        // Surligner le commentaire
-        target.style.background = 'rgba(108,99,255,0.15)';
-        target.style.borderRadius = '12px';
-        target.style.transition = 'background 0.3s';
-        setTimeout(() => { target.style.background = ''; }, 3000);
-        // Nettoyer le hash
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-      }, 800);
-    }
+    // Exposer sur window pour app.js?v=1777048180096
+    window._postRenderComments = _postRenderComments;
+    window._postCommentSignature = _postCommentSignature;
 
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await refreshCurrentUser();
@@ -860,6 +884,7 @@
         post.likes    = Array.isArray(post.likes)    ? post.likes    : [];
         post.comments = Array.isArray(post.comments) ? post.comments : [];
         _postData = post;
+        window._postData = post;
         _postsCache = [post];
 
         // Titre
@@ -889,11 +914,33 @@
         }
 
         // Rendre les commentaires
+        const _anchorHash = new URLSearchParams(window.location.search).get('anchor') || null;
+        // Forcer affichage de tous les commentaires si ancre dans l'URL (une seule fois)
+        if (_anchorHash && window.innerWidth <= 768) _postCommPage = 9999;
         _postRenderComments(true);
+
+        // Scroll vers l'ancre #reply-ID ou #comment-ID
+
+        if (_anchorHash) {
+          // Supprimer le hash de l'URL immédiatement pour éviter le scroll natif du navigateur
+          history.replaceState(null, '', window.location.pathname + '?id=' + _postId);
+          // Délai plus long sur mobile pour attendre le rendu complet
+          const _anchorDelay = window.innerWidth <= 768 ? 1200 : 800;
+          // Nettoyer l'URL immédiatement pour que le polling ne relise pas anchor
+          history.replaceState(null, '', window.location.pathname + '?id=' + _postId);
+          setTimeout(() => {
+            const _target = document.getElementById(_anchorHash);
+            if (!_target) return;
+            _target.scrollIntoView({ behavior: 'instant', block: 'center' });
+            _target.style.background = 'rgba(108,99,255,0.18)';
+            _target.style.borderRadius = '12px';
+            _target.style.outline = '2px solid rgba(108,99,255,0.5)';
+            _target.style.transition = 'background 1.5s ease, outline 1.5s ease';
+            setTimeout(() => { _target.style.background = ''; _target.style.outline = ''; }, 3000);
+          }, _anchorDelay);
+        }
         _postInitScrollLoad();
         _postStartPolling();
-        _scrollToCommentAnchor();
-
         // Autocomplete mentions
         setTimeout(() => {
           const cf = document.getElementById('postCommentField');

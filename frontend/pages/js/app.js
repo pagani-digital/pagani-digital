@@ -906,7 +906,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
       : `openPublicProfileByName('${esc(r.author).replace(/'/g, "\\'")}')`;
     const rPhoto = (user && r.authorId && r.authorId === user.id) ? (user.avatarPhoto || '') : (r.authorPhoto || '');
     return `
-      <div class="reply">
+      <div class="reply" id="reply-${String(r.id||r.date).replace(/[^a-zA-Z0-9_-]/g,'_')}">
         <div class="avatar-circle avatar-xs" style="${rPhoto ? '' : 'background:'+(r.authorColor||'#6c63ff')};cursor:pointer" onclick="${rClickHandler}">
           ${rPhoto ? `<img src="${rPhoto}" class="avatar-photo avatar-xs" />` : getInitials(r.author)}
         </div>
@@ -1256,6 +1256,8 @@ async function submitReply(postId, commentId) {
   const text  = input ? input.value.trim() : '';
   if (!text) return;
   if (input) input.value = '';
+  // Protéger le polling contre l'écrasement de la réponse locale
+  if (window._postLocalUpdate !== undefined) window._postLocalUpdate = Date.now();
   const pid     = Number(postId);
   const post    = _postsCache.find(n => n.id === pid);
   const comment = post?.comments.find(c => {
@@ -1263,6 +1265,8 @@ async function submitReply(postId, commentId) {
     return norm === String(commentId);
   });
   const replyTo = comment?.author || '';
+  // Utiliser l'id original (non sanitisé) pour l'appel API
+  const rawCommentId = comment ? String(comment.id || (comment.author + comment.date)) : commentId;
   const newReply = {
     id: String(Date.now())+String(Math.floor(Math.random()*9999)),
     author: user.name, authorId: user.id,
@@ -1270,19 +1274,50 @@ async function submitReply(postId, commentId) {
     replyTo, text, date: new Date().toISOString()
   };
   if (comment) { if (!comment.replies) comment.replies = []; comment.replies.push(newReply); }
-  const listEl  = document.getElementById(`comments-list-${pid}`);
+
+  // Synchroniser _postData immédiatement
+  if (window._postData && window._postData.id === pid) {
+    window._postData = post;
+  }
+  const listEl = document.getElementById(`comments-list-${pid}`);
   const section = document.getElementById(`comments-${pid}`);
-  if (listEl && post) listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
   if (section) section.style.display = 'block';
   if (post) _updatePostStats(pid, post);
-  if (window.PaganiAPI) {
-    try { await PaganiAPI.addReply(pid, commentId, text, replyTo); }
-    catch(e) {
-      // echec serveur : retirer la rponse temporaire du cache et re-render
-      if (comment) comment.replies = comment.replies.filter(r => r.id !== newReply.id);
-      if (listEl && post) listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
-      if (post) _updatePostStats(pid, post);
 
+  if (window.PaganiAPI) {
+    try {
+      const confirmedReply = await PaganiAPI.addReply(pid, rawCommentId, text, replyTo);
+      // Remplacer la réponse temporaire par la réponse confirmée
+      if (confirmedReply && confirmedReply.id && comment) {
+        const tmpIdx = comment.replies.findIndex(r => r.id === newReply.id);
+        if (tmpIdx !== -1) comment.replies[tmpIdx] = confirmedReply;
+      }
+      // Re-render unique après confirmation — bloquer le polling
+      if (window._postData && window._postData.id === pid && typeof window._postRenderComments === 'function') {
+        window._postData = post;
+        window._postLocalUpdate = Date.now();
+        window._postLastCommentSig = typeof window._postCommentSignature === 'function'
+          ? window._postCommentSignature(post.comments) : '';
+        window._postRenderComments(true);
+        // Scroller vers le commentaire parent
+        setTimeout(() => {
+          const cid = String(comment ? (comment.id||(comment.author+comment.date)) : commentId).replace(/[^a-zA-Z0-9_-]/g,'_');
+          const el = document.getElementById('comment-' + cid);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+      } else if (listEl && post) {
+        listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
+      }
+    } catch(e) {
+      // Rollback
+      if (comment) comment.replies = comment.replies.filter(r => r.id !== newReply.id);
+      if (window._postData && window._postData.id === pid && typeof window._postRenderComments === 'function') {
+        window._postData = post;
+        window._postRenderComments(true);
+      } else if (listEl && post) {
+        listEl.innerHTML = post.comments.map(c => _buildCommentHTML(c, pid, user, false)).join('');
+      }
+      if (post) _updatePostStats(pid, post);
     }
   }
 }

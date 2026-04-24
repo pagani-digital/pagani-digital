@@ -619,7 +619,7 @@ app.post('/api/posts/:id/comments', requireAuth, async (req, res) => {
       if (_uid2 !== null) sendPush(_uid2, user.name + ' a commenté', 'Nouveau commentaire sur votre publication', `post.html?id=${post.id}`);
     }
     // Mentions dans le commentaire
-    await _notifyMentions(text, req.user.id, `post.html?id=${id}#comment-${comment.id}`);
+    await _notifyMentions(text, req.user.id, `post.html?id=${id}&anchor=comment-${comment.id}`);
     res.json(comment);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
@@ -642,11 +642,12 @@ app.post('/api/posts/:id/comments/:cid/replies', requireAuth, async (req, res) =
       const _uid3 = await _resolveNotifUserId(comment.authorId);
       if (_uid3 !== null) await db.createNotification({ userId: _uid3, type: 'COMMENT',
         message: `${user.name} a repondu a votre commentaire sur "${post.title}"`,
-        link: `post.html?id=${post.id}` });
-      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `post.html?id=${post.id}`);
+        link: `post.html?id=${post.id}&anchor=reply-${reply.id}` });
+      if (_uid3 !== null) sendPush(_uid3, user.name + ' a répondu', 'Nouvelle réponse à votre commentaire', `post.html?id=${post.id}&anchor=reply-${reply.id}`);
     }
     // Mentions dans la réponse
-    await _notifyMentions(text, req.user.id, `post.html?id=${id}#comment-${req.params.cid}`);
+
+    await _notifyMentions(text, req.user.id, `post.html?id=${id}&anchor=reply-${reply.id}`);
     res.json(reply);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });

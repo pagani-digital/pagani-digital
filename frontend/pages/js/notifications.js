@@ -238,10 +238,15 @@ async function renderNotifPanel(userId) {
         if (panelEl) panelEl.classList.remove('open');
         if (overlay) overlay.style.display = 'none';
 
-        // Convertir tout lien post en post.html?id=X
-        const postMatch = link.match(/(?:index\.html)?#post-(\d+)/) || link.match(/post\.html\?id=(\d+)/);
-        if (postMatch) {
-          setTimeout(() => { window.location.href = 'post.html?id=' + postMatch[1]; }, 120);
+        // Convertir index.html#post-X en post.html?id=X
+        const postHashMatch = link.match(/(?:index\.html)?#post-(\d+)/);
+        if (postHashMatch) {
+          setTimeout(() => { window.location.href = 'post.html?id=' + postHashMatch[1]; }, 120);
+          return;
+        }
+        // Lien post.html?id=X#reply-Y ou post.html?id=X#comment-Y : naviguer tel quel
+        if (link.startsWith('post.html?id=')) {
+          setTimeout(() => { window.location.href = link; }, 120);
           return;
         }
 
