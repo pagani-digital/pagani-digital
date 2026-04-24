@@ -183,7 +183,7 @@ function makeToken(user) {
 // authorId = celui qui écrit, link = lien vers l'endroit précis
 async function _notifyMentions(text, authorId, link) {
   if (!text) return;
-  const tags = [...new Set((text.match(/@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g) || []).map(t => t.slice(1).trim()))];
+  const tags = [...new Set((text.match(/@([A-Za-z\u00C0-\u024F][A-Za-z0-9\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][A-Za-z0-9\u00C0-\u024F]*)?)/g) || []).map(t => t.slice(1).trim()))];
   if (!tags.length) return;
   const author = await db.getUserById(authorId);
   for (const tag of tags) {
