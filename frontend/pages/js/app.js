@@ -912,7 +912,7 @@ function _buildCommentHTML(c, postId, user, isGuest) {
         </div>
         <div class="comment-bubble reply-bubble">
           <strong style="cursor:pointer" onclick="${rClickHandler}">${esc(r.author)}</strong>
-          <p><span class="mention">@${esc(r.replyTo)}</span> ${_renderCommentText(r.text)}</p>
+          <p><a href="javascript:void(0)" class="post-mention" onclick="_openMentionProfile('${r.replyTo}')">${'@' + esc(r.replyTo)}</a> ${_renderCommentText(r.text)}</p>
           <span class="comment-time">${timeAgo(r.date)}</span>
         </div>
       </div>`;
