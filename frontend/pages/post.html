@@ -616,8 +616,8 @@
 
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1777019637507"></script>
-  <script src="/js/app.js?v=1777019637507"></script>
+  <script src="/js/api.js?v=1777021959533"></script>
+  <script src="/js/app.js?v=1777021959533"></script>
   <script>
     let _postId   = null;
     let _postData = null;
@@ -641,7 +641,8 @@
       const sorted  = _postSortedComments();
       const total   = sorted.length;
 
-      if (resetPage) _postCommPage = window.innerWidth > 768 ? 9999 : 3;
+      // Si ancre #comment-X dans l'URL, charger tous les commentaires
+      if (resetPage) _postCommPage = (window.innerWidth > 768 || window.location.hash.startsWith('#comment-')) ? 9999 : 3;
       const shown  = sorted.slice(0, _postCommPage);
       const hidden = total - shown.length; // anciens pas encore affichés
 
@@ -799,6 +800,36 @@
       if (input) toggleCommentEmoji('postCommentField', document.querySelector('.post-comment-input-wrap .comment-emoji-btn'));
     }
 
+
+    // Scroller vers un commentaire précis depuis une ancre #comment-ID
+    function _scrollToCommentAnchor() {
+      const hash = window.location.hash;
+      if (!hash || !hash.startsWith('#comment-')) return;
+      const rawCommentId = hash.slice(9); // enlever "#comment-"
+      // Appliquer la même sanitisation que _buildCommentHTML (cid)
+      const commentId = String(rawCommentId).replace(/[^a-zA-Z0-9_-]/g, '_');
+      setTimeout(() => {
+        const target = document.getElementById('comment-' + commentId);
+        if (!target) return;
+        // Scroller vers le commentaire
+        const isMobile = window.innerWidth <= 768;
+        const scrollEl = isMobile ? document.getElementById('postMain') : document.getElementById('postCommentsList');
+        if (scrollEl) {
+          const rect = target.getBoundingClientRect();
+          const elRect = scrollEl.getBoundingClientRect();
+          const offset = rect.top - elRect.top + scrollEl.scrollTop - 80;
+          scrollEl.scrollTo({ top: offset, behavior: 'smooth' });
+        }
+        // Surligner le commentaire
+        target.style.background = 'rgba(108,99,255,0.15)';
+        target.style.borderRadius = '12px';
+        target.style.transition = 'background 0.3s';
+        setTimeout(() => { target.style.background = ''; }, 3000);
+        // Nettoyer le hash
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }, 800);
+    }
+
     document.addEventListener('DOMContentLoaded', async () => {
       const user = await refreshCurrentUser();
       updateNavbar(user);
@@ -861,6 +892,7 @@
         _postRenderComments(true);
         _postInitScrollLoad();
         _postStartPolling();
+        _scrollToCommentAnchor();
 
         // Autocomplete mentions
         setTimeout(() => {
