@@ -701,12 +701,23 @@ app.get('/api/notifications', requireAuth, async (req, res) => {
 // SSE — stream de notifications temps réel
 const _sseClients = new Map(); // userId -> Set<res>
 
-db.setSseNotifyHook((userId, notif) => {
+db.setSseNotifyHook(async (userId, notif) => {
   const clients = _sseClients.get(userId);
   if (clients && clients.size) {
     const data = `data: ${JSON.stringify(notif)}\n\n`;
     for (const client of clients) { try { client.write(data); } catch(e) {} }
   }
+  // Si le destinataire est admin, notifier aussi sur userId=0
+  try {
+    const u = await db.getUserById(userId);
+    if (u && u.role === 'admin') {
+      const ac = _sseClients.get(0);
+      if (ac && ac.size) {
+        const d = `data: ${JSON.stringify(notif)}\n\n`;
+        for (const c of ac) { try { c.write(d); } catch(e) {} }
+      }
+    }
+  } catch(e) {}
 });
 
 app.get('/api/notifications/stream', (req, res) => {

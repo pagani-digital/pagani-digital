@@ -48,6 +48,11 @@ function _notifToToast(notif) {
   const icons = { PRIVATE_MESSAGE:'💬', REACTION:'❤️', COMMENT:'💬', NEW_FOLLOWER:'👤', NEW_POST:'📢', WITHDRAW_REQUEST:'💰', NEW_SUBSCRIPTION:'🎉', NEW_FORMATION:'🎓', SUB_CONFIRMED:'✅' };
   const icon = icons[notif.type] || '🔔';
   const url = notif.link ? notif.link : null;
+  // Ne pas afficher le toast si l'utilisateur est déjà dans ce chat
+  if (notif.type === 'PRIVATE_MESSAGE' && notif.link) {
+    const m = notif.link.match(/with=(d+)/);
+    if (m && window._currentChatUserId && parseInt(m[1]) === window._currentChatUserId) return;
+  }
   _showToast(notif.type === 'PRIVATE_MESSAGE' ? 'Nouveau message' : 'Notification', notif.message || '', icon, url);
 }
 

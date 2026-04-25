@@ -760,10 +760,9 @@ ul { list-style: none; }
   margin-right: auto;
 }
 #tab-admin .dash-section {
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 1.5rem 2%;
+  max-width: 100% !important;
+  padding: 1.5rem 2rem !important;
+  box-sizing: border-box;
 }
 .dash-section h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem; }
 
@@ -4012,7 +4011,7 @@ ul { list-style: none; }
 }
 
 /* Section admin (contenu sous la subnav) */
-.admin-sub-section { animation: fadeIn 0.2s ease; }
+.admin-sub-section { animation: fadeIn 0.2s ease; padding: 1.2rem 2rem; }
 
 /* KPI compacts (6 au lieu de 8) */
 .admin-kpi-grid {
@@ -8863,6 +8862,7 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   overflow: hidden;
   overscroll-behavior-x: contain;
   position: relative;
+  padding: 0.5rem 2rem;
 }
 @media (max-width: 768px) {
   .stories-bar-wrap {

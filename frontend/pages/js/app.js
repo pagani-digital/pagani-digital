@@ -33,6 +33,15 @@ async function loadStories() {
     </div>`;
   }
 
+  // Mettre la story de l'utilisateur connecté en premier
+  if (user) {
+    _storiesData.sort((a, b) => {
+      if (a.userId === user.id) return -1;
+      if (b.userId === user.id) return 1;
+      return 0;
+    });
+  }
+
   // Cartes stories style Facebook
   _storiesData.forEach((group, gi) => {
     const isOwn = user && group.userId === user.id;
@@ -6196,6 +6205,7 @@ async function loadConversations() {
 }
 async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   _currentChatUserId   = userId;
+  window._currentChatUserId = userId;
   window.__typingChatUserId = userId;
   _currentChatUserName = userName;
   _chatMsgsCache = []; // Reinitialiser le cache a chaque nouvelle conversation
@@ -6320,6 +6330,7 @@ function closeChatMobile() {
   if (chat)    { chat.classList.remove('msg-visible'); chat.classList.remove('mpx-chat-entering'); chat.classList.remove('mpx-chat-leaving'); }
   if (sidebar) sidebar.classList.remove('msg-hidden');
   _currentChatUserId   = null;
+  window._currentChatUserId = null;
   window.__typingChatUserId = null;
   _currentChatUserName = null;
   if (_chatPollingTimer) { clearInterval(_chatPollingTimer); _chatPollingTimer = null; }
