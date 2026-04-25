@@ -62,11 +62,17 @@
     <aside class="mpx-sidebar" id="mpxSidebar">
 
       <div class="mpx-sidebar-head">
-        <div class="mpx-sidebar-title">
-          <i class="fas fa-comments"></i>
-          <span>Messages</span>
+        <div class="mpx-sidebar-tabs">
+          <button class="mpx-tab-btn active" id="tabBtnDm" onclick="switchMsgTab('dm',this)">
+            <i class="fas fa-envelope"></i> Messages
+            <span class="mpx-tab-badge" id="tabBadgeDm" style="display:none"></span>
+          </button>
+          <button class="mpx-tab-btn" id="tabBtnGroups" onclick="switchMsgTab('groups',this)">
+            <i class="fas fa-users"></i> Groupes
+            <span class="mpx-tab-badge" id="tabBadgeGroups" style="display:none"></span>
+          </button>
         </div>
-        <button class="mpx-compose-btn" onclick="showNewMsgModal()" title="Nouveau message">
+        <button class="mpx-compose-btn" id="mpxComposeBtn" onclick="showNewMsgModal()" title="Nouveau message">
           <i class="fas fa-edit"></i>
         </button>
       </div>
@@ -84,6 +90,7 @@
       </div>
 
       <div class="mpx-conv-list" id="convList"></div>
+      <div class="mpx-conv-list" id="groupList" style="display:none"></div>
 
     </aside>
 
@@ -190,6 +197,51 @@
     </div>
   </div>
 
+  <!-- Modal créer un groupe -->
+  <div class="mpx-modal-overlay" id="newGroupModal" style="display:none" onclick="if(event.target===this)closeNewGroupModal()">
+    <div class="mpx-modal">
+      <div class="mpx-modal-head">
+        <h3><i class="fas fa-users"></i> Nouveau groupe</h3>
+        <button class="mpx-modal-close" onclick="closeNewGroupModal()">&times;</button>
+      </div>
+      <div class="mpx-modal-body">
+        <input type="text" id="newGroupName" class="mpx-modal-search" placeholder="Nom du groupe..." style="margin-bottom:0.8rem" maxlength="100" />
+        <div class="mpx-modal-search-wrap" style="margin-bottom:0.6rem">
+          <i class="fas fa-search"></i>
+          <input type="text" id="newGroupSearch" class="mpx-modal-search"
+            placeholder="Ajouter des membres..."
+            oninput="searchGroupMembers(this.value)" autocomplete="off" />
+        </div>
+        <div id="newGroupSelected" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.6rem"></div>
+        <div class="mpx-modal-results" id="newGroupResults"></div>
+        <p class="mpx-modal-status" id="newGroupStatus"></p>
+        <button class="btn-primary" style="width:100%;margin-top:0.8rem" onclick="createGroup()">
+          <i class="fas fa-plus"></i> Créer le groupe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal membres du groupe -->
+  <div class="mpx-modal-overlay" id="groupMembersModal" style="display:none" onclick="if(event.target===this)closeGroupMembersModal()">
+    <div class="mpx-modal">
+      <div class="mpx-modal-head">
+        <h3><i class="fas fa-users"></i> <span id="groupMembersTitle">Membres</span></h3>
+        <button class="mpx-modal-close" onclick="closeGroupMembersModal()">&times;</button>
+      </div>
+      <div class="mpx-modal-body">
+        <div id="groupMembersList"></div>
+        <div id="groupMembersAdminActions" style="display:none;margin-top:1rem;border-top:1px solid var(--border);padding-top:0.8rem">
+          <div class="mpx-modal-search-wrap" style="margin-bottom:0.6rem">
+            <i class="fas fa-search"></i>
+            <input type="text" id="addMemberSearch" class="mpx-modal-search" placeholder="Ajouter un membre..." oninput="searchAddMember(this.value)" autocomplete="off" />
+          </div>
+          <div class="mpx-modal-results" id="addMemberResults"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="footer-content">
       <a href="index.html" class="logo">Pagani<span>Digital</span></a>
@@ -217,6 +269,98 @@
   <style>
     /* Masquer la barre stories globale sur la page messages */
     #storiesBar { display: none !important; }
+
+    /* ── Onglets sidebar ── */
+    .mpx-sidebar-tabs { display:flex; gap:0.3rem; flex:1; }
+    .mpx-tab-btn {
+      flex:1; display:flex; align-items:center; justify-content:center; gap:0.4rem;
+      background:var(--bg3); border:1px solid var(--border); border-radius:10px;
+      color:var(--text2); padding:0.45rem 0.6rem; cursor:pointer;
+      font-size:0.8rem; font-family:inherit; font-weight:600;
+      transition:all 0.2s; position:relative;
+    }
+    .mpx-tab-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .mpx-tab-badge {
+      background:#ff4d6d; color:#fff; border-radius:50px;
+      font-size:0.65rem; font-weight:700; padding:0.05rem 0.4rem;
+      min-width:16px; text-align:center;
+    }
+
+    /* ── Carte groupe dans la liste ── */
+    .mpx-group-item {
+      display:flex; align-items:center; gap:0.8rem;
+      padding:0.85rem 1rem; cursor:pointer;
+      border-bottom:1px solid var(--border); transition:background 0.15s;
+    }
+    .mpx-group-item:hover { background:rgba(108,99,255,0.06); }
+    .mpx-group-item.active { background:rgba(108,99,255,0.1); }
+    .mpx-group-avatar {
+      width:44px; height:44px; border-radius:14px; flex-shrink:0;
+      background:var(--accent); display:flex; align-items:center;
+      justify-content:center; font-size:1.1rem; color:#fff; font-weight:700;
+      overflow:hidden;
+    }
+    .mpx-group-avatar img { width:100%; height:100%; object-fit:cover; }
+    .mpx-group-info { flex:1; min-width:0; }
+    .mpx-group-name { font-weight:700; font-size:0.88rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .mpx-group-last { font-size:0.75rem; color:var(--text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:0.15rem; }
+    .mpx-group-meta { display:flex; flex-direction:column; align-items:flex-end; gap:0.3rem; flex-shrink:0; }
+    .mpx-group-unread {
+      background:var(--accent); color:#fff; border-radius:50px;
+      font-size:0.65rem; font-weight:700; padding:0.1rem 0.45rem; min-width:18px; text-align:center;
+    }
+    .mpx-group-count { font-size:0.7rem; color:var(--text2); }
+
+    /* ── En-tête chat groupe ── */
+    .mpx-group-header-actions { display:flex; gap:0.4rem; align-items:center; }
+    .mpx-group-action-btn {
+      background:none; border:none; color:var(--text2); cursor:pointer;
+      font-size:0.95rem; padding:0.3rem 0.5rem; border-radius:8px;
+      transition:color 0.15s, background 0.15s;
+    }
+    .mpx-group-action-btn:hover { color:var(--accent); background:rgba(108,99,255,0.1); }
+
+    /* ── Bulle message groupe ── */
+    .mpx-msg-sender-name {
+      font-size:0.72rem; font-weight:700; color:var(--accent);
+      margin-bottom:0.2rem; padding-left:0.2rem;
+    }
+    .mpx-msg-sender-name.own { color:var(--accent2); }
+
+    /* ── Chip membre sélectionné ── */
+    .mpx-member-chip {
+      display:inline-flex; align-items:center; gap:0.3rem;
+      background:rgba(108,99,255,0.15); border:1px solid rgba(108,99,255,0.3);
+      color:var(--accent); border-radius:50px; padding:0.2rem 0.6rem;
+      font-size:0.78rem; font-weight:600;
+    }
+    .mpx-member-chip button {
+      background:none; border:none; color:var(--accent); cursor:pointer;
+      font-size:0.75rem; padding:0; line-height:1;
+    }
+
+    /* ── Liste membres modal ── */
+    .mpx-member-row {
+      display:flex; align-items:center; gap:0.8rem;
+      padding:0.6rem 0; border-bottom:1px solid var(--border);
+    }
+    .mpx-member-row:last-child { border-bottom:none; }
+    .mpx-member-row-info { flex:1; min-width:0; }
+    .mpx-member-row-name { font-weight:600; font-size:0.88rem; }
+    .mpx-member-row-role {
+      font-size:0.7rem; font-weight:700; padding:0.1rem 0.5rem;
+      border-radius:50px; display:inline-block; margin-top:0.1rem;
+    }
+    .mpx-member-row-role.admin { background:rgba(245,158,11,0.15); color:#f59e0b; }
+    .mpx-member-row-role.member { background:rgba(108,99,255,0.1); color:var(--accent); }
+    .mpx-member-actions { display:flex; gap:0.3rem; }
+    .mpx-member-action {
+      background:none; border:1px solid var(--border); color:var(--text2);
+      border-radius:8px; padding:0.25rem 0.5rem; cursor:pointer; font-size:0.75rem;
+      transition:all 0.15s;
+    }
+    .mpx-member-action:hover { border-color:var(--accent); color:var(--accent); }
+    .mpx-member-action.danger:hover { border-color:var(--red); color:var(--red); }
   </style>
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js?v=1777137604049"></script>
@@ -225,6 +369,550 @@
   <script>
     // Cache conversations pour le filtre local
     let _allConvs = [];
+
+    // ===== ONGLETS DM / GROUPES =====
+    let _activeTab = 'dm';
+
+    function switchMsgTab(tab, btn) {
+      _activeTab = tab;
+      document.querySelectorAll('.mpx-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const isDm = tab === 'dm';
+      document.getElementById('convList').style.display  = isDm ? '' : 'none';
+      document.getElementById('groupList').style.display = isDm ? 'none' : '';
+      document.getElementById('convSearchInput').placeholder = isDm ? 'Rechercher...' : 'Rechercher un groupe...';
+      document.getElementById('mpxComposeBtn').title = isDm ? 'Nouveau message' : 'Nouveau groupe';
+      document.getElementById('mpxComposeBtn').onclick = isDm ? showNewMsgModal : showNewGroupModal;
+      if (tab === 'groups' && _allGroups.length === 0) loadGroups();
+      // Fermer le chat actif si on change d'onglet
+      _closeActiveChat();
+    }
+
+    function _closeActiveChat() {
+      document.getElementById('chatEmpty').style.display    = 'flex';
+      document.getElementById('chatMessages').style.display = 'none';
+      document.getElementById('chatHeader').style.display   = 'none';
+      document.getElementById('chatInputRow').style.display = 'none';
+      window._currentChatUserId  = null;
+      window._currentGroupId     = null;
+    }
+
+    // ===== LISTE DES GROUPES =====
+    let _allGroups = [];
+    const API_BASE = () => (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    const _jwt     = () => localStorage.getItem('pd_jwt');
+
+    async function loadGroups() {
+      const list = document.getElementById('groupList');
+      list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text2);font-size:0.85rem"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const r = await fetch(API_BASE() + '/groups', { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _allGroups = await r.json();
+        renderGroupList();
+        _updateGroupTabBadge();
+      } catch(e) {
+        list.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red);font-size:0.82rem">Erreur de chargement</div>';
+      }
+    }
+
+    function _groupAvatar(g, size) {
+      const sz = size || 44;
+      if (g.photo) return '<img src="' + g.photo + '" style="width:' + sz + 'px;height:' + sz + 'px;object-fit:cover;border-radius:12px" />';
+      const initials = g.name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0, 2);
+      return '<div class="mpx-group-avatar" style="width:' + sz + 'px;height:' + sz + 'px;font-size:' + Math.round(sz*0.36) + 'px">' + initials + '</div>';
+    }
+
+    function renderGroupList() {
+      const list = document.getElementById('groupList');
+      if (!_allGroups.length) {
+        list.innerHTML = '<div style="padding:2rem 1rem;text-align:center;color:var(--text2);font-size:0.85rem"><i class="fas fa-users" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.8rem"></i>Aucun groupe.<br><small>Créez-en un avec le bouton +</small></div>';
+        return;
+      }
+      list.innerHTML = _allGroups.map(function(g) {
+        const unread  = parseInt(g.unread_count) || 0;
+        const lastMsg = g.last_message ? g.last_message.slice(0, 40) + (g.last_message.length > 40 ? '…' : '') : 'Aucun message';
+        const av = g.photo
+          ? '<img src="' + g.photo + '" style="width:44px;height:44px;object-fit:cover;border-radius:12px" />'
+          : '<div class="mpx-group-avatar">' + g.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+        return '<div class="mpx-group-item" data-gid="' + g.id + '" onclick="openGroupChat(' + g.id + ')">' +
+          av +
+          '<div class="mpx-group-info">' +
+            '<div class="mpx-group-name">' + g.name + '</div>' +
+            '<div class="mpx-group-last">' + lastMsg + '</div>' +
+          '</div>' +
+          '<div class="mpx-group-meta">' +
+            (unread > 0 ? '<span class="mpx-group-unread">' + unread + '</span>' : '') +
+            '<span class="mpx-group-count"><i class="fas fa-users" style="font-size:0.65rem"></i> ' + (g.member_count || 1) + '</span>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function _updateGroupTabBadge() {
+      const total  = _allGroups.reduce(function(s, g){ return s + (parseInt(g.unread_count) || 0); }, 0);
+      const badge  = document.getElementById('tabBadgeGroups');
+      if (!badge) return;
+      if (total > 0) { badge.textContent = total; badge.style.display = 'inline-block'; }
+      else badge.style.display = 'none';
+    }
+
+    // ===== MODAL CREATION GROUPE =====
+    let _newGroupMembers = [];
+    let _groupSearchTimer = null;
+
+    function showNewGroupModal() {
+      _newGroupMembers = [];
+      document.getElementById('newGroupName').value    = '';
+      document.getElementById('newGroupSearch').value  = '';
+      document.getElementById('newGroupResults').innerHTML = '';
+      document.getElementById('newGroupSelected').innerHTML = '';
+      document.getElementById('newGroupStatus').textContent = '';
+      document.getElementById('newGroupModal').style.display = 'flex';
+      setTimeout(function(){ document.getElementById('newGroupName').focus(); }, 50);
+    }
+
+    function closeNewGroupModal() {
+      document.getElementById('newGroupModal').style.display = 'none';
+    }
+
+    async function searchGroupMembers(query) {
+      const results = document.getElementById('newGroupResults');
+      clearTimeout(_groupSearchTimer);
+      if (!query || query.length < 2) { results.innerHTML = ''; return; }
+      _groupSearchTimer = setTimeout(async function() {
+        try {
+          const r = await fetch(API_BASE() + '/members/search?q=' + encodeURIComponent(query), { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+          const users = await r.json();
+          const me = getUser();
+          const filtered = (Array.isArray(users) ? users : [])
+            .filter(function(u){ return !_newGroupMembers.find(function(m){ return m.id === u.id; }); })
+            .slice(0, 6);
+          if (!filtered.length) { results.innerHTML = '<div class="mpx-modal-empty">Aucun membre trouvé</div>'; return; }
+          results.innerHTML = filtered.map(function(u) {
+            const av = u.avatarPhoto
+              ? '<img src="' + u.avatarPhoto + '" class="mpx-result-avatar" />'
+              : '<div class="mpx-result-avatar mpx-result-initials" style="background:' + (u.avatarColor||'#6c63ff') + '">' + getInitials(u.name) + '</div>';
+            return '<div class="mpx-result-item" onclick="addGroupMember(' + u.id + ',\'' + u.name.replace(/'/g,"\\'")
+              + '\',\'' + (u.avatarColor||'#6c63ff') + '\',\'' + (u.avatarPhoto||'') + '\')">'
+              + av + '<div class="mpx-result-info"><span class="mpx-result-name">' + u.name + '</span></div>'
+              + '<i class="fas fa-plus" style="color:var(--accent);font-size:0.85rem"></i></div>';
+          }).join('');
+        } catch(e) {}
+      }, 300);
+    }
+
+    function addGroupMember(id, name, color, photo) {
+      if (_newGroupMembers.find(function(m){ return m.id === id; })) return;
+      _newGroupMembers.push({ id: id, name: name, color: color, photo: photo });
+      _renderGroupMemberChips();
+      document.getElementById('newGroupSearch').value = '';
+      document.getElementById('newGroupResults').innerHTML = '';
+    }
+
+    function removeGroupMember(id) {
+      _newGroupMembers = _newGroupMembers.filter(function(m){ return m.id !== id; });
+      _renderGroupMemberChips();
+    }
+
+    function _renderGroupMemberChips() {
+      const wrap = document.getElementById('newGroupSelected');
+      wrap.innerHTML = _newGroupMembers.map(function(m) {
+        return '<span class="mpx-member-chip">' + m.name
+          + ' <button onclick="removeGroupMember(' + m.id + ')" title="Retirer"><i class="fas fa-times"></i></button></span>';
+      }).join('');
+    }
+
+    async function createGroup() {
+      const name   = document.getElementById('newGroupName').value.trim();
+      const status = document.getElementById('newGroupStatus');
+      if (!name) { status.style.color = 'var(--red)'; status.textContent = 'Le nom est obligatoire.'; return; }
+      status.style.color = 'var(--text2)'; status.textContent = 'Création...';
+      try {
+        const r = await fetch(API_BASE() + '/groups', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+          body: JSON.stringify({ name: name, memberIds: _newGroupMembers.map(function(m){ return m.id; }) })
+        });
+        const group = await r.json();
+        if (!r.ok) { status.style.color = 'var(--red)'; status.textContent = group.error || 'Erreur'; return; }
+        closeNewGroupModal();
+        await loadGroups();
+        // Basculer sur l'onglet groupes et ouvrir le groupe
+        const tabBtn = document.getElementById('tabBtnGroups');
+        switchMsgTab('groups', tabBtn);
+        openGroupChat(group.id);
+      } catch(e) { status.style.color = 'var(--red)'; status.textContent = 'Erreur serveur.'; }
+    }
+
+    // ===== CHAT GROUPE =====
+    let _currentGroupData = null;
+    let _groupMessages    = [];
+    let _groupImageB64    = '';
+    let _groupReplyTo     = null;
+
+    async function openGroupChat(groupId) {
+      window._currentGroupId    = groupId;
+      window._currentChatUserId = null;
+
+      // Marquer actif dans la liste
+      document.querySelectorAll('.mpx-group-item').forEach(function(el){
+        el.classList.toggle('active', parseInt(el.dataset.gid) === groupId);
+      });
+
+      // Afficher zone chat
+      document.getElementById('chatEmpty').style.display    = 'none';
+      document.getElementById('chatMessages').style.display = 'flex';
+      document.getElementById('chatHeader').style.display   = 'flex';
+      document.getElementById('chatInputRow').style.display = 'flex';
+
+      // Charger les détails du groupe
+      try {
+        const r = await fetch(API_BASE() + '/groups/' + groupId, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _currentGroupData = await r.json();
+      } catch(e) { return; }
+
+      // En-tête
+      const g = _currentGroupData;
+      const headerAv = document.getElementById('chatHeaderAvatar');
+      const headerName = document.getElementById('chatHeaderName');
+      const headerSub  = document.getElementById('chatHeaderSub');
+      headerAv.innerHTML = g.photo
+        ? '<img src="' + g.photo + '" style="width:40px;height:40px;object-fit:cover;border-radius:12px" />'
+        : '<div class="mpx-group-avatar" style="width:40px;height:40px;font-size:0.9rem">' + g.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+      headerName.textContent = g.name;
+      headerSub.textContent  = (g.members ? g.members.length : 1) + ' membre(s)';
+      headerSub.style.display = 'block';
+
+      // Boutons actions dans l'en-tête
+      const profileLink = document.getElementById('chatProfileLink');
+      profileLink.innerHTML = '<button class="mpx-group-action-btn" onclick="openGroupMembersModal()" title="Membres"><i class="fas fa-users"></i></button>';
+      if (g.role === 'admin') {
+        profileLink.innerHTML += '<button class="mpx-group-action-btn" onclick="openEditGroupModal()" title="Modifier"><i class="fas fa-edit"></i></button>';
+      }
+      profileLink.innerHTML += '<button class="mpx-group-action-btn" onclick="leaveOrDeleteGroup()" title="' + (g.role === 'admin' && g.created_by === (getUser()&&getUser().id) ? 'Supprimer' : 'Quitter') + '" style="color:var(--red)"><i class="fas fa-sign-out-alt"></i></button>';
+
+      // Charger les messages
+      await loadGroupMessages(groupId);
+
+      // Mettre à jour le badge
+      const gInList = _allGroups.find(function(x){ return x.id === groupId; });
+      if (gInList) { gInList.unread_count = 0; renderGroupList(); _updateGroupTabBadge(); }
+    }
+
+    async function loadGroupMessages(groupId) {
+      const box = document.getElementById('chatMessages');
+      box.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+      try {
+        const r = await fetch(API_BASE() + '/groups/' + groupId + '/messages?limit=30', { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _groupMessages = await r.json();
+        renderGroupMessages();
+      } catch(e) {
+        box.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red)">Erreur de chargement</div>';
+      }
+    }
+
+    function renderGroupMessages() {
+      const box  = document.getElementById('chatMessages');
+      const me   = getUser();
+      if (!_groupMessages.length) {
+        box.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text2);font-size:0.85rem">Aucun message. Soyez le premier !</div>';
+        return;
+      }
+      box.innerHTML = _groupMessages.map(function(msg) {
+        const isOwn = me && msg.sender_id === me.id;
+        const av = msg.sender_photo
+          ? '<img src="' + msg.sender_photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />'
+          : '<div class="avatar-circle avatar-sm" style="background:' + (msg.sender_color||'#6c63ff') + ';flex-shrink:0">' + (msg.sender_name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+        const reactions = _buildGroupReactions(msg);
+        const replyBlock = msg.reply_content
+          ? '<div class="mpx-reply-preview" style="margin-bottom:0.3rem"><div class="mpx-reply-preview-inner"><span class="mpx-reply-name">' + (msg.reply_sender_name||'') + '</span><span class="mpx-reply-text">' + msg.reply_content.slice(0,60) + '</span></div></div>'
+          : '';
+        const imgBlock = msg.image ? '<img src="' + msg.image + '" style="max-width:220px;border-radius:10px;display:block;margin-top:0.3rem" />' : '';
+        const time = _groupTimeAgo(msg.created_at);
+        return '<div class="mpx-msg-row ' + (isOwn ? 'own' : '') + '" data-msgid="' + msg.id + '">' +
+          (!isOwn ? '<div class="mpx-msg-avatar">' + av + '</div>' : '') +
+          '<div class="mpx-msg-col">' +
+            (!isOwn ? '<div class="mpx-msg-sender-name">' + (msg.sender_name||'') + '</div>' : '') +
+            '<div class="mpx-bubble ' + (isOwn ? 'own' : '') + '">' +
+              replyBlock +
+              (msg.content ? '<span>' + msg.content + '</span>' : '') +
+              imgBlock +
+              '<span class="mpx-msg-time">' + time + '</span>' +
+            '</div>' +
+            (reactions ? '<div class="mpx-reactions-row">' + reactions + '</div>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    function _buildGroupReactions(msg) {
+      if (!msg.reactions || !msg.reactions.length) return '';
+      const counts = {};
+      msg.reactions.forEach(function(r){ counts[r.emoji] = (counts[r.emoji]||0) + 1; });
+      return Object.entries(counts).map(function(e){
+        return '<span class="mpx-rx-chip" onclick="sendGroupReaction(' + msg.id + ',\'' + e[0] + '\')">'
+          + e[0] + ' ' + e[1] + '</span>';
+      }).join('');
+    }
+
+    function _groupTimeAgo(dateStr) {
+      const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+      if (diff < 60)    return "\u00e0 l'instant";
+      if (diff < 3600)  return 'Il y a ' + Math.floor(diff/60) + ' min';
+      if (diff < 86400) return 'Il y a ' + Math.floor(diff/3600) + 'h';
+      return new Date(dateStr).toLocaleDateString('fr-FR');
+    }
+
+    async function sendGroupMessage() {
+      const gid = window._currentGroupId;
+      if (!gid) return;
+      const input   = document.getElementById('chatInput');
+      const content = input.value.trim();
+      if (!content && !_groupImageB64) return;
+      input.value = '';
+      const body = { content: content, image: _groupImageB64 || '' };
+      if (_groupReplyTo) { body.replyToId = _groupReplyTo.id; }
+      _groupImageB64 = '';
+      _groupReplyTo  = null;
+      document.getElementById('chatReplyBar').style.display   = 'none';
+      document.getElementById('chatImagePreview').style.display = 'none';
+      try {
+        const r = await fetch(API_BASE() + '/groups/' + gid + '/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+          body: JSON.stringify(body)
+        });
+        const msg = await r.json();
+        if (!r.ok) return;
+        _groupMessages.push(msg);
+        renderGroupMessages();
+      } catch(e) {}
+    }
+
+    async function sendGroupReaction(msgId, emoji) {
+      const gid = window._currentGroupId;
+      if (!gid) return;
+      const me  = getUser();
+      const msg = _groupMessages.find(function(m){ return m.id === msgId; });
+      if (!msg) return;
+      const existing = msg.reactions && msg.reactions.find(function(r){ return r.user_id === (me&&me.id); });
+      const action   = (existing && existing.emoji === emoji) ? 'remove' : 'add';
+      try {
+        await fetch(API_BASE() + '/groups/' + gid + '/messages/' + msgId + '/reaction', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+          body: JSON.stringify({ emoji: emoji, action: action })
+        });
+        // Mise à jour optimiste
+        if (!msg.reactions) msg.reactions = [];
+        if (action === 'remove') {
+          msg.reactions = msg.reactions.filter(function(r){ return !(r.user_id === (me&&me.id)); });
+        } else {
+          msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== (me&&me.id); });
+          msg.reactions.push({ emoji: emoji, user_id: me.id });
+        }
+        renderGroupMessages();
+      } catch(e) {}
+    }
+
+    // ===== MODAL MEMBRES =====
+    function openGroupMembersModal() {
+      if (!_currentGroupData) return;
+      const g = _currentGroupData;
+      const me = getUser();
+      document.getElementById('groupMembersTitle').textContent = g.name + ' — ' + (g.members||[]).length + ' membre(s)';
+      const list = document.getElementById('groupMembersList');
+      list.innerHTML = (g.members||[]).map(function(m) {
+        const isCreator = m.user_id === g.created_by;
+        const av = m.avatar_photo
+          ? '<img src="' + m.avatar_photo + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" />'
+          : '<div class="avatar-circle avatar-sm" style="background:' + (m.avatar_color||'#6c63ff') + '">' + (m.name||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+        const roleLabel = '<span class="mpx-member-row-role ' + m.role + '">' + (isCreator ? 'Créateur' : m.role === 'admin' ? 'Admin' : 'Membre') + '</span>';
+        let actions = '';
+        if (g.role === 'admin' && m.user_id !== (me&&me.id)) {
+          if (isCreator) {
+            actions = '';
+          } else if (g.created_by === (me&&me.id)) {
+            const newRole = m.role === 'admin' ? 'member' : 'admin';
+            const roleLabel2 = m.role === 'admin' ? 'Rétrograder' : 'Promouvoir';
+            actions = '<button class="mpx-member-action" onclick="changeGroupMemberRole(' + m.user_id + ',\'' + newRole + '\')"><i class="fas fa-user-shield"></i> ' + roleLabel2 + '</button>'
+              + '<button class="mpx-member-action danger" onclick="removeGroupMemberFromGroup(' + m.user_id + ')"><i class="fas fa-user-minus"></i> Retirer</button>';
+          } else {
+            actions = '<button class="mpx-member-action danger" onclick="removeGroupMemberFromGroup(' + m.user_id + ')"><i class="fas fa-user-minus"></i> Retirer</button>';
+          }
+        }
+        return '<div class="mpx-member-row">' + av
+          + '<div class="mpx-member-row-info"><div class="mpx-member-row-name">' + m.name + '</div>' + roleLabel + '</div>'
+          + (actions ? '<div class="mpx-member-actions">' + actions + '</div>' : '')
+          + '</div>';
+      }).join('');
+      const adminActions = document.getElementById('groupMembersAdminActions');
+      adminActions.style.display = g.role === 'admin' ? 'block' : 'none';
+      document.getElementById('addMemberSearch').value = '';
+      document.getElementById('addMemberResults').innerHTML = '';
+      document.getElementById('groupMembersModal').style.display = 'flex';
+    }
+
+    function closeGroupMembersModal() {
+      document.getElementById('groupMembersModal').style.display = 'none';
+    }
+
+    let _addMemberTimer = null;
+    async function searchAddMember(query) {
+      const results = document.getElementById('addMemberResults');
+      clearTimeout(_addMemberTimer);
+      if (!query || query.length < 2) { results.innerHTML = ''; return; }
+      _addMemberTimer = setTimeout(async function() {
+        try {
+          const r = await fetch(API_BASE() + '/members/search?q=' + encodeURIComponent(query), { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+          const users = await r.json();
+          const memberIds = new Set((_currentGroupData.members||[]).map(function(m){ return m.user_id; }));
+          const filtered = (Array.isArray(users) ? users : []).filter(function(u){ return !memberIds.has(u.id); }).slice(0, 5);
+          if (!filtered.length) { results.innerHTML = '<div class="mpx-modal-empty">Aucun résultat</div>'; return; }
+          results.innerHTML = filtered.map(function(u) {
+            return '<div class="mpx-result-item" onclick="addMemberToGroup(' + u.id + ')">' +
+              '<div class="mpx-result-info"><span class="mpx-result-name">' + u.name + '</span></div>' +
+              '<i class="fas fa-plus" style="color:var(--accent)"></i></div>';
+          }).join('');
+        } catch(e) {}
+      }, 300);
+    }
+
+    async function addMemberToGroup(userId) {
+      const gid = window._currentGroupId;
+      if (!gid) return;
+      try {
+        await fetch(API_BASE() + '/groups/' + gid + '/members', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+          body: JSON.stringify({ userId: userId })
+        });
+        // Recharger les détails
+        const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _currentGroupData = await r.json();
+        openGroupMembersModal();
+      } catch(e) {}
+    }
+
+    async function removeGroupMemberFromGroup(userId) {
+      const gid = window._currentGroupId;
+      if (!gid || !confirm('Retirer ce membre ?')) return;
+      try {
+        await fetch(API_BASE() + '/groups/' + gid + '/members/' + userId, {
+          method: 'DELETE', headers: { 'Authorization': 'Bearer ' + _jwt() }
+        });
+        const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _currentGroupData = await r.json();
+        openGroupMembersModal();
+      } catch(e) {}
+    }
+
+    async function changeGroupMemberRole(userId, role) {
+      const gid = window._currentGroupId;
+      if (!gid) return;
+      try {
+        await fetch(API_BASE() + '/groups/' + gid + '/members/' + userId + '/role', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+          body: JSON.stringify({ role: role })
+        });
+        const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _currentGroupData = await r.json();
+        openGroupMembersModal();
+      } catch(e) {}
+    }
+
+    async function leaveOrDeleteGroup() {
+      const gid = window._currentGroupId;
+      const me  = getUser();
+      if (!gid || !_currentGroupData) return;
+      const isCreator = _currentGroupData.created_by === (me&&me.id);
+      const msg = isCreator ? 'Supprimer ce groupe définitivement ?' : 'Quitter ce groupe ?';
+      if (!confirm(msg)) return;
+      try {
+        const url    = isCreator ? API_BASE() + '/groups/' + gid : API_BASE() + '/groups/' + gid + '/leave';
+        const method = isCreator ? 'DELETE' : 'POST';
+        await fetch(url, { method: method, headers: { 'Authorization': 'Bearer ' + _jwt() } });
+        _closeActiveChat();
+        await loadGroups();
+      } catch(e) {}
+    }
+
+    function openEditGroupModal() {
+      if (!_currentGroupData) return;
+      const name = prompt('Nouveau nom du groupe :', _currentGroupData.name);
+      if (!name || !name.trim()) return;
+      fetch(API_BASE() + '/groups/' + window._currentGroupId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+        body: JSON.stringify({ name: name.trim() })
+      }).then(function(r){ return r.json(); }).then(function(g) {
+        _currentGroupData.name = g.name;
+        document.getElementById('chatHeaderName').textContent = g.name;
+        loadGroups();
+      }).catch(function(){});
+    }
+
+    // ===== SSE GROUPES =====
+    // Le SSE existant (notifications.js) reçoit les événements GROUP_MESSAGE
+    // On écoute via un hook sur _sseSource dans notifications.js
+    function _onGroupSSE(payload) {
+      if (payload.type === 'GROUP_MESSAGE') {
+        // Mettre à jour la liste
+        const g = _allGroups.find(function(x){ return x.id === payload.groupId; });
+        if (g) {
+          g.last_message = payload.message.content || 'Photo';
+          if (window._currentGroupId !== payload.groupId) g.unread_count = (parseInt(g.unread_count)||0) + 1;
+          renderGroupList();
+          _updateGroupTabBadge();
+        }
+        // Si le groupe est ouvert, ajouter le message
+        if (window._currentGroupId === payload.groupId) {
+          _groupMessages.push(payload.message);
+          renderGroupMessages();
+        }
+      }
+      if (payload.type === 'GROUP_REACTION' && window._currentGroupId === payload.groupId) {
+        const msg = _groupMessages.find(function(m){ return m.id === payload.msgId; });
+        if (msg) {
+          if (!msg.reactions) msg.reactions = [];
+          if (payload.action === 'remove') {
+            msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== payload.userId; });
+          } else {
+            msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== payload.userId; });
+            msg.reactions.push({ emoji: payload.emoji, user_id: payload.userId });
+          }
+          renderGroupMessages();
+        }
+      }
+      if (payload.type === 'GROUP_MSG_DELETE' && window._currentGroupId === payload.groupId) {
+        _groupMessages = _groupMessages.filter(function(m){ return m.id !== payload.msgId; });
+        renderGroupMessages();
+      }
+    }
+    // Brancher le hook SSE après chargement
+    window._onGroupSSE = _onGroupSSE;
+
+    // ===== BRANCHEMENT BOUTON ENVOYER =====
+    // Surcharge sendChatMessage pour gérer les groupes
+    const _origSendChatMessage = typeof sendChatMessage !== 'undefined' ? sendChatMessage : null;
+    function sendChatMessage() {
+      if (window._currentGroupId) { sendGroupMessage(); return; }
+      if (_origSendChatMessage) _origSendChatMessage();
+    }
+    // Surcharge chatInput Enter
+    document.addEventListener('DOMContentLoaded', function() {
+      const input = document.getElementById('chatInput');
+      if (input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && window._currentGroupId) {
+            e.preventDefault();
+            sendGroupMessage();
+          }
+        });
+      }
+    });
 
     // ===== STORIES MESSAGES =====
     // Cache des stories filtrées (gens suivis uniquement)
@@ -364,10 +1052,22 @@
       // Charger les stories des gens suivis
       loadMsgStories();
 
-      // Ouvrir depuis URL ?with=ID (refresh ou lien direct)
+      // Ouvrir depuis URL ?tab=groups ou ?group=ID
       const params = new URLSearchParams(window.location.search);
+      const tabParam   = params.get('tab');
+      const groupParam = params.get('group');
+      if (tabParam === 'groups') {
+        const tabBtn = document.getElementById('tabBtnGroups');
+        switchMsgTab('groups', tabBtn);
+        if (groupParam) {
+          await loadGroups();
+          openGroupChat(parseInt(groupParam));
+        }
+      }
+
+      // Ouvrir depuis URL ?with=ID (refresh ou lien direct)
       const withId = params.get('with');
-      if (withId) {
+      if (withId && tabParam !== 'groups') {
         // Chercher d'abord dans les conversations chargées
         const existing = _allConvs.find(c => String(c.id) === String(withId));
         if (existing) {
@@ -453,16 +1153,10 @@
       status.textContent = 'Recherche...';
       _searchTimer = setTimeout(async () => {
         try {
-          let users = [];
-          try { users = await PaganiAPI.admin.getUsers(); } catch(e) {}
-          const me = getUser();
-          const filtered = users
-            .filter(u => u.id !== (me && me.id))
-            .filter(u =>
-              u.name.toLowerCase().includes(query.toLowerCase()) ||
-              (u.email && u.email.toLowerCase().includes(query.toLowerCase()))
-            ).slice(0, 8);
+          const r = await fetch(API_BASE() + '/members/search?q=' + encodeURIComponent(query), { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+          const users = await r.json();
           status.textContent = '';
+          const filtered = Array.isArray(users) ? users : [];
           if (!filtered.length) {
             results.innerHTML = '<div class="mpx-modal-empty"><i class="fas fa-user-slash"></i> Aucun membre trouvé</div>';
             return;

@@ -45,7 +45,7 @@ function _showToast(title, message, icon, url) {
 }
 
 function _notifToToast(notif) {
-  const icons = { PRIVATE_MESSAGE:'💬', REACTION:'❤️', COMMENT:'💬', NEW_FOLLOWER:'👤', NEW_POST:'📢', WITHDRAW_REQUEST:'💰', NEW_SUBSCRIPTION:'🎉', NEW_FORMATION:'🎓', SUB_CONFIRMED:'✅' };
+  const icons = { PRIVATE_MESSAGE:'💬', REACTION:'❤️', COMMENT:'💬', NEW_FOLLOWER:'👤', NEW_POST:'📢', WITHDRAW_REQUEST:'💰', NEW_SUBSCRIPTION:'🎉', NEW_FORMATION:'🎓', SUB_CONFIRMED:'✅', GROUP_MESSAGE:'👥' };
   const icon = icons[notif.type] || '🔔';
   const url = notif.link ? notif.link : null;
   // Ne pas afficher le toast si l'utilisateur est déjà dans ce chat
@@ -356,6 +356,12 @@ function _connectSSE(userId) {
       if (notif.type === 'REACTION') {
         if (typeof _onRxSSE === 'function') _onRxSSE(notif);
         _notifToToast(notif);
+        return;
+      }
+      // Events groupes
+      if (notif.type === 'GROUP_MESSAGE' || notif.type === 'GROUP_REACTION' || notif.type === 'GROUP_MSG_DELETE') {
+        if (typeof window._onGroupSSE === 'function') window._onGroupSSE(notif);
+        if (notif.type === 'GROUP_MESSAGE') _notifToToast(notif);
         return;
       }
     } catch(e) {}

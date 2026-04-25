@@ -1176,8 +1176,8 @@
     </div>
     <!-- TAB : VIDEOS (admin) -->
     <!-- MODAL FOLLOWERS/FOLLOWING DASHBOARD -->
-    <div id="dashFollowModal" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)closeDashFollowModal()">
-      <div class="crop-modal" style="max-width:420px;gap:0" onclick="event.stopPropagation()">
+    <div id="dashFollowModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:1rem;animation:fadeIn 0.18s ease" onclick="if(event.target===this)closeDashFollowModal()">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.4);animation:slideUp 0.22s ease;overflow:hidden" onclick="event.stopPropagation()">
         <div class="video-modal-header" style="padding:1rem 1.2rem;border-bottom:1px solid var(--border)">
           <h3 id="dashFollowModalTitle" style="font-size:0.95rem"></h3>
           <button class="video-modal-close" onclick="closeDashFollowModal()"><i class="fas fa-times"></i></button>

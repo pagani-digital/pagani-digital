@@ -6,6 +6,18 @@
   <title>Profil — Pagani Digital</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
   <link rel="stylesheet" href="/css/style.css?v=1777106940613" />
+  <style>
+    @keyframes followModalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(12px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
+    }
+    @keyframes followModalOut {
+      from { opacity: 1; transform: scale(1)   translateY(0); }
+      to   { opacity: 0; transform: scale(0.92) translateY(12px); }
+    }
+    .follow-modal-in  { animation: followModalIn  0.22s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    .follow-modal-out { animation: followModalOut 0.18s ease-in forwards; }
+  </style>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
@@ -349,6 +361,9 @@
       }
       list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
       modal.style.display = 'flex';
+      const modalBox = modal.firstElementChild;
+      modalBox.classList.remove('follow-modal-out');
+      modalBox.classList.add('follow-modal-in');
       try {
         const users = type === 'followers'
           ? await PaganiAPI.getFollowers(_profileId)
@@ -395,7 +410,14 @@
     }
 
     function closeFollowModal() {
-      document.getElementById('followModal').style.display = 'none';
+      const modal    = document.getElementById('followModal');
+      const modalBox = modal.firstElementChild;
+      modalBox.classList.remove('follow-modal-in');
+      modalBox.classList.add('follow-modal-out');
+      modalBox.addEventListener('animationend', () => {
+        modal.style.display = 'none';
+        modalBox.classList.remove('follow-modal-out');
+      }, { once: true });
     }
 
     function openMessageModal() {
