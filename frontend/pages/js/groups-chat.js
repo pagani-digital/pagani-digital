@@ -1,0 +1,773 @@
+'use strict';
+// ══════════════════════════════════════════════════════════
+//  GROUPES DE DISCUSSION — Frontend
+//  Dépend de : app.js (getUser, getInitials, esc), api.js
+// ══════════════════════════════════════════════════════════
+
+const API_BASE = () => (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+const _jwt     = () => localStorage.getItem('pd_jwt');
+
+// ── État ──────────────────────────────────────────────────
+let _allGroups        = [];
+let _currentGroupData = null;
+let _groupMessages    = [];
+let _groupImageB64    = '';
+let _groupReplyTo     = null;
+let _newGroupMembers  = [];
+let _groupSearchTimer = null;
+let _addMemberTimer   = null;
+let _groupOldestTs    = null;   // pour scroll infini (pagination)
+let _groupLoadingMore = false;
+
+// ══════════════════════════════════════════════════════════
+//  ONGLET DM / GROUPES
+// ══════════════════════════════════════════════════════════
+
+function switchMsgTab(tab, btn) {
+  window._activeTab = tab;
+  document.querySelectorAll('.mpx-tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const isDm = tab === 'dm';
+  document.getElementById('convList').style.display   = isDm ? '' : 'none';
+  document.getElementById('groupList').style.display  = isDm ? 'none' : '';
+  document.getElementById('convSearchInput').placeholder = isDm ? 'Rechercher...' : 'Rechercher un groupe...';
+  document.getElementById('mpxComposeBtn').title   = isDm ? 'Nouveau message' : 'Nouveau groupe';
+  document.getElementById('mpxComposeBtn').onclick = isDm ? showNewMsgModal : showNewGroupModal;
+  if (tab === 'groups' && _allGroups.length === 0) loadGroups();
+  _closeActiveChat();
+}
+
+function _closeActiveChat() {
+  document.getElementById('chatEmpty').style.display    = 'flex';
+  document.getElementById('chatMessages').style.display = 'none';
+  document.getElementById('chatMessages').innerHTML     = '';
+  document.getElementById('chatHeader').style.display   = 'none';
+  document.getElementById('chatInputRow').style.display = 'none';
+  // Mobile : restaurer sidebar, cacher chat
+  var sidebar = document.getElementById('mpxSidebar');
+  var chat    = document.getElementById('mpxChat');
+  if (sidebar) sidebar.classList.remove('msg-hidden');
+  if (chat)    chat.classList.remove('msg-visible');
+  window._currentChatUserId = null;
+  window._currentGroupId    = null;
+}
+
+// ══════════════════════════════════════════════════════════
+//  LISTE DES GROUPES
+// ══════════════════════════════════════════════════════════
+
+async function loadGroups() {
+  const list = document.getElementById('groupList');
+  list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+  try {
+    const r = await fetch(API_BASE() + '/groups', { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _allGroups = await r.json();
+    renderGroupList();
+    _updateGroupTabBadge();
+  } catch(e) {
+    list.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red);font-size:0.82rem">Erreur de chargement</div>';
+  }
+}
+
+function renderGroupList() {
+  const list = document.getElementById('groupList');
+  if (!_allGroups.length) {
+    list.innerHTML = '<div style="padding:2rem 1rem;text-align:center;color:var(--text2);font-size:0.85rem"><i class="fas fa-users" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.8rem"></i>Aucun groupe.<br><small>Créez-en un avec le bouton +</small></div>';
+    return;
+  }
+  list.innerHTML = _allGroups.map(function(g) {
+    const unread  = parseInt(g.unread_count) || 0;
+    const lastMsg = g.last_message ? g.last_message.slice(0,40) + (g.last_message.length > 40 ? '…' : '') : 'Aucun message';
+    const av = g.photo
+      ? '<img src="' + g.photo + '" style="width:44px;height:44px;object-fit:cover;border-radius:12px" />'
+      : '<div class="mpx-group-avatar">' + g.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+    return '<div class="mpx-group-item" data-gid="' + g.id + '" onclick="openGroupChat(' + g.id + ')">'
+      + av
+      + '<div class="mpx-group-info"><div class="mpx-group-name">' + g.name + '</div><div class="mpx-group-last">' + lastMsg + '</div></div>'
+      + '<div class="mpx-group-meta">'
+      + (unread > 0 ? '<span class="mpx-group-unread">' + unread + '</span>' : '')
+      + '<span class="mpx-group-count"><i class="fas fa-users" style="font-size:0.65rem"></i> ' + (g.member_count || 1) + '</span>'
+      + '</div></div>';
+  }).join('');
+}
+
+function _updateGroupTabBadge() {
+  const total = _allGroups.reduce(function(s,g){ return s + (parseInt(g.unread_count)||0); }, 0);
+  const badge = document.getElementById('tabBadgeGroups');
+  if (!badge) return;
+  badge.textContent    = total;
+  badge.style.display  = total > 0 ? 'inline-block' : 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL CRÉATION GROUPE
+// ══════════════════════════════════════════════════════════
+
+function showNewGroupModal() {
+  _newGroupMembers = [];
+  document.getElementById('newGroupName').value         = '';
+  document.getElementById('newGroupSearch').value       = '';
+  document.getElementById('newGroupResults').innerHTML  = '';
+  document.getElementById('newGroupSelected').innerHTML = '';
+  document.getElementById('newGroupStatus').textContent = '';
+  document.getElementById('newGroupModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('newGroupName').focus(); }, 50);
+}
+
+function closeNewGroupModal() {
+  document.getElementById('newGroupModal').style.display = 'none';
+}
+
+async function searchGroupMembers(query) {
+  const results = document.getElementById('newGroupResults');
+  clearTimeout(_groupSearchTimer);
+  if (!query || query.length < 2) { results.innerHTML = ''; return; }
+  _groupSearchTimer = setTimeout(async function() {
+    try {
+      const r = await fetch(API_BASE() + '/members/search?q=' + encodeURIComponent(query), { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+      const users = await r.json();
+      const filtered = (Array.isArray(users) ? users : [])
+        .filter(function(u){ return !_newGroupMembers.find(function(m){ return m.id === u.id; }); })
+        .slice(0, 6);
+      if (!filtered.length) { results.innerHTML = '<div class="mpx-modal-empty">Aucun membre trouvé</div>'; return; }
+      results.innerHTML = filtered.map(function(u) {
+        const av = u.avatarPhoto
+          ? '<img src="' + u.avatarPhoto + '" class="mpx-result-avatar" />'
+          : '<div class="mpx-result-avatar mpx-result-initials" style="background:' + (u.avatarColor||'#6c63ff') + '">' + getInitials(u.name) + '</div>';
+        return '<div class="mpx-result-item" onclick="addGroupMember(' + u.id + ',\'' + u.name.replace(/'/g,"\\'") + '\',\'' + (u.avatarColor||'#6c63ff') + '\',\'' + (u.avatarPhoto||'') + '\')">'
+          + av + '<div class="mpx-result-info"><span class="mpx-result-name">' + u.name + '</span></div>'
+          + '<i class="fas fa-plus" style="color:var(--accent);font-size:0.85rem"></i></div>';
+      }).join('');
+    } catch(e) {}
+  }, 300);
+}
+
+function addGroupMember(id, name, color, photo) {
+  if (_newGroupMembers.find(function(m){ return m.id === id; })) return;
+  _newGroupMembers.push({ id, name, color, photo });
+  _renderGroupMemberChips();
+  document.getElementById('newGroupSearch').value = '';
+  document.getElementById('newGroupResults').innerHTML = '';
+}
+
+function removeGroupMember(id) {
+  _newGroupMembers = _newGroupMembers.filter(function(m){ return m.id !== id; });
+  _renderGroupMemberChips();
+}
+
+function _renderGroupMemberChips() {
+  document.getElementById('newGroupSelected').innerHTML = _newGroupMembers.map(function(m) {
+    return '<span class="mpx-member-chip">' + m.name
+      + ' <button onclick="removeGroupMember(' + m.id + ')"><i class="fas fa-times"></i></button></span>';
+  }).join('');
+}
+
+async function createGroup() {
+  const name   = document.getElementById('newGroupName').value.trim();
+  const status = document.getElementById('newGroupStatus');
+  if (!name) { status.style.color = 'var(--red)'; status.textContent = 'Le nom est obligatoire.'; return; }
+  status.style.color = 'var(--text2)'; status.textContent = 'Création...';
+  try {
+    const r = await fetch(API_BASE() + '/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify({ name, memberIds: _newGroupMembers.map(function(m){ return m.id; }) })
+    });
+    const group = await r.json();
+    if (!r.ok) { status.style.color = 'var(--red)'; status.textContent = group.error || 'Erreur'; return; }
+    closeNewGroupModal();
+    await loadGroups();
+    switchMsgTab('groups', document.getElementById('tabBtnGroups'));
+    openGroupChat(group.id);
+  } catch(e) { status.style.color = 'var(--red)'; status.textContent = 'Erreur serveur.'; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  OUVERTURE CHAT GROUPE
+// ══════════════════════════════════════════════════════════
+
+async function openGroupChat(groupId) {
+  window._currentGroupId    = groupId;
+  window._currentChatUserId = null;
+  _groupMessages  = [];
+  _groupOldestTs  = null;
+  _groupReplyTo   = null;
+  _groupImageB64  = '';
+
+  document.querySelectorAll('.mpx-group-item').forEach(function(el){
+    el.classList.toggle('active', parseInt(el.dataset.gid) === groupId);
+  });
+
+  document.getElementById('chatEmpty').style.display    = 'none';
+  document.getElementById('chatMessages').style.display = 'flex';
+  document.getElementById('chatMessages').innerHTML     = '';
+  document.getElementById('chatHeader').style.display   = 'flex';
+  document.getElementById('chatInputRow').style.display = 'flex';
+  // Mobile : cacher sidebar, afficher chat (identique au DM)
+  var sidebar = document.getElementById('mpxSidebar');
+  var chat    = document.getElementById('mpxChat');
+  if (sidebar) sidebar.classList.add('msg-hidden');
+  if (chat)    chat.classList.add('msg-visible');
+  _clearReplyBar();
+
+  try {
+    const r = await fetch(API_BASE() + '/groups/' + groupId, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _currentGroupData = await r.json();
+  } catch(e) { return; }
+
+  // En-tête
+  const g = _currentGroupData;
+  document.getElementById('chatHeaderAvatar').innerHTML = g.photo
+    ? '<img src="' + g.photo + '" style="width:40px;height:40px;object-fit:cover;border-radius:12px" />'
+    : '<div class="mpx-group-avatar" style="width:40px;height:40px;font-size:0.9rem">' + g.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+  document.getElementById('chatHeaderName').textContent  = g.name;
+  document.getElementById('chatHeaderSub').textContent   = (g.members ? g.members.length : 1) + ' membre(s)';
+  document.getElementById('chatHeaderSub').style.display = 'block';
+
+  // Boutons header
+  const profileLink = document.getElementById('chatProfileLink');
+  profileLink.removeAttribute('href');
+  profileLink.innerHTML =
+    '<button class="mpx-group-action-btn" onclick="openGroupMembersModal()" title="Membres"><i class="fas fa-users"></i></button>'
+    + (g.role === 'admin' ? '<button class="mpx-group-action-btn" onclick="openEditGroupModal()" title="Modifier"><i class="fas fa-edit"></i></button>' : '')
+    + '<button class="mpx-group-action-btn" onclick="leaveOrDeleteGroup()" style="color:var(--red)" title="'
+    + (g.role === 'admin' && g.created_by === (getUser()&&getUser().id) ? 'Supprimer' : 'Quitter')
+    + '"><i class="fas fa-sign-out-alt"></i></button>';
+
+  await _loadGroupMessages(groupId, false);
+
+  // Réinitialiser badge
+  const gInList = _allGroups.find(function(x){ return x.id === groupId; });
+  if (gInList) { gInList.unread_count = 0; renderGroupList(); _updateGroupTabBadge(); }
+}
+
+// ── Chargement messages (initial ou pagination) ────────────
+async function _loadGroupMessages(groupId, prepend) {
+  const box = document.getElementById('chatMessages');
+  if (!prepend) {
+    box.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+  }
+  try {
+    let url = API_BASE() + '/groups/' + groupId + '/messages?limit=30';
+    if (prepend && _groupOldestTs) url += '&before=' + encodeURIComponent(_groupOldestTs);
+    const r = await fetch(url, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    const msgs = await r.json();
+    if (!prepend) {
+      _groupMessages = msgs;
+      renderGroupMessages();
+      box.scrollTop = box.scrollHeight;
+    } else {
+      if (!msgs.length) { _groupLoadingMore = false; return; }
+      const prevHeight = box.scrollHeight;
+      _groupMessages = msgs.concat(_groupMessages);
+      renderGroupMessages();
+      box.scrollTop = box.scrollHeight - prevHeight; // maintenir position
+    }
+    if (msgs.length) _groupOldestTs = msgs[0].created_at;
+    _groupLoadingMore = false;
+  } catch(e) {
+    if (!prepend) box.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--red)">Erreur de chargement</div>';
+    _groupLoadingMore = false;
+  }
+}
+
+// ── Scroll infini (charger plus anciens) ───────────────────
+function _initGroupScrollInfinite() {
+  const box = document.getElementById('chatMessages');
+  box.addEventListener('scroll', function() {
+    if (box.scrollTop < 60 && !_groupLoadingMore && window._currentGroupId) {
+      _groupLoadingMore = true;
+      _loadGroupMessages(window._currentGroupId, true);
+    }
+    // Bouton scroll vers le bas
+    const btn = document.getElementById('scrollDownBtn');
+    if (btn) {
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      btn.classList.toggle('visible', !atBottom);
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDU MESSAGES
+// ══════════════════════════════════════════════════════════
+
+function renderGroupMessages() {
+  const box = document.getElementById('chatMessages');
+  const me  = getUser();
+  if (!_groupMessages.length) {
+    box.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text2);font-size:0.85rem">Aucun message. Soyez le premier !</div>';
+    return;
+  }
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.innerHTML = _groupMessages.map(function(msg){ return _buildGroupMsgHTML(msg, me); }).join('');
+  // Attacher long-press sur chaque bulle
+  box.querySelectorAll('.mpx-bubble[data-msgid]').forEach(function(b){ _attachBubbleLongPress(b); });
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function _buildGroupMsgHTML(msg, me) {
+  const isOwn = me && msg.sender_id === me.id;
+  const av = msg.sender_photo
+    ? '<img src="' + msg.sender_photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />'
+    : '<div class="avatar-circle avatar-sm" style="background:' + (msg.sender_color||'#6c63ff') + ';flex-shrink:0">' + getInitials(msg.sender_name||'?') + '</div>';
+
+  const replyBlock = msg.reply_content
+    ? '<div class="mpx-reply-preview" style="margin-bottom:0.3rem"><div class="mpx-reply-preview-inner">'
+      + '<span class="mpx-reply-name">' + esc(msg.reply_sender_name||'') + '</span>'
+      + '<span class="mpx-reply-text">' + esc(msg.reply_content.slice(0,60)) + '</span>'
+      + '</div></div>'
+    : '';
+
+  const imgBlock = msg.image
+    ? '<img src="' + msg.image + '" style="max-width:220px;border-radius:10px;display:block;margin-top:0.3rem;cursor:pointer" onclick="_openImgFull(this.src)" />'
+    : '';
+
+  const reactions = _buildGroupReactions(msg);
+  const time      = _groupTimeAgo(msg.created_at);
+
+  return '<div class="mpx-msg-row ' + (isOwn ? 'own' : '') + '" data-msgid="' + msg.id + '">'
+    + (!isOwn ? '<div class="mpx-msg-avatar">' + av + '</div>' : '')
+    + '<div class="mpx-msg-col">'
+      + (!isOwn ? '<div class="mpx-msg-sender-name">' + esc(msg.sender_name||'') + '</div>' : '')
+      + '<div class="mpx-bubble ' + (isOwn ? 'own' : '') + '" data-msgid="' + msg.id + '">'
+        + replyBlock
+        + (msg.content ? '<span>' + esc(msg.content) + '</span>' : '')
+        + imgBlock
+        + '<span class="mpx-msg-time">' + time + '</span>'
+      + '</div>'
+      + (reactions ? '<div class="mpx-reactions-row">' + reactions + '</div>' : '')
+    + '</div>'
+  + '</div>';
+}
+
+function _buildGroupReactions(msg) {
+  if (!msg.reactions || !msg.reactions.length) return '';
+  const me = getUser();
+  const counts = {};
+  msg.reactions.forEach(function(r){ counts[r.emoji] = (counts[r.emoji]||0) + 1; });
+  return Object.entries(counts).map(function(e) {
+    const mine = me && msg.reactions.find(function(r){ return r.user_id === me.id && r.emoji === e[0]; });
+    return '<span class="mpx-rx-chip' + (mine ? ' mine' : '') + '" onclick="sendGroupReaction(' + msg.id + ',\'' + e[0] + '\')">' + e[0] + ' ' + e[1] + '</span>';
+  }).join('');
+}
+
+function _groupTimeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60)    return "à l'instant";
+  if (diff < 3600)  return 'Il y a ' + Math.floor(diff/60) + ' min';
+  if (diff < 86400) return 'Il y a ' + Math.floor(diff/3600) + 'h';
+  return new Date(dateStr).toLocaleDateString('fr-FR');
+}
+
+function _openImgFull(src) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:3000;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+  ov.innerHTML = '<img src="' + src + '" style="max-width:95vw;max-height:90vh;border-radius:10px;object-fit:contain" />';
+  ov.onclick = function(){ ov.remove(); };
+  document.body.appendChild(ov);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ENVOI MESSAGE + IMAGE + REPLY
+// ══════════════════════════════════════════════════════════
+
+async function sendGroupMessage() {
+  const gid = window._currentGroupId;
+  if (!gid) return;
+  const input   = document.getElementById('chatInput');
+  const content = input.value.trim();
+  if (!content && !_groupImageB64) return;
+  input.value = '';
+  const body = { content, image: _groupImageB64 || '' };
+  if (_groupReplyTo) body.replyToId = _groupReplyTo.id;
+  _groupImageB64 = '';
+  _groupReplyTo  = null;
+  _clearReplyBar();
+  document.getElementById('chatImagePreview').style.display = 'none';
+  document.getElementById('chatImagePreviewImg').src = '';
+  try {
+    const r = await fetch(API_BASE() + '/groups/' + gid + '/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify(body)
+    });
+    const msg = await r.json();
+    if (!r.ok) return;
+    // Ajouter seulement si pas déjà présent (évite le doublon avec SSE)
+    if (!_groupMessages.find(function(m){ return m.id === msg.id; })) {
+      _groupMessages.push(msg);
+      renderGroupMessages();
+    }
+  } catch(e) {}
+}
+
+async function sendGroupReaction(msgId, emoji) {
+  const gid = window._currentGroupId;
+  if (!gid) return;
+  const me  = getUser();
+  const msg = _groupMessages.find(function(m){ return m.id === msgId; });
+  if (!msg) return;
+  const existing = msg.reactions && msg.reactions.find(function(r){ return r.user_id === (me&&me.id); });
+  const action   = (existing && existing.emoji === emoji) ? 'remove' : 'add';
+  // Mise à jour optimiste
+  if (!msg.reactions) msg.reactions = [];
+  msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== (me&&me.id); });
+  if (action === 'add') msg.reactions.push({ emoji, user_id: me.id });
+  renderGroupMessages();
+  try {
+    await fetch(API_BASE() + '/groups/' + gid + '/messages/' + msgId + '/reaction', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify({ emoji, action })
+    });
+  } catch(e) {}
+}
+
+async function deleteGroupMessage(msgId) {
+  const gid = window._currentGroupId;
+  if (!gid || !confirm('Supprimer ce message ?')) return;
+  try {
+    await fetch(API_BASE() + '/groups/' + gid + '/messages/' + msgId, {
+      method: 'DELETE', headers: { 'Authorization': 'Bearer ' + _jwt() }
+    });
+    _groupMessages = _groupMessages.filter(function(m){ return m.id !== msgId; });
+    renderGroupMessages();
+  } catch(e) {}
+}
+
+// ── Reply ──────────────────────────────────────────────────
+function _setGroupReply(msgId) {
+  const msg = _groupMessages.find(function(m){ return m.id === msgId; });
+  if (!msg) return;
+  _groupReplyTo = msg;
+  document.getElementById('chatReplyName').textContent = msg.sender_name || '';
+  document.getElementById('chatReplyText').textContent = msg.content ? msg.content.slice(0,60) : '📷 Photo';
+  document.getElementById('chatReplyBar').style.display = 'flex';
+  document.getElementById('chatInput').focus();
+}
+
+function _clearReplyBar() {
+  _groupReplyTo = null;
+  const bar = document.getElementById('chatReplyBar');
+  if (bar) bar.style.display = 'none';
+}
+
+// ── Image ──────────────────────────────────────────────────
+function _groupPreviewImage(file) {
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    _groupImageB64 = e.target.result;
+    document.getElementById('chatImagePreviewImg').src = e.target.result;
+    document.getElementById('chatImagePreview').style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+}
+
+function _removeGroupImage() {
+  _groupImageB64 = '';
+  document.getElementById('chatImagePreview').style.display = 'none';
+  document.getElementById('chatImagePreviewImg').src = '';
+  const inp = document.getElementById('chatImageInput');
+  if (inp) inp.value = '';
+}
+
+// ══════════════════════════════════════════════════════════
+//  MENU CONTEXTUEL BULLE (long press / clic droit)
+// ══════════════════════════════════════════════════════════
+
+function _attachBubbleLongPress(bubble) {
+  let timer = null, moved = false;
+  bubble.addEventListener('touchstart', function() {
+    moved = false;
+    timer = setTimeout(function(){ if (!moved) _showBubbleMenu(bubble); }, 500);
+  }, { passive: true });
+  bubble.addEventListener('touchmove',   function(){ moved = true; clearTimeout(timer); }, { passive: true });
+  bubble.addEventListener('touchend',    function(){ clearTimeout(timer); }, { passive: true });
+  bubble.addEventListener('contextmenu', function(e){ e.preventDefault(); _showBubbleMenu(bubble); });
+}
+
+function _showBubbleMenu(bubble) {
+  document.querySelectorAll('.mpx-bubble-menu').forEach(function(m){ m.remove(); });
+  const msgId   = parseInt(bubble.dataset.msgid);
+  const msg     = _groupMessages.find(function(m){ return m.id === msgId; });
+  const me      = getUser();
+  if (!msgId || !msg) return;
+  const isOwn   = me && msg.sender_id === me.id;
+  const isAdmin = _currentGroupData && _currentGroupData.role === 'admin';
+  const EMOJIS  = ['❤️','😂','😮','😢','😡','👍'];
+  const menu = document.createElement('div');
+  menu.className = 'mpx-bubble-menu';
+  menu.innerHTML =
+    '<div class="mpx-bubble-menu-emojis">'
+    + EMOJIS.map(function(e){
+        return '<button onclick="sendGroupReaction(' + msgId + ',\'' + e + '\');_closeBubbleMenu()">' + e + '</button>';
+      }).join('')
+    + '</div>'
+    + '<div class="mpx-bubble-menu-actions">'
+    + '<button onclick="_setGroupReply(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-reply"></i> Répondre</button>'
+    + ((isOwn || isAdmin) ? '<button class="danger" onclick="deleteGroupMessage(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-trash"></i> Supprimer</button>' : '')
+    + '</div>';
+  bubble.style.position = 'relative';
+  bubble.appendChild(menu);
+  setTimeout(function(){
+    document.addEventListener('click', function close(ev){
+      if (!menu.contains(ev.target)){ menu.remove(); document.removeEventListener('click', close); }
+    });
+  }, 10);
+}
+
+function _closeBubbleMenu() {
+  document.querySelectorAll('.mpx-bubble-menu').forEach(function(m){ m.remove(); });
+}
+
+// ══════════════════════════════════════════════════════════
+//  MODAL MEMBRES
+// ══════════════════════════════════════════════════════════
+
+function openGroupMembersModal() {
+  if (!_currentGroupData) return;
+  const g = _currentGroupData, me = getUser();
+  document.getElementById('groupMembersTitle').textContent = g.name + ' — ' + (g.members||[]).length + ' membre(s)';
+  document.getElementById('groupMembersList').innerHTML = (g.members||[]).map(function(m) {
+    const isCreator = m.user_id === g.created_by;
+    const av = m.avatar_photo
+      ? '<img src="' + m.avatar_photo + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" />'
+      : '<div class="avatar-circle avatar-sm" style="background:' + (m.avatar_color||'#6c63ff') + '">' + getInitials(m.name||'?') + '</div>';
+    const roleLabel = '<span class="mpx-member-row-role ' + m.role + '">' + (isCreator ? 'Créateur' : m.role === 'admin' ? 'Admin' : 'Membre') + '</span>';
+    let actions = '';
+    if (g.role === 'admin' && m.user_id !== (me&&me.id) && !isCreator) {
+      const newRole = m.role === 'admin' ? 'member' : 'admin';
+      if (g.created_by === (me&&me.id)) {
+        actions = '<button class="mpx-member-action" onclick="changeGroupMemberRole(' + m.user_id + ',\'' + newRole + '\')"><i class="fas fa-user-shield"></i> ' + (m.role === 'admin' ? 'Rétrograder' : 'Promouvoir') + '</button>';
+      }
+      actions += '<button class="mpx-member-action danger" onclick="removeGroupMemberFromGroup(' + m.user_id + ')"><i class="fas fa-user-minus"></i> Retirer</button>';
+    }
+    return '<div class="mpx-member-row">' + av
+      + '<div class="mpx-member-row-info"><div class="mpx-member-row-name">' + m.name + '</div>' + roleLabel + '</div>'
+      + (actions ? '<div class="mpx-member-actions">' + actions + '</div>' : '')
+      + '</div>';
+  }).join('');
+  document.getElementById('groupMembersAdminActions').style.display = g.role === 'admin' ? 'block' : 'none';
+  document.getElementById('addMemberSearch').value = '';
+  document.getElementById('addMemberResults').innerHTML = '';
+  document.getElementById('groupMembersModal').style.display = 'flex';
+}
+
+function closeGroupMembersModal() {
+  document.getElementById('groupMembersModal').style.display = 'none';
+}
+
+async function searchAddMember(query) {
+  const results = document.getElementById('addMemberResults');
+  clearTimeout(_addMemberTimer);
+  if (!query || query.length < 2) { results.innerHTML = ''; return; }
+  _addMemberTimer = setTimeout(async function() {
+    try {
+      const r = await fetch(API_BASE() + '/members/search?q=' + encodeURIComponent(query), { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+      const users = await r.json();
+      const memberIds = new Set((_currentGroupData.members||[]).map(function(m){ return m.user_id; }));
+      const filtered = (Array.isArray(users) ? users : []).filter(function(u){ return !memberIds.has(u.id); }).slice(0,5);
+      if (!filtered.length) { results.innerHTML = '<div class="mpx-modal-empty">Aucun résultat</div>'; return; }
+      results.innerHTML = filtered.map(function(u) {
+        return '<div class="mpx-result-item" onclick="addMemberToGroup(' + u.id + ')">'
+          + '<div class="mpx-result-info"><span class="mpx-result-name">' + u.name + '</span></div>'
+          + '<i class="fas fa-plus" style="color:var(--accent)"></i></div>';
+      }).join('');
+    } catch(e) {}
+  }, 300);
+}
+
+async function addMemberToGroup(userId) {
+  const gid = window._currentGroupId;
+  if (!gid) return;
+  try {
+    await fetch(API_BASE() + '/groups/' + gid + '/members', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify({ userId })
+    });
+    const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _currentGroupData = await r.json();
+    openGroupMembersModal();
+  } catch(e) {}
+}
+
+async function removeGroupMemberFromGroup(userId) {
+  const gid = window._currentGroupId;
+  if (!gid || !confirm('Retirer ce membre ?')) return;
+  try {
+    await fetch(API_BASE() + '/groups/' + gid + '/members/' + userId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _currentGroupData = await r.json();
+    openGroupMembersModal();
+  } catch(e) {}
+}
+
+async function changeGroupMemberRole(userId, role) {
+  const gid = window._currentGroupId;
+  if (!gid) return;
+  try {
+    await fetch(API_BASE() + '/groups/' + gid + '/members/' + userId + '/role', {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify({ role })
+    });
+    const r = await fetch(API_BASE() + '/groups/' + gid, { headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _currentGroupData = await r.json();
+    openGroupMembersModal();
+  } catch(e) {}
+}
+
+async function leaveOrDeleteGroup() {
+  const gid = window._currentGroupId, me = getUser();
+  if (!gid || !_currentGroupData) return;
+  const isCreator = _currentGroupData.created_by === (me&&me.id);
+  if (!confirm(isCreator ? 'Supprimer ce groupe définitivement ?' : 'Quitter ce groupe ?')) return;
+  try {
+    const url = isCreator ? API_BASE() + '/groups/' + gid : API_BASE() + '/groups/' + gid + '/leave';
+    await fetch(url, { method: isCreator ? 'DELETE' : 'POST', headers: { 'Authorization': 'Bearer ' + _jwt() } });
+    _closeActiveChat();
+    await loadGroups();
+  } catch(e) {}
+}
+
+function openEditGroupModal() {
+  if (!_currentGroupData) return;
+  const name = prompt('Nouveau nom du groupe :', _currentGroupData.name);
+  if (!name || !name.trim()) return;
+  fetch(API_BASE() + '/groups/' + window._currentGroupId, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+    body: JSON.stringify({ name: name.trim() })
+  }).then(function(r){ return r.json(); }).then(function(g) {
+    _currentGroupData.name = g.name;
+    document.getElementById('chatHeaderName').textContent = g.name;
+    loadGroups();
+  }).catch(function(){});
+}
+
+// ══════════════════════════════════════════════════════════
+//  SSE GROUPES — fix doublon : ignorer si déjà dans la liste
+// ══════════════════════════════════════════════════════════
+
+function _onGroupSSE(payload) {
+  if (payload.type === 'GROUP_MESSAGE') {
+    const g = _allGroups.find(function(x){ return x.id === payload.groupId; });
+    if (g) {
+      g.last_message = payload.message.content || 'Photo';
+      if (window._currentGroupId !== payload.groupId) g.unread_count = (parseInt(g.unread_count)||0) + 1;
+      renderGroupList();
+      _updateGroupTabBadge();
+    }
+    if (window._currentGroupId === payload.groupId) {
+      // Ne pas ajouter si déjà présent (envoyé par nous via sendGroupMessage)
+      if (!_groupMessages.find(function(m){ return m.id === payload.message.id; })) {
+        _groupMessages.push(payload.message);
+        renderGroupMessages();
+      }
+    }
+  }
+  if (payload.type === 'GROUP_REACTION' && window._currentGroupId === payload.groupId) {
+    const msg = _groupMessages.find(function(m){ return m.id === payload.msgId; });
+    if (msg) {
+      if (!msg.reactions) msg.reactions = [];
+      msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== payload.userId; });
+      if (payload.action !== 'remove') msg.reactions.push({ emoji: payload.emoji, user_id: payload.userId });
+      renderGroupMessages();
+    }
+  }
+  if (payload.type === 'GROUP_MSG_DELETE' && window._currentGroupId === payload.groupId) {
+    _groupMessages = _groupMessages.filter(function(m){ return m.id !== payload.msgId; });
+    renderGroupMessages();
+  }
+}
+window._onGroupSSE = _onGroupSSE;
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Scroll infini
+  _initGroupScrollInfinite();
+
+  // Enter → envoyer dans groupe
+  const input = document.getElementById('chatInput');
+  if (input) {
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && window._currentGroupId) { e.preventDefault(); sendGroupMessage(); }
+    });
+  }
+
+  // Bouton image → groupe si groupe actif
+  const imgInput = document.getElementById('chatImageInput');
+  if (imgInput) {
+    imgInput.addEventListener('change', function() {
+      if (!window._currentGroupId) return; // laisser le DM gérer
+      _groupPreviewImage(this.files[0]);
+      this.value = '';
+    });
+  }
+
+  // Bouton × image → groupe si groupe actif
+  // On surcharge _removeChatImage pour les groupes
+  const origRemove = window._removeChatImage;
+  window._removeChatImage = function() {
+    if (window._currentGroupId) { _removeGroupImage(); return; }
+    if (typeof origRemove === 'function') origRemove();
+  };
+});
+
+// Surcharge sendChatMessage pour intercepter les groupes
+(function() {
+  var _orig = null;
+  var _patch = function() {
+    _orig = window.sendChatMessage;
+    window.sendChatMessage = function() {
+      if (window._currentGroupId) { sendGroupMessage(); return; }
+      if (typeof _orig === 'function') _orig();
+    };
+  };
+  if (typeof window.sendChatMessage === 'function') {
+    _patch();
+  } else {
+    document.addEventListener('DOMContentLoaded', _patch);
+  }
+})();
+
+// Bloquer openChat (DM) si un groupe est actif
+document.addEventListener('DOMContentLoaded', function() {
+  var _origOpenChat = window.openChat;
+  if (typeof _origOpenChat === 'function') {
+    window.openChat = function() {
+      if (window._currentGroupId) return;
+      _origOpenChat.apply(this, arguments);
+    };
+  } else {
+    // openChat défini plus tard dans le script inline — on patche après
+    var _desc = Object.getOwnPropertyDescriptor(window, 'openChat');
+    if (!_desc) {
+      Object.defineProperty(window, 'openChat', {
+        configurable: true,
+        set: function(fn) {
+          Object.defineProperty(window, 'openChat', {
+            configurable: true, writable: true,
+            value: function() {
+              if (window._currentGroupId) return;
+              fn.apply(this, arguments);
+            }
+          });
+        }
+      });
+    }
+  }
+});
+
+// _clearReply est appelé par le bouton × de la barre reply dans le HTML
+// On s'assure qu'il efface aussi l'état groupe
+var _origClearReply = window._clearReply;
+window._clearReply = function() {
+  _clearReplyBar();
+  if (typeof _origClearReply === 'function') _origClearReply();
+};
