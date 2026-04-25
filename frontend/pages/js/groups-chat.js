@@ -43,11 +43,15 @@ function _closeActiveChat() {
   document.getElementById('chatMessages').innerHTML     = '';
   document.getElementById('chatHeader').style.display   = 'none';
   document.getElementById('chatInputRow').style.display = 'none';
+  // Remettre chatProfileLink à son état DM (lien simple)
+  var pl = document.getElementById('chatProfileLink');
+  if (pl) { pl.innerHTML = '<i class="fas fa-user-circle"></i>'; pl.style.display = ''; }
   // Mobile : restaurer sidebar, cacher chat
   var sidebar = document.getElementById('mpxSidebar');
   var chat    = document.getElementById('mpxChat');
   if (sidebar) sidebar.classList.remove('msg-hidden');
   if (chat)    chat.classList.remove('msg-visible');
+  document.body.classList.remove('chat-open');
   window._currentChatUserId = null;
   window._currentGroupId    = null;
 }
@@ -208,6 +212,7 @@ async function openGroupChat(groupId) {
   var chat    = document.getElementById('mpxChat');
   if (sidebar) sidebar.classList.add('msg-hidden');
   if (chat)    chat.classList.add('msg-visible');
+  document.body.classList.add('chat-open');
   _clearReplyBar();
 
   try {
@@ -227,6 +232,9 @@ async function openGroupChat(groupId) {
   // Boutons header
   const profileLink = document.getElementById('chatProfileLink');
   profileLink.removeAttribute('href');
+  profileLink.style.display = 'flex';
+  profileLink.style.gap = '0.2rem';
+  profileLink.style.alignItems = 'center';
   profileLink.innerHTML =
     '<button class="mpx-group-action-btn" onclick="openGroupMembersModal()" title="Membres"><i class="fas fa-users"></i></button>'
     + (g.role === 'admin' ? '<button class="mpx-group-action-btn" onclick="openEditGroupModal()" title="Modifier"><i class="fas fa-edit"></i></button>' : '')
