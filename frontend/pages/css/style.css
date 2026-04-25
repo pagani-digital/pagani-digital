@@ -754,11 +754,16 @@ ul { list-style: none; }
 #tab-subscription .dash-section,
 #tab-myvideos .dash-section,
 #tab-myebooks .dash-section,
-#tab-trainer .dash-section,
-#tab-admin .dash-section {
+#tab-trainer .dash-section {
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
+}
+#tab-admin .dash-section {
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1.5rem 2%;
 }
 .dash-section h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem; }
 
