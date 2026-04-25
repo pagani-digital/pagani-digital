@@ -742,6 +742,24 @@ ul { list-style: none; }
 .dash-stat span { font-size: 0.8rem; color: var(--text2); }
 
 .dash-section { padding: 1.5rem 5%; }
+#tab-myposts .dash-section { padding: 1.5rem 2%; max-width: 900px; margin-left: auto; margin-right: auto; }
+#tab-myposts .user-post-panel,
+#tab-myposts #myPostsList .post-card { width: 100%; max-width: 100%; box-sizing: border-box; }
+
+/* Centrer tous les tabs dashboard */
+#tab-profile .profile-section { max-width: 900px; margin-left: auto; margin-right: auto; }
+#tab-overview .dash-section,
+#tab-profile .dash-section,
+#tab-wallet .dash-section,
+#tab-subscription .dash-section,
+#tab-myvideos .dash-section,
+#tab-myebooks .dash-section,
+#tab-trainer .dash-section,
+#tab-admin .dash-section {
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
 .dash-section h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem; }
 
 .progress-list { display: flex; flex-direction: column; gap: 0.8rem; }
