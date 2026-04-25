@@ -129,12 +129,13 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
-const _staticOpts = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
+const _staticOpts     = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
+const _staticOptsAsset = IS_PROD ? {} : { setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=3600') };
 // /js, /css, /assets servis depuis frontend/ (source unique)
 // IMPORTANT : déclarés AVANT frontend/pages pour avoir la priorité
 app.use('/js',     express.static(path.join(__dirname, '../frontend/pages/js'),     _staticOpts));
-app.use('/css',    express.static(path.join(__dirname, '../frontend/pages/css'),    _staticOpts));
-app.use('/assets', express.static(path.join(__dirname, '../frontend/pages/assets'), _staticOpts));
+app.use('/css',    express.static(path.join(__dirname, '../frontend/pages/css'),    _staticOptsAsset));
+app.use('/assets', express.static(path.join(__dirname, '../frontend/pages/assets'), _staticOptsAsset));
 app.use(express.static(path.join(__dirname, '../frontend/pages'), _staticOpts));
 // Gestionnaire d'erreur CORS — renvoie 403 au lieu de planter le serveur
 app.use((err, req, res, next) => {
@@ -279,13 +280,21 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 app.put('/api/auth/profile', requireAuth, async (req, res) => {
   try {
     // Whitelist stricte — jamais de role/plan/email modifiable par l'utilisateur
-    const { name, bio, location, website, phone, avatarPhoto, avatarColor, following_privacy } = req.body;
+    const { name, bio, location, website, phone, following_privacy } = req.body;
+    const avatarPhoto = req.body.avatarPhoto !== undefined ? req.body.avatarPhoto : req.body.avatar_photo;
+    const avatarColor = req.body.avatarColor !== undefined ? req.body.avatarColor : req.body.avatar_color;
     if (avatarPhoto && avatarPhoto.length > 2 * 1024 * 1024 * 1.37)
       return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
     const allowed = { name, bio, location, website, phone, avatarPhoto, avatarColor, following_privacy };
     // Supprimer les clés undefined pour ne pas écraser avec null
     Object.keys(allowed).forEach(k => allowed[k] === undefined && delete allowed[k]);
-    const user = await db.updateUser(req.user.id, allowed);
+    // Convertir camelCase → snake_case pour updateUser
+    const snakeAllowed = {};
+    Object.keys(allowed).forEach(k => {
+      const snake = k.replace(/([A-Z])/g, '_$1').toLowerCase();
+      snakeAllowed[snake] = allowed[k];
+    });
+    const user = await db.updateUser(req.user.id, snakeAllowed);
     res.json(safeUser(user));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -1690,7 +1699,7 @@ app.get('/api/messages/:userId', requireAuth, async (req, res) => {
 app.post('/api/messages/:userId', requireAuth, async (req, res) => {
   try {
     const receiverId = parseId(req.params.userId);
-    const { content, image, replyToId } = req.body;
+    const { content, image, replyToId, storyImage, isStoryReply } = req.body;
     if ((!content || !content.trim()) && !image) return res.status(400).json({ error: 'CONTENU_VIDE' });
     if (content && content.trim().length > 2000) return res.status(400).json({ error: 'MESSAGE_TROP_LONG' });
     if (!receiverId) return res.status(400).json({ error: 'ID_INVALIDE' });
@@ -1698,7 +1707,7 @@ app.post('/api/messages/:userId', requireAuth, async (req, res) => {
     if (image && image.length > 2 * 1024 * 1024 * 1.37) return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
     const receiver = await db.getUserById(receiverId);
     if (!receiver) return res.status(404).json({ error: 'UTILISATEUR_INTROUVABLE' });
-    const msg = await db.sendPrivateMessage(req.user.id, receiverId, (content || '').trim(), image || '', replyToId || null);
+    const msg = await db.sendPrivateMessage(req.user.id, receiverId, (content || '').trim(), image || '', replyToId || null, storyImage || '', isStoryReply ? 1 : 0);
     const sender = await db.getUserById(req.user.id);
     await db.createNotification({
       userId: receiverId, type: 'PRIVATE_MESSAGE',

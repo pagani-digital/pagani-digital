@@ -308,6 +308,20 @@ async function runMigrations(pool) {
     await pool.query(`ALTER TABLE module_purchases ADD COLUMN IF NOT EXISTS trainer_commission_paid BOOLEAN DEFAULT false`);
   });
 
+  
+  await run('private_messages.is_story_reply', async () => {
+    await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS is_story_reply SMALLINT DEFAULT 0`);
+  });
+
+  await run('private_messages.story_image', async () => {
+    await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS story_image TEXT DEFAULT ''`);
+  });
+
+  
+  await run('private_messages.story_image', async () => {
+    await pool.query(`ALTER TABLE private_messages ADD COLUMN IF NOT EXISTS story_image TEXT DEFAULT ''`);
+  });
+
   await run('trainer_submissions.module_id', async () => {
     await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS module_id INTEGER REFERENCES video_modules(id) ON DELETE SET NULL`);
     await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS unit_price NUMERIC DEFAULT 0`);

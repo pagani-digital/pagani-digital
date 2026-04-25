@@ -3,6 +3,7 @@ const STORY_COLORS = ['#6c63ff','#00d4aa','#ff4d6d','#f59e0b','#8b5cf6','#1877f2
 const STORY_DURATION = 5000;
 let _storiesData = [];
 let _storyViewerGroup = null;
+let _storyScrollY = 0;
 let _storyViewerIdx = 0;
 let _storyTimer = null;
 
@@ -60,6 +61,13 @@ async function loadStories() {
 function openStoryViewer(groupIdx) {
   _storyViewerGroup = groupIdx;
   _storyViewerIdx = 0;
+  // Bloquer le scroll du body une seule fois à l'ouverture
+  _storyScrollY = window.scrollY;
+  document.body.style.position = 'fixed';
+  document.body.style.top = '-' + _storyScrollY + 'px';
+  document.body.style.left = '0';
+  document.body.style.right = '0';
+  document.body.style.overflow = 'hidden';
   _renderStoryViewer();
 }
 
@@ -118,16 +126,40 @@ function _renderStoryViewer() {
       <div class="story-viewer-content">${content}</div>
       ${_storyViewerIdx > 0 ? '<button class="story-nav-btn story-nav-prev" onclick="_storyNav(-1)"><i class="fas fa-chevron-left"></i></button>' : ''}
       ${_storyViewerIdx < group.stories.length - 1 ? '<button class="story-nav-btn story-nav-next" onclick="_storyNav(1)"><i class="fas fa-chevron-right"></i></button>' : ''}
-      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><span id="storyReactCountLabel"></span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : `<div class="story-react-bar" id="storyReactBar"></div>`}
+      ${isOwn ? `<div class="story-owner-bar"><span id="storyViewCountLabel" onclick="openStoryViewers()" style="cursor:pointer"><i class="fas fa-eye"></i> ${viewCount} vue${viewCount>1?'s':''}</span><span id="storyReactCountLabel"></span><button class="story-owner-del" onclick="deleteStory(${story.id})"><i class="fas fa-trash"></i> Supprimer</button></div>` : `<div class="story-bottom-bar" id="storyBottomBar"><button class="story-react-btn" id="storyReactBtn" onclick="toggleStoryEmojiPicker(${story.id}, this)">\u2764\uFE0F</button><input type="text" class="story-reply-input" id="storyReplyInput" placeholder="R\u00e9pondre \u00e0 ${group.userName.split(' ')[0]}..." /><button class="story-reply-send" id="storyReplySend" title="Envoyer"><i class="fas fa-paper-plane"></i></button></div>`}
     </div>`;
   overlay.addEventListener('click', e => { if (e.target === overlay) closeStoryViewer(); });
   document.body.appendChild(overlay);
+  // Figer --story-vh
+  document.documentElement.style.setProperty('--story-vh', window.innerHeight + 'px');
+  // Fix: désactiver will-change sur la navbar pour éviter le stacking context
+  const _navbar = document.querySelector('.navbar');
+  if (_navbar) _navbar.style.willChange = 'auto';
 
   // Polling du compteur de vues pour le créateur
   if (isOwn) _pollStoryViewCount(story.id);
 
   // Charger les reactions
   _loadStoryReactions(story.id);
+
+  // Brancher le champ de réponse story
+  if (!isOwn) {
+    const replyInput = document.getElementById('storyReplyInput');
+    const replySend  = document.getElementById('storyReplySend');
+    if (replyInput && replySend) {
+      const _doReply = () => _sendStoryReply(story.id, group.userId, group.userName, replyInput);
+      replySend.addEventListener('click', _doReply);
+      replyInput.addEventListener('keydown', e => { if (e.key === 'Enter') _doReply(); });
+      replyInput.addEventListener('focus', () => {
+        _pauseStoryTimer();
+        _storyAdjustForKeyboard();
+      });
+      replyInput.addEventListener('blur', () => {
+        _storyResetKeyboard();
+        _resumeStoryTimer();
+      });
+    }
+  }
 
   // Barre de progression
   clearTimeout(_storyTimer);
@@ -156,30 +188,60 @@ function _storyNav(dir) {
 }
 
 let _storyViewCountTimer = null;
+var _storyPausedPct = 0;
+
 function _pauseStoryTimer() {
   clearTimeout(_storyTimer);
   _storyTimer = null;
-  // Figer la barre de progression en cours
   var fill = document.getElementById('spf-' + _storyViewerIdx);
   if (fill) {
-    var computed = window.getComputedStyle(fill).width;
+    var computed = parseFloat(window.getComputedStyle(fill).width);
+    var parent = fill.parentElement;
+    _storyPausedPct = parent && parent.offsetWidth ? Math.min(1, computed / parent.offsetWidth) : 0;
     fill.style.transition = 'none';
-    fill.style.width = computed;
+    fill.style.width = computed + 'px';
   }
 }
 
 function _resumeStoryTimer() {
-  // Ne reprendre que si le viewer est ouvert et aucun picker actif
   if (!document.getElementById('storyViewerOverlay')) return;
   if (document.getElementById('storyEmojiPicker')) return;
   clearTimeout(_storyTimer);
-  // Relancer la progression depuis 0 pour la story courante
+  var remaining = Math.max(200, STORY_DURATION * (1 - _storyPausedPct));
   var fill = document.getElementById('spf-' + _storyViewerIdx);
   if (fill) {
-    fill.style.transition = 'width ' + STORY_DURATION + 'ms linear';
+    fill.style.transition = 'width ' + remaining + 'ms linear';
     fill.style.width = '100%';
   }
-  _storyTimer = setTimeout(function() { _storyNav(1); }, STORY_DURATION);
+  _storyTimer = setTimeout(function() { _storyNav(1); }, remaining);
+}
+
+
+var _storyVVHandler = null;
+
+function _storyAdjustForKeyboard() {
+  var bar = document.getElementById('storyBottomBar');
+  if (!bar || !window.visualViewport) return;
+  var _update = function() {
+    var vv = window.visualViewport;
+    var kb = window.innerHeight - vv.height - vv.offsetTop;
+    bar.style.bottom = Math.max(0, kb) + 'px';
+    bar.style.transition = 'bottom 0.15s ease';
+  };
+  _storyVVHandler = _update;
+  window.visualViewport.addEventListener('resize', _update);
+  window.visualViewport.addEventListener('scroll', _update);
+  _update();
+}
+
+function _storyResetKeyboard() {
+  var bar = document.getElementById('storyBottomBar');
+  if (bar) { bar.style.bottom = ''; bar.style.transition = ''; }
+  if (_storyVVHandler && window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', _storyVVHandler);
+    window.visualViewport.removeEventListener('scroll', _storyVVHandler);
+    _storyVVHandler = null;
+  }
 }
 
 function closeStoryViewer() {
@@ -187,6 +249,16 @@ function closeStoryViewer() {
   clearInterval(_storyViewCountTimer);
   _storyViewCountTimer = null;
   document.getElementById('storyViewerOverlay')?.remove();
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.left = '';
+  document.body.style.right = '';
+  document.body.style.overflow = '';
+  window.scrollTo(0, _storyScrollY);
+  _storyResetKeyboard();
+  // Restaurer will-change sur la navbar
+  const _navbar = document.querySelector('.navbar');
+  if (_navbar) _navbar.style.willChange = '';
 }
 
 async function deleteStory(storyId) {
@@ -362,7 +434,6 @@ var STORY_EMOJIS = ['\u2764\uFE0F','\uD83D\uDD25','\uD83D\uDE0D','\uD83D\uDC4F',
 var _myStoryReaction = null;
 
 async function _loadStoryReactions(storyId) {
-  var bar = document.getElementById('storyReactBar');
   var ownerLabel = document.getElementById('storyReactCountLabel');
   var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
   var token = localStorage.getItem('pd_jwt');
@@ -374,7 +445,8 @@ async function _loadStoryReactions(storyId) {
     ownerLabel.innerHTML = total > 0 ? '<i class="fas fa-heart" style="color:#ff4d6d"></i> ' + top : '';
     return;
   }
-  if (!bar) return;
+  var btn = document.getElementById('storyReactBtn');
+  if (!btn) return;
   _myStoryReaction = null;
   if (token) {
     try {
@@ -383,11 +455,13 @@ async function _loadStoryReactions(storyId) {
       _myStoryReaction = md.emoji || null;
     } catch(e) {}
   }
-  _renderStoryReactBar(bar, storyId);
+  _updateStoryReactBtn(btn);
 }
 
-function _renderStoryReactBar(bar, storyId) {
-  bar.innerHTML = '<button class="story-react-btn' + (_myStoryReaction ? ' reacted' : '') + '" onclick="toggleStoryEmojiPicker(' + storyId + ', this)">' + (_myStoryReaction || '\u2764\uFE0F') + '</button>';
+function _updateStoryReactBtn(btn) {
+  if (!btn) return;
+  btn.textContent = _myStoryReaction || '\u2764\uFE0F';
+  btn.className = 'story-react-btn' + (_myStoryReaction ? ' reacted' : '');
 }
 
 function toggleStoryEmojiPicker(storyId, btn) {
@@ -427,11 +501,54 @@ async function reactToStory(storyId, emoji, btn) {
     });
     var d = await r.json();
     _myStoryReaction = d.action === 'removed' ? null : emoji;
-    if (d.action !== 'removed') _launchStoryEmojiAnim(emoji);
+    if (d.action !== 'removed') {
+      _launchStoryEmojiAnim(emoji);
+      // Envoyer un message avec l'emoji + miniature de la story
+      var grp = _storiesData[_storyViewerGroup];
+      if (grp && d.action !== 'removed') {
+        var storyImg = grp.stories[_storyViewerIdx] ? grp.stories[_storyViewerIdx].image : '';
+        fetch(API + '/messages/' + grp.userId, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+          body: JSON.stringify({ content: emoji, storyImage: storyImg || '', isStoryReply: true })
+        }).catch(function(){});
+      }
+    }
     await _loadStoryReactions(storyId);
-    var bar = document.getElementById('storyReactBar');
-    if (bar) _renderStoryReactBar(bar, storyId);
+    var btn = document.getElementById('storyReactBtn');
+    if (btn) _updateStoryReactBtn(btn);
   } catch(e) {}
+}
+
+async function _sendStoryReply(storyId, targetUserId, targetUserName, inputEl) {
+  if (!inputEl) inputEl = document.getElementById('storyReplyInput');
+  const text = inputEl ? inputEl.value.trim() : '';
+  if (!text) return;
+  if (!getUser()) { window.location.href = 'dashboard.html'; return; }
+  const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+  const token = localStorage.getItem('pd_jwt');
+  const btn = document.getElementById('storyReplySend');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; }
+  try {
+    const r = await fetch(API + '/messages/' + targetUserId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ content: text, storyImage: (function(){ var grp=_storiesData[_storyViewerGroup]; return grp&&grp.stories[_storyViewerIdx]?grp.stories[_storyViewerIdx].image||'':''; })(), isStoryReply: true })
+    });
+    if (r.ok) {
+      if (inputEl) inputEl.value = '';
+      // Animation envoi
+      const bar = document.querySelector('.story-bottom-bar');
+      if (bar) {
+        const fly = document.createElement('div');
+        fly.className = 'story-msg-fly';
+        fly.textContent = '\uD83D\uDCAC Envoy\u00e9 !';
+        bar.appendChild(fly);
+        setTimeout(() => fly.remove(), 1200);
+      }
+    }
+  } catch(e) {}
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i>'; }
 }
 
 function _launchStoryEmojiAnim(emoji) {
@@ -2806,131 +2923,154 @@ async function saveProfile() {
   renderProfile(updated);
 }
 // ===== AVATAR : recadrage & upload =====
-const _crop = {
-  src: null, scale: 1,
-  offsetX: 0, offsetY: 0,
-  dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0
-};
+;
 function uploadAvatarPhoto(input) {
   const file = input.files[0];
-  input.value = ""; // reset pour permettre re-slection
+  input.value = '';
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert("Image trop grande (max 5 Mo)."); return; }
+  if (file.size > 5 * 1024 * 1024) { alert('Image trop grande (max 5 Mo).'); return; }
   const reader = new FileReader();
-  reader.onload = (e) => {
-    _crop.src = e.target.result;
-    _crop.scale = 1;
-    _crop.offsetX = 0;
-    _crop.offsetY = 0;
-    openCropModal(e.target.result);
+  reader.onload = function(e) {
+    _showAvatarPreview(e.target.result);
   };
   reader.readAsDataURL(file);
 }
-function openCropModal(src) {
-  const overlay = document.getElementById("cropModalOverlay");
-  const img     = document.getElementById("cropImg");
-  const zoom    = document.getElementById("cropZoom");
-  if (!overlay) return;
-  img.src = src;
-  zoom.value = 1;
-  _crop.scale = 1; _crop.offsetX = 0; _crop.offsetY = 0;
-  overlay.style.display = "flex";
-  img.onload = () => {
-    updateCrop();
-    initCropDrag();
-  };
+function _showAvatarPreview(base64) {
+  document.getElementById('avatarPreviewModal')?.remove();
+
+  // Injection keyframes si pas encore présentes
+  if (!document.getElementById('avatarPreviewKF')) {
+    var style = document.createElement('style');
+    style.id = 'avatarPreviewKF';
+    style.textContent = '@keyframes avPopIn{from{opacity:0;transform:scale(0.88) translateY(18px)}to{opacity:1;transform:scale(1) translateY(0)}}@keyframes avImgIn{from{opacity:0;transform:scale(0.75)}to{opacity:1;transform:scale(1)}}@keyframes avBtnIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}';
+    document.head.appendChild(style);
+  }
+
+  var overlay = document.createElement('div');
+  overlay.id = 'avatarPreviewModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,0.78);display:flex;align-items:center;justify-content:center;padding:1.5rem;box-sizing:border-box;';
+
+  var popup = document.createElement('div');
+  popup.style.cssText = 'background:#1a2235;border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:2.2rem 2.2rem 2rem;width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center;gap:1.2rem;box-shadow:0 24px 60px rgba(0,0,0,0.65);box-sizing:border-box;animation:avPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both;';
+
+  var title = document.createElement('p');
+  title.style.cssText = 'font-size:1rem;font-weight:700;color:#fff;margin:0;';
+  title.innerHTML = '<i class="fas fa-image" style="color:#6c63ff;margin-right:0.4rem"></i>Aperçu de votre photo';
+
+  // Image en vraie forme (pas de cercle)
+  var imgWrap = document.createElement('div');
+  imgWrap.style.cssText = 'width:100%;border-radius:12px;overflow:hidden;animation:avImgIn 0.35s ease 0.1s both;';
+
+  var previewImg = document.createElement('img');
+  previewImg.src = base64;
+  previewImg.style.cssText = 'width:100%;max-height:280px;object-fit:contain;display:block;background:#0d1117;';
+
+  imgWrap.appendChild(previewImg);
+
+  var hint = document.createElement('p');
+  hint.style.cssText = 'font-size:0.78rem;color:rgba(255,255,255,0.5);text-align:center;margin:0;line-height:1.5;';
+  hint.textContent = 'Voici comment votre photo apparaîtra sur votre profil';
+
+  var actions = document.createElement('div');
+  actions.style.cssText = 'display:flex;gap:0.7rem;width:100%;';
+
+  var btnCancel = document.createElement('button');
+  btnCancel.style.cssText = 'flex:1;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:10px;padding:0.7rem;font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.7);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem;transition:background 0.18s,transform 0.12s;animation:avBtnIn 0.3s ease 0.25s both;';
+  btnCancel.innerHTML = '<i class="fas fa-times"></i> Annuler';
+  btnCancel.onmouseenter = function() { this.style.background = 'rgba(255,255,255,0.15)'; };
+  btnCancel.onmouseleave = function() { this.style.background = 'rgba(255,255,255,0.08)'; };
+  btnCancel.onmousedown  = function() { this.style.transform = 'scale(0.96)'; };
+  btnCancel.onmouseup    = function() { this.style.transform = 'scale(1)'; };
+  btnCancel.ontouchstart = function() { this.style.transform = 'scale(0.96)'; this.style.background = 'rgba(255,255,255,0.15)'; };
+  btnCancel.ontouchend   = function() { this.style.transform = 'scale(1)'; this.style.background = 'rgba(255,255,255,0.08)'; };
+  btnCancel.onclick = function() { _cancelAvatarPreview(); };
+
+  var btnConfirm = document.createElement('button');
+  btnConfirm.id = 'avatarPreviewConfirmBtn';
+  btnConfirm.style.cssText = 'flex:1;background:#6c63ff;border:none;border-radius:10px;padding:0.7rem;font-size:0.85rem;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem;transition:background 0.18s,transform 0.12s;animation:avBtnIn 0.3s ease 0.32s both;';
+  btnConfirm.innerHTML = '<i class="fas fa-check"></i> Utiliser cette photo';
+  btnConfirm.onmouseenter = function() { this.style.background = '#7c74ff'; };
+  btnConfirm.onmouseleave = function() { this.style.background = '#6c63ff'; };
+  btnConfirm.onmousedown  = function() { this.style.transform = 'scale(0.96)'; };
+  btnConfirm.onmouseup    = function() { this.style.transform = 'scale(1)'; };
+  btnConfirm.ontouchstart = function() { this.style.transform = 'scale(0.96)'; this.style.background = '#7c74ff'; };
+  btnConfirm.ontouchend   = function() { this.style.transform = 'scale(1)'; this.style.background = '#6c63ff'; };
+  btnConfirm.onclick = function() { _confirmAvatarPreview(base64); };
+
+  actions.appendChild(btnCancel);
+  actions.appendChild(btnConfirm);
+  popup.appendChild(title);
+  popup.appendChild(imgWrap);
+  popup.appendChild(hint);
+  popup.appendChild(actions);
+  overlay.appendChild(popup);
+
+  // Scroll lock
+  document.body.style.overflow = 'hidden';
+  document.documentElement.style.overflow = 'hidden';
+  overlay.addEventListener('touchmove', function(e) { e.preventDefault(); }, { passive: false });
+  document.documentElement.appendChild(overlay);
 }
-function closeCropModal() {
-  const overlay = document.getElementById("cropModalOverlay");
-  if (overlay) overlay.style.display = "none";
+
+function _cancelAvatarPreview() {
+  var overlay = document.getElementById('avatarPreviewModal');
+  if (overlay) overlay.remove();
+  document.body.style.overflow = '';
+  document.documentElement.style.overflow = '';
 }
-function updateCrop() {
-  const img   = document.getElementById("cropImg");
-  const wrap  = document.getElementById("cropWrap");
-  const zoom  = document.getElementById("cropZoom");
-  if (!img || !wrap) return;
-  const wrapSize = wrap.offsetWidth;
-  _crop.scale    = parseFloat(zoom.value);
-  const naturalW = img.naturalWidth  || 400;
-  const naturalH = img.naturalHeight || 400;
-  const baseScale = wrapSize / Math.min(naturalW, naturalH);
-  const s = baseScale * _crop.scale;
-  const w = naturalW * s;
-  const h = naturalH * s;
-  // Limiter le dplacement pour ne pas sortir du cadre
-  const maxX = 0;
-  const minX = wrapSize - w;
-  const maxY = 0;
-  const minY = wrapSize - h;
-  _crop.offsetX = Math.min(maxX, Math.max(minX, _crop.offsetX));
-  _crop.offsetY = Math.min(maxY, Math.max(minY, _crop.offsetY));
-  img.style.width     = w + "px";
-  img.style.height    = h + "px";
-  img.style.transform = `translate(${_crop.offsetX}px, ${_crop.offsetY}px)`;
-}
-function initCropDrag() {
-  const wrap = document.getElementById("cropWrap");
-  if (!wrap || wrap._dragInit) return;
-  wrap._dragInit = true;
-  const onDown = (e) => {
-    _crop.dragging = true;
-    const pt = e.touches ? e.touches[0] : e;
-    _crop.startX = pt.clientX - _crop.offsetX;
-    _crop.startY = pt.clientY - _crop.offsetY;
-  };
-  const onMove = (e) => {
-    if (!_crop.dragging) return;
-    e.preventDefault();
-    const pt = e.touches ? e.touches[0] : e;
-    _crop.offsetX = pt.clientX - _crop.startX;
-    _crop.offsetY = pt.clientY - _crop.startY;
-    updateCrop();
-  };
-  const onUp = () => { _crop.dragging = false; };
-  wrap.addEventListener("mousedown",  onDown);
-  wrap.addEventListener("touchstart", onDown, { passive: true });
-  document.addEventListener("mousemove", onMove);
-  document.addEventListener("touchmove", onMove, { passive: false });
-  document.addEventListener("mouseup",  onUp);
-  document.addEventListener("touchend", onUp);
-}
-async function applyCrop() {
-  const img    = document.getElementById("cropImg");
-  const wrap   = document.getElementById("cropWrap");
-  if (!img || !wrap) return;
-  const wrapSize   = wrap.offsetWidth;
-  const circleSize = wrapSize * 0.76;
-  const circleX    = (wrapSize - circleSize) / 2;
-  const circleY    = (wrapSize - circleSize) / 2;
-  const scaleX   = img.naturalWidth  / img.offsetWidth;
-  const scaleY   = img.naturalHeight / img.offsetHeight;
-  const srcX = (circleX - _crop.offsetX) * scaleX;
-  const srcY = (circleY - _crop.offsetY) * scaleY;
-  const srcW = circleSize * scaleX;
-  const srcH = circleSize * scaleY;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = 256;
-  const ctx = canvas.getContext("2d");
-  ctx.beginPath();
-  ctx.arc(128, 128, 128, 0, Math.PI * 2);
-  ctx.clip();
-  ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, 256, 256);
-  const base64 = canvas.toDataURL("image/jpeg", 0.85);
-  closeCropModal();
+
+
+
+
+
+async function _confirmAvatarPreview(base64) {
+  const btn = document.getElementById('avatarPreviewConfirmBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...'; }
   const user = getUser();
   if (!user) return;
-  const updated = await PaganiAPI.updateProfile({ avatarPhoto: base64 });
-  window._currentUser = updated;
-  renderProfile(updated);
-  updateNavbar(updated);
+  // Redimensionner à 400x400 centré
+  const resized = await new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 400;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const scale = Math.max(size / img.width, size / img.height);
+      const w = img.width * scale;
+      const h = img.height * scale;
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.88));
+    };
+    img.onerror = () => resolve(base64);
+    img.src = base64;
+  });
+  try {
+    const updated = await PaganiAPI.updateProfile({ avatarPhoto: resized });
+    if (!updated) throw new Error('no response');
+    window._currentUser = updated;
+    _cancelAvatarPreview();
+    renderProfile(updated);
+    updateNavbar(updated);
+  } catch(e) {
+    alert('Erreur lors de la mise à jour.');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check"></i> Utiliser cette photo'; }
+  }
 }
+
 async function removeAvatarPhoto() {
   const user = getUser();
   if (!user) return;
-  const updated = await PaganiAPI.updateProfile({ avatarPhoto: '' });
-  window._currentUser = updated;
-  renderProfile(updated);
-  updateNavbar(updated);
+  if (!confirm('Supprimer la photo de profil ?')) return;
+  try {
+    const updated = await PaganiAPI.updateProfile({ avatarPhoto: '' });
+    if (!updated) throw new Error('no response');
+    window._currentUser = updated;
+    renderProfile(updated);
+    updateNavbar(updated);
+  } catch(e) {
+    alert('Erreur lors de la suppression.');
+  }
 }
 async function changePassword(e) {
   e.preventDefault();
@@ -6296,6 +6436,12 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
   const timeStr   = _formatMsgTime(m.createdAt);
   const animClass = isNew ? ' mpx-bubble-new' : '';
   const imageHtml = m.image ? '<div class="mpx-bubble-img-wrap"><img src="' + m.image + '" class="mpx-bubble-img" onclick="_openMsgImage(this.src)" /></div>' : '';
+  const storyImageHtml = m.storyImage
+    ? '<div class="mpx-story-reply-wrap">' +
+        '<img src="' + m.storyImage + '" class="mpx-story-reply-thumb" onclick="_openMsgImage(\'' + m.storyImage + '\')" />' +
+        '<div class="mpx-story-reply-label"><i class="fas fa-play-circle"></i> Story</div>' +
+      '</div>'
+    : '';
   const textHtml  = m.content ? esc(m.content) : '';
   const tickHtml  = isMine
     ? (m.read
@@ -6322,8 +6468,8 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
     ${avatarHtml}
     <div class="mpx-bubble-wrap">
       ${replyBtn}
-      <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr}>
-        ${quoteHtml}${imageHtml}${textHtml}
+      <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr} ${m.storyImage ? 'style="max-width:140px;padding:0.4rem;"' : ''}>
+        ${quoteHtml}${storyImageHtml}${imageHtml}${textHtml}
         <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
         ${rxTrigger}
       </div>
@@ -10205,3 +10351,10 @@ window.toggleComments = function(postId) {
     if (input) _initMentionAutocomplete(input);
   }, 150);
 };
+
+// Re-render le feed au retour depuis bfcache (ex: retour de post.html)
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted && typeof renderFeed === 'function') {
+    renderFeed();
+  }
+});

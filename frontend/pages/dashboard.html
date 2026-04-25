@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Pagani Digital</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="stylesheet" href="/css/style.css?v=1776608487261" />
+  <link rel="stylesheet" href="/css/style.css?v=1777106940613" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     .lb-search-wrap { position:relative; }
@@ -1764,26 +1764,6 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   <!-- PANNEAU NOTIFICATIONS -->
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
-  <!-- MODAL RECADRAGE AVATAR -->
-  <div id="cropModalOverlay" class="crop-modal-overlay" style="display:none">
-    <div class="crop-modal">
-      <h3><i class="fas fa-crop-alt"></i> Recadrer la photo</h3>
-      <div class="crop-canvas-wrap" id="cropWrap">
-        <img id="cropImg" src="" alt="" />
-        <div class="crop-circle-guide"></div>
-      </div>
-      <div class="crop-controls">
-        <label>
-          <i class="fas fa-search-plus"></i> Zoom
-          <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" oninput="updateCrop()" />
-        </label>
-      </div>
-      <div class="crop-actions">
-        <button class="btn-outline" onclick="closeCropModal()"><i class="fas fa-times"></i> Annuler</button>
-        <button class="btn-primary" onclick="applyCrop()"><i class="fas fa-check"></i> Appliquer</button>
-      </div>
-    </div>
-  </div>
   <!-- MODALE CONFIRMATION ACHAT VIDÉO -->
   <div id="vpConfirmModal">
     <div class="vp-confirm-backdrop" onclick="_vpConfirmCancel()"></div>
@@ -1804,8 +1784,8 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
   </div>
   <script src="/js/config.js"></script>
   <script src="/js/notifications.js"></script>
-  <script src="/js/api.js?v=1777054050674"></script>
-  <script src="/js/app.js?v=1777054050674"></script>
+  <script src="/js/api.js?v=1777106940613"></script>
+  <script src="/js/app.js?v=1777106940613"></script>
   <script src="https://www.youtube.com/iframe_api" referrerpolicy="strict-origin-when-cross-origin" defer></script>
   <script>
     // ── LEADERBOARD ADMIN ──

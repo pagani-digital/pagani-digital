@@ -978,11 +978,11 @@ async function countFollowing(userId) {
 // ═══════════════════════════════════════════════
 
 
-async function sendPrivateMessage(senderId, receiverId, content, image, replyToId) {
+async function sendPrivateMessage(senderId, receiverId, content, image, replyToId, storyImage, isStoryReply) {
   const res = await query(
-    `INSERT INTO private_messages (sender_id, receiver_id, content, image, read, read_at, reply_to_id)
-     VALUES ($1,$2,$3,$4, false, NULL, $5) RETURNING *`,
-    [senderId, receiverId, content, image || '', replyToId || null]
+    `INSERT INTO private_messages (sender_id, receiver_id, content, image, read, read_at, reply_to_id, story_image, is_story_reply)
+     VALUES ($1,$2,$3,$4, false, NULL, $5, $6, $7) RETURNING *`,
+    [senderId, receiverId, content, image || '', replyToId || null, storyImage || '', isStoryReply || 0]
   );
   return rowToCamel(res.rows[0]);
 }
