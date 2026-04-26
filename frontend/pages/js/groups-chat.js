@@ -41,6 +41,8 @@ function _closeActiveChat() {
   if (_groupTypingHideTimer) { clearTimeout(_groupTypingHideTimer); _groupTypingHideTimer = null; }
   var el = document.getElementById('chatTypingIndicator');
   if (el) el.style.display = 'none';
+  var scrollBtn = document.getElementById('scrollDownBtn');
+  if (scrollBtn) { scrollBtn.style.display = 'none'; scrollBtn.classList.remove('visible'); }
   document.getElementById('chatEmpty').style.display    = 'flex';
   document.getElementById('chatMessages').style.display = 'none';
   document.getElementById('chatMessages').innerHTML     = '';
@@ -275,6 +277,11 @@ async function openGroupChat(groupId) {
 
   await _loadGroupMessages(groupId, false);
 
+  // Bouton scroll vers le bas
+  const btn = document.getElementById('scrollDownBtn');
+  if (btn) { btn.style.display = 'none'; btn.classList.remove('visible'); }
+  if (typeof _initChatScrollBtn === 'function') _initChatScrollBtn(document.getElementById('chatMessages'));
+
   // Réinitialiser badge
   const gInList = _allGroups.find(function(x){ return x.id === groupId; });
   if (gInList) { gInList.unread_count = 0; renderGroupList(); _updateGroupTabBadge(); }
@@ -398,7 +405,7 @@ function _buildGroupMsgHTML(msg, me) {
         + '<div class="mpx-bubble ' + (isOwn ? 'mine' : 'theirs') + '" data-msgid="' + msg.id + '"'
           + (msg.image && !msg.content ? ' style="background:none;border:none;box-shadow:none;padding:0"' : '') + '>'
           + quoteBlock
-          + (msg.content ? esc(msg.content) : '')
+          + (msg.content ? (typeof _renderCommentText === 'function' ? _renderCommentText(msg.content) : esc(msg.content)) : '')
           + imgBlock
           + '<span class="mpx-bubble-meta">' + time + '</span>'
           + rxTrigger
@@ -929,6 +936,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!window._currentGroupId) return;
       _sendGroupTyping();
     });
+    // Activer l'autocomplete @ sur l'input groupe (réutilise le système des commentaires)
+    if (typeof _initMentionAutocomplete === 'function') _initMentionAutocomplete(input);
   }
 
   // Bouton image → groupe si groupe actif
