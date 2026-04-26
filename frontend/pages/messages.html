@@ -470,44 +470,71 @@
     /* Menu contextuel bulle */
     .mpx-bubble-menu {
       position: absolute;
-      bottom: calc(100% + 6px);
+      bottom: calc(100% + 8px);
       left: 0;
       right: auto;
       background: var(--bg2);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 0.5rem;
+      border-radius: 18px;
+      padding: 0.6rem;
       z-index: 200;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-      min-width: 180px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3);
+      min-width: 200px;
       max-width: calc(100vw - 2rem);
-      animation: fadeIn 0.15s ease;
+      animation: bubbleMenuIn 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+      transform-origin: bottom left;
+    }
+    @keyframes bubbleMenuIn {
+      from { opacity: 0; transform: scale(0.85) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)   translateY(0); }
     }
     /* Messages envoyés (mine) : ancrer à droite */
-    .mpx-bubble-row.mine .mpx-bubble-menu { left: auto; right: 0; }
+    .mpx-bubble-row.mine .mpx-bubble-menu { left: auto; right: 0; transform-origin: bottom right; }
     /* Sécurité mobile : ne jamais déborder à gauche */
     @media (max-width: 580px) {
-      .mpx-bubble-menu { left: 0 !important; right: auto !important; max-width: calc(100vw - 1.5rem); }
-      .mpx-bubble-row.mine .mpx-bubble-menu { left: auto !important; right: 0 !important; }
+      .mpx-bubble-menu { left: 0 !important; right: auto !important; max-width: calc(100vw - 1.5rem); transform-origin: bottom left; }
+      .mpx-bubble-row.mine .mpx-bubble-menu { left: auto !important; right: 0 !important; transform-origin: bottom right; }
     }
     .mpx-bubble-menu-emojis {
-      display: flex; gap: 0.2rem; justify-content: space-between;
-      padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem;
-      flex-wrap: nowrap;
+      display: flex;
+      gap: 0.15rem;
+      justify-content: space-between;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 0.4rem;
     }
     .mpx-bubble-menu-emojis button {
-      background: none; border: none; font-size: 1.2rem; cursor: pointer;
-      padding: 0.2rem; border-radius: 8px; transition: background 0.15s;
-      flex: 1; text-align: center;
+      background: none;
+      border: none;
+      font-size: 1.6rem;
+      cursor: pointer;
+      padding: 0.3rem;
+      border-radius: 10px;
+      transition: background 0.15s, transform 0.15s;
+      flex: 1;
+      text-align: center;
+      line-height: 1;
     }
-    .mpx-bubble-menu-emojis button:hover { background: rgba(108,99,255,0.12); }
-    .mpx-bubble-menu-actions { display: flex; flex-direction: column; gap: 0.2rem; }
+    .mpx-bubble-menu-emojis button:hover { background: rgba(108,99,255,0.12); transform: scale(1.25); }
+    .mpx-bubble-menu-emojis button.active { background: rgba(108,99,255,0.2); transform: scale(1.15); }
+    .mpx-bubble-menu-actions { display: flex; flex-direction: column; gap: 0.15rem; }
     .mpx-bubble-menu-actions button {
-      background: none; border: none; color: var(--text); font-size: 0.82rem;
-      padding: 0.4rem 0.6rem; border-radius: 8px; cursor: pointer;
-      text-align: left; display: flex; align-items: center; gap: 0.5rem;
-      transition: background 0.15s; font-family: inherit;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 0.88rem;
+      padding: 0.5rem 0.7rem;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      transition: background 0.15s;
+      font-family: inherit;
+      font-weight: 500;
     }
+    .mpx-bubble-menu-actions button i { width: 16px; text-align: center; }
     .mpx-bubble-menu-actions button:hover { background: rgba(108,99,255,0.1); }
     .mpx-bubble-menu-actions button.danger { color: var(--red); }
     .mpx-bubble-menu-actions button.danger:hover { background: rgba(255,77,109,0.1); }

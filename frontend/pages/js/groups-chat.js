@@ -831,9 +831,36 @@ function _showBubbleMenu(bubble) {
     + (msg.content ? '<button onclick="_copyGroupMsg(\'' + msg.content.replace(/'/g,"\\'").replace(/\\/g,'\\\\') + '\');_closeBubbleMenu()"><i class="fas fa-copy"></i> Copier</button>' : '')
     + ((isOwn || isAdmin) ? '<button class="danger" onclick="deleteGroupMessage(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-trash"></i> Supprimer</button>' : '')
     + '</div>';
-  // Positionner le menu sur la bulle
+
+  // Positionner : par défaut au-dessus, repositionner si déborde
   bubble.style.position = 'relative';
+  menu.style.position = 'absolute';
+  menu.style.bottom = 'calc(100% + 8px)';
+  menu.style.top = 'auto';
   bubble.appendChild(menu);
+
+  // Après rendu, vérifier si le menu déborde en haut
+  requestAnimationFrame(function() {
+    var rect = menu.getBoundingClientRect();
+    if (rect.top < 8) {
+      // Déborde en haut → afficher en dessous
+      menu.style.bottom = 'auto';
+      menu.style.top = 'calc(100% + 8px)';
+      menu.style.transformOrigin = isOwn ? 'top right' : 'top left';
+    }
+    // Déborde à droite
+    var rect2 = menu.getBoundingClientRect();
+    if (rect2.right > window.innerWidth - 8) {
+      menu.style.left = 'auto';
+      menu.style.right = '0';
+    }
+    // Déborde à gauche
+    if (rect2.left < 8) {
+      menu.style.left = '0';
+      menu.style.right = 'auto';
+    }
+  });
+
   setTimeout(function(){
     document.addEventListener('click', function close(ev){
       if (!menu.contains(ev.target) && !ev.target.closest('.mpx-msg-actions-btn')){
