@@ -263,6 +263,9 @@ async function openGroupChat(groupId) {
   document.getElementById('chatHeaderSub').textContent   = (g.members ? g.members.length : 1) + ' membre(s)';
   document.getElementById('chatHeaderSub').style.display = 'block';
 
+  // Charger les membres en ligne
+  _updateGroupOnlineCount(g.members || []);
+
   // Boutons header
   const profileLink = document.getElementById('chatProfileLink');
   profileLink.removeAttribute('href');
@@ -344,6 +347,26 @@ function _memberColor(userId) {
 }
 
 
+
+async function _updateGroupOnlineCount(members) {
+  var sub = document.getElementById('chatHeaderSub');
+  if (!sub) return;
+  var total = members.length;
+  try {
+    var results = await Promise.all(members.map(function(m) {
+      return fetch(API_BASE() + '/presence/' + m.user_id, { headers: { 'Authorization': 'Bearer ' + _jwt() } })
+        .then(function(r){ return r.json(); })
+        .catch(function(){ return { online: false }; });
+    }));
+    var onlineCount = results.filter(function(r){ return r.online; }).length;
+    sub.innerHTML = total + ' membre(s)'
+      + (onlineCount > 0
+        ? ' &bull; <span style="color:var(--accent2)"><i class="fas fa-circle" style="font-size:0.5rem;vertical-align:middle"></i> ' + onlineCount + ' en ligne</span>'
+        : '');
+  } catch(e) {
+    sub.textContent = total + ' membre(s)';
+  }
+}
 
 function _groupDateLabel(dateStr) {
   const d     = new Date(dateStr);
