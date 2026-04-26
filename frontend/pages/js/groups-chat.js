@@ -337,9 +337,13 @@ function _initGroupScrollInfinite() {
   });
 }
 
-// ══════════════════════════════════════════════════════════
-//  RENDU MESSAGES
-// ══════════════════════════════════════════════════════════
+// Palette de couleurs pour les noms des membres (comme Telegram)
+var _GROUP_COLORS = ['#6c63ff','#00d4aa','#f59e0b','#ff4d6d','#3b82f6','#8b5cf6','#10b981','#f97316','#06b6d4','#ec4899'];
+function _memberColor(userId) {
+  return _GROUP_COLORS[userId % _GROUP_COLORS.length];
+}
+
+
 
 function renderGroupMessages() {
   const box = document.getElementById('chatMessages');
@@ -380,7 +384,7 @@ function _buildGroupMsgHTML(msg, me) {
 
   // Nom expéditeur (autres seulement)
   const senderName = !isOwn
-    ? '<div class="mpx-group-sender-name">' + esc(msg.sender_name||'') + '</div>'
+    ? '<div class="mpx-group-sender-name" style="color:' + _memberColor(msg.sender_id) + '">' + esc(msg.sender_name||'') + '</div>'
     : '';
 
   const time = _groupTimeAgo(msg.created_at);
