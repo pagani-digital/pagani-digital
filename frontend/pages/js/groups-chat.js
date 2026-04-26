@@ -43,10 +43,8 @@ function _closeActiveChat() {
   document.getElementById('chatMessages').innerHTML     = '';
   document.getElementById('chatHeader').style.display   = 'none';
   document.getElementById('chatInputRow').style.display = 'none';
-  // Remettre chatProfileLink à son état DM (lien simple)
   var pl = document.getElementById('chatProfileLink');
   if (pl) { pl.innerHTML = '<i class="fas fa-user-circle"></i>'; pl.style.display = ''; }
-  // Mobile : restaurer sidebar, cacher chat
   var sidebar = document.getElementById('mpxSidebar');
   var chat    = document.getElementById('mpxChat');
   if (sidebar) sidebar.classList.remove('msg-hidden');
@@ -54,7 +52,28 @@ function _closeActiveChat() {
   document.body.classList.remove('chat-open');
   window._currentChatUserId = null;
   window._currentGroupId    = null;
+  window._groupChatActive   = false;
 }
+
+// Guard : empêche tout rechargement DM quand un groupe est ouvert
+// Patch sur window.openChat ET sur le polling via _currentChatUserId=null
+(function() {
+  var _guardNames = ['_loadChatMessages', '_pollChat', '_chatPoll', 'loadMessages', '_refreshChat', 'openChat'];
+  function _patchFn(name) {
+    var orig = window[name];
+    if (typeof orig !== 'function') return;
+    window[name] = function() {
+      if (window._currentGroupId || window._groupChatActive) return;
+      return orig.apply(this, arguments);
+    };
+  }
+  function _patchAll() { _guardNames.forEach(_patchFn); }
+  _patchAll();
+  document.addEventListener('DOMContentLoaded', function() {
+    _patchAll();
+    setTimeout(_patchAll, 800);
+  });
+})();
 
 // ══════════════════════════════════════════════════════════
 //  LISTE DES GROUPES
@@ -193,6 +212,15 @@ async function createGroup() {
 async function openGroupChat(groupId) {
   window._currentGroupId    = groupId;
   window._currentChatUserId = null;
+  window.__typingChatUserId = null;
+  // Stopper TOUS les timers DM immédiatement
+  if (window._chatPollingTimer)  { clearInterval(window._chatPollingTimer);  window._chatPollingTimer  = null; }
+  if (window._chatPollInterval)  { clearInterval(window._chatPollInterval);  window._chatPollInterval  = null; }
+  if (window._dmPollTimer)       { clearInterval(window._dmPollTimer);       window._dmPollTimer       = null; }
+  if (window._msgPollTimer)      { clearInterval(window._msgPollTimer);      window._msgPollTimer      = null; }
+  if (window._chatRefreshTimer)  { clearInterval(window._chatRefreshTimer);  window._chatRefreshTimer  = null; }
+  // Bloquer aussi tout appel à _loadChatMessages / openChat pendant qu'un groupe est ouvert
+  window._groupChatActive = true;
   _groupMessages  = [];
   _groupOldestTs  = null;
   _groupReplyTo   = null;
@@ -253,7 +281,9 @@ async function openGroupChat(groupId) {
 async function _loadGroupMessages(groupId, prepend) {
   const box = document.getElementById('chatMessages');
   if (!prepend) {
+    // Vider complètement avant de charger (fix bug historique DM)
     box.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text2)"><i class="fas fa-spinner fa-spin"></i></div>';
+    _groupMessages = [];
   }
   try {
     let url = API_BASE() + '/groups/' + groupId + '/messages?limit=30';
@@ -309,44 +339,107 @@ function renderGroupMessages() {
   }
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
   box.innerHTML = _groupMessages.map(function(msg){ return _buildGroupMsgHTML(msg, me); }).join('');
-  // Attacher long-press sur chaque bulle
   box.querySelectorAll('.mpx-bubble[data-msgid]').forEach(function(b){ _attachBubbleLongPress(b); });
+  box.querySelectorAll('.grp-row[data-msgid]').forEach(function(row){ _attachSwipeReply(row); });
   if (atBottom) box.scrollTop = box.scrollHeight;
 }
 
 function _buildGroupMsgHTML(msg, me) {
   const isOwn = me && msg.sender_id === me.id;
-  const av = msg.sender_photo
-    ? '<img src="' + msg.sender_photo + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />'
-    : '<div class="avatar-circle avatar-sm" style="background:' + (msg.sender_color||'#6c63ff') + ';flex-shrink:0">' + getInitials(msg.sender_name||'?') + '</div>';
 
-  const replyBlock = msg.reply_content
-    ? '<div class="mpx-reply-preview" style="margin-bottom:0.3rem"><div class="mpx-reply-preview-inner">'
-      + '<span class="mpx-reply-name">' + esc(msg.reply_sender_name||'') + '</span>'
-      + '<span class="mpx-reply-text">' + esc(msg.reply_content.slice(0,60)) + '</span>'
+  // Avatar — identique au DM (mpx-bubble-av)
+  const av = msg.sender_photo
+    ? '<img src="' + msg.sender_photo + '" style="width:28px;height:28px;border-radius:50%;object-fit:cover" />'
+    : '<div class="avatar-circle" style="background:' + (msg.sender_color||'#6c63ff') + ';width:28px;height:28px;font-size:0.6rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:50%">' + getInitials(msg.sender_name||'?') + '</div>';
+  const avatarHtml = !isOwn ? '<div class="mpx-bubble-av">' + av + '</div>' : '';
+
+  // Citation
+  const quoteBlock = (msg.reply_content || msg.reply_to_id)
+    ? '<div class="mpx-bubble-quote" onclick="_scrollToGroupMsg(' + (msg.reply_to_id||0) + ')">'
+      + '<div class="mpx-bubble-quote-inner">'
+      + '<span class="mpx-bubble-quote-name">' + esc(msg.reply_sender_name||'') + '</span>'
+      + '<span class="mpx-bubble-quote-text">' + (msg.reply_content === '__IMAGE__' ? '\uD83D\uDCF7 Photo' : msg.reply_content ? esc(msg.reply_content.slice(0,80)) : '\uD83D\uDCF7 Photo') + '</span>'
       + '</div></div>'
     : '';
 
+  // Image
   const imgBlock = msg.image
-    ? '<img src="' + msg.image + '" style="max-width:220px;border-radius:10px;display:block;margin-top:0.3rem;cursor:pointer" onclick="_openImgFull(this.src)" />'
+    ? '<img src="' + msg.image + '" style="max-width:220px;border-radius:10px;display:block;cursor:zoom-in" onclick="_openImgFull(this.src)" />'
     : '';
 
-  const reactions = _buildGroupReactions(msg);
-  const time      = _groupTimeAgo(msg.created_at);
+  // Nom expéditeur (autres seulement)
+  const senderName = !isOwn
+    ? '<div class="mpx-group-sender-name">' + esc(msg.sender_name||'') + '</div>'
+    : '';
 
-  return '<div class="mpx-msg-row ' + (isOwn ? 'own' : '') + '" data-msgid="' + msg.id + '">'
-    + (!isOwn ? '<div class="mpx-msg-avatar">' + av + '</div>' : '')
-    + '<div class="mpx-msg-col">'
-      + (!isOwn ? '<div class="mpx-msg-sender-name">' + esc(msg.sender_name||'') + '</div>' : '')
-      + '<div class="mpx-bubble ' + (isOwn ? 'own' : '') + '" data-msgid="' + msg.id + '">'
-        + replyBlock
-        + (msg.content ? '<span>' + esc(msg.content) + '</span>' : '')
+  const time = _groupTimeAgo(msg.created_at);
+
+  // Bouton répondre — même position que DM (dans .mpx-bubble-wrap, avant la bulle)
+  const replyBtn = '<button class="mpx-reply-btn" title="Répondre" onclick="event.stopPropagation();_setGroupReply(' + msg.id + ')"><i class="fas fa-reply"></i></button>';
+
+  // Trigger réaction — même position que DM (dans la bulle)
+  const rxTrigger = '<button class="mpx-rx-trigger" title="Réagir" onclick="event.stopPropagation();_showGroupRxPicker(event,' + msg.id + ')"><i class="fas fa-smile"></i></button>';
+
+  // Zone réactions — en dehors de la row, comme le DM
+  const rxZone = '<div class="mpx-bubble-reactions" id="rx-zone-' + msg.id + '">' + _buildGroupReactions(msg) + '</div>';
+
+  const swipeIcon = '<div class="mpx-swipe-icon"><i class="fas fa-reply"></i></div>';
+
+  return '<div class="mpx-bubble-row' + (isOwn ? ' mine' : '') + ' grp-row" data-msgid="' + msg.id + '" id="gmsg-' + msg.id + '">'
+    + swipeIcon
+    + avatarHtml
+    + '<div class="mpx-bubble-wrap">'
+      + senderName
+      + replyBtn
+      + '<div class="mpx-bubble ' + (isOwn ? 'mine' : 'theirs') + '" data-msgid="' + msg.id + '"'
+        + (msg.image && !msg.content ? ' style="background:none;border:none;box-shadow:none;padding:0"' : '') + '>'
+        + quoteBlock
+        + (msg.content ? esc(msg.content) : '')
         + imgBlock
-        + '<span class="mpx-msg-time">' + time + '</span>'
+        + '<span class="mpx-bubble-meta">' + time + '</span>'
+        + rxTrigger
       + '</div>'
-      + (reactions ? '<div class="mpx-reactions-row">' + reactions + '</div>' : '')
+      + rxZone
     + '</div>'
   + '</div>';
+}
+
+
+// Scroller vers le message cité
+function _scrollToGroupMsg(msgId) {
+  if (!msgId) return;
+  var el = document.getElementById('gmsg-' + msgId);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('mpx-bubble-highlight');
+  setTimeout(function(){ el.classList.remove('mpx-bubble-highlight'); }, 1500);
+}
+
+// Picker réactions groupe — utilise le même système que le DM (_showRxPicker)
+function _showGroupRxPicker(e, msgId) {
+  // Réutiliser _showRxPicker du DM si disponible
+  if (typeof _showRxPicker === 'function') {
+    // Remplacer temporairement _toggleReaction pour cibler les messages groupe
+    var origToggle = window._toggleReaction;
+    window._toggleReaction = function(id, emoji) {
+      sendGroupReaction(id, emoji);
+      // Restaurer après usage
+      window._toggleReaction = origToggle;
+    };
+    _showRxPicker(e, msgId);
+    return;
+  }
+  // Fallback : menu bulle
+  var row = document.querySelector('[data-msgid="' + msgId + '"] .mpx-bubble');
+  if (row) _showBubbleMenu(row);
+}
+
+// Ouvre le menu depuis le bouton ⋮
+function _showBubbleMenuById(msgId, btn) {
+  var wrap = btn.closest('.mpx-bubble-wrap');
+  if (!wrap) return;
+  var bubble = wrap.querySelector('.mpx-bubble');
+  if (bubble) _showBubbleMenu(bubble);
 }
 
 function _buildGroupReactions(msg) {
@@ -390,6 +483,7 @@ async function sendGroupMessage() {
   const body = { content, image: _groupImageB64 || '' };
   if (_groupReplyTo) body.replyToId = _groupReplyTo.id;
   _groupImageB64 = '';
+  var _savedReplyTo = _groupReplyTo;
   _groupReplyTo  = null;
   _clearReplyBar();
   document.getElementById('chatImagePreview').style.display = 'none';
@@ -402,6 +496,12 @@ async function sendGroupMessage() {
     });
     const msg = await r.json();
     if (!r.ok) return;
+    // Injecter les données de reply pour affichage instantané
+    if (body.replyToId && _savedReplyTo) {
+      msg.reply_content     = _savedReplyTo.content || (_savedReplyTo.image ? '__IMAGE__' : '');
+      msg.reply_sender_name = _savedReplyTo.sender_name || '';
+      msg.reply_to_id       = _savedReplyTo.id;
+    }
     // Ajouter seulement si pas déjà présent (évite le doublon avec SSE)
     if (!_groupMessages.find(function(m){ return m.id === msg.id; })) {
       _groupMessages.push(msg);
@@ -423,6 +523,7 @@ async function sendGroupReaction(msgId, emoji) {
   msg.reactions = msg.reactions.filter(function(r){ return r.user_id !== (me&&me.id); });
   if (action === 'add') msg.reactions.push({ emoji, user_id: me.id });
   renderGroupMessages();
+  _animateReaction(msgId);
   try {
     await fetch(API_BASE() + '/groups/' + gid + '/messages/' + msgId + '/reaction', {
       method: 'POST',
@@ -450,8 +551,9 @@ function _setGroupReply(msgId) {
   if (!msg) return;
   _groupReplyTo = msg;
   document.getElementById('chatReplyName').textContent = msg.sender_name || '';
-  document.getElementById('chatReplyText').textContent = msg.content ? msg.content.slice(0,60) : '📷 Photo';
-  document.getElementById('chatReplyBar').style.display = 'flex';
+  document.getElementById('chatReplyText').textContent = msg.content ? msg.content.slice(0,60) : (msg.image ? '\uD83D\uDCF7 Photo' : '');
+  var bar = document.getElementById('chatReplyBar');
+  if (bar) bar.style.display = 'flex';
   document.getElementById('chatInput').focus();
 }
 
@@ -507,28 +609,88 @@ function _showBubbleMenu(bubble) {
   const isAdmin = _currentGroupData && _currentGroupData.role === 'admin';
   const EMOJIS  = ['❤️','😂','😮','😢','😡','👍'];
   const menu = document.createElement('div');
-  menu.className = 'mpx-bubble-menu';
+  menu.className = 'mpx-bubble-menu ' + (isOwn ? 'own' : '');
   menu.innerHTML =
     '<div class="mpx-bubble-menu-emojis">'
     + EMOJIS.map(function(e){
-        return '<button onclick="sendGroupReaction(' + msgId + ',\'' + e + '\');_closeBubbleMenu()">' + e + '</button>';
+        const myReact = msg.reactions && msg.reactions.find(function(r){ return r.user_id === (me&&me.id) && r.emoji === e; });
+        return '<button class="' + (myReact ? 'active' : '') + '" onclick="sendGroupReaction(' + msgId + ',\'' + e + '\');_closeBubbleMenu()">' + e + '</button>';
       }).join('')
     + '</div>'
     + '<div class="mpx-bubble-menu-actions">'
     + '<button onclick="_setGroupReply(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-reply"></i> Répondre</button>'
     + ((isOwn || isAdmin) ? '<button class="danger" onclick="deleteGroupMessage(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-trash"></i> Supprimer</button>' : '')
     + '</div>';
+  // Positionner le menu sur la bulle
   bubble.style.position = 'relative';
   bubble.appendChild(menu);
   setTimeout(function(){
     document.addEventListener('click', function close(ev){
-      if (!menu.contains(ev.target)){ menu.remove(); document.removeEventListener('click', close); }
+      if (!menu.contains(ev.target) && !ev.target.closest('.mpx-msg-actions-btn')){
+        menu.remove();
+        document.removeEventListener('click', close);
+      }
     });
   }, 10);
 }
 
 function _closeBubbleMenu() {
   document.querySelectorAll('.mpx-bubble-menu').forEach(function(m){ m.remove(); });
+}
+
+// ── Swipe pour répondre ───────────────────────────────────
+function _attachSwipeReply(row) {
+  var startX = 0, startY = 0, swiping = false, triggered = false;
+  var icon = row.querySelector('.mpx-swipe-icon');
+  var isOwn = row.classList.contains('mine');
+  var THRESHOLD = 60;
+
+  row.addEventListener('touchstart', function(e) {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    swiping = false; triggered = false;
+  }, { passive: true });
+
+  row.addEventListener('touchmove', function(e) {
+    var dx = e.touches[0].clientX - startX;
+    var dy = Math.abs(e.touches[0].clientY - startY);
+    if (dy > 20) return;
+    var valid = isOwn ? dx < -20 : dx > 20;
+    if (!valid) return;
+    swiping = true;
+    var progress = Math.min(Math.abs(dx) / THRESHOLD, 1);
+    var bubble = row.querySelector('.mpx-bubble-wrap');
+    if (bubble) bubble.style.transform = 'translateX(' + (isOwn ? -1 : 1) * Math.min(Math.abs(dx), THRESHOLD) * 0.6 + 'px)';
+    if (icon) { icon.style.opacity = progress; icon.style.transform = 'translateY(-50%) scale(' + (0.5 + progress * 0.5) + ')'; }
+    if (Math.abs(dx) >= THRESHOLD && !triggered) {
+      triggered = true;
+      _setGroupReply(parseInt(row.dataset.msgid));
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+  }, { passive: true });
+
+  row.addEventListener('touchend', function() {
+    if (!swiping) return;
+    var bubble = row.querySelector('.mpx-bubble-wrap');
+    if (bubble) { bubble.style.transition = 'transform 0.25s cubic-bezier(0.34,1.56,0.64,1)'; bubble.style.transform = 'translateX(0)'; setTimeout(function(){ bubble.style.transition = ''; }, 300); }
+    if (icon) { icon.style.opacity = '0'; icon.style.transform = 'translateY(-50%) scale(0)'; }
+    swiping = false;
+  }, { passive: true });
+}
+
+// ── Animation réaction ────────────────────────────────────
+function _animateReaction(msgId) {
+  var box = document.getElementById('chatMessages');
+  if (!box) return;
+  var zone = box.querySelector('#rx-zone-' + msgId);
+  if (!zone) return;
+  var chips = zone.querySelectorAll('.mpx-rx-chip');
+  chips.forEach(function(c) {
+    c.classList.remove('pop');
+    void c.offsetWidth;
+    c.classList.add('pop');
+    c.addEventListener('animationend', function(){ c.classList.remove('pop'); }, { once: true });
+  });
 }
 
 // ══════════════════════════════════════════════════════════
@@ -671,7 +833,16 @@ function _onGroupSSE(payload) {
     if (window._currentGroupId === payload.groupId) {
       // Ne pas ajouter si déjà présent (envoyé par nous via sendGroupMessage)
       if (!_groupMessages.find(function(m){ return m.id === payload.message.id; })) {
-        _groupMessages.push(payload.message);
+        // Enrichir avec les données de reply si reply_to_id présent
+        var msg = payload.message;
+        if (msg.reply_to_id && !msg.reply_content) {
+          var quoted = _groupMessages.find(function(m){ return m.id === msg.reply_to_id; });
+          if (quoted) {
+            msg.reply_content     = quoted.content || (quoted.image ? '__IMAGE__' : '');
+            msg.reply_sender_name = quoted.sender_name || '';
+          }
+        }
+        _groupMessages.push(msg);
         renderGroupMessages();
       }
     }
@@ -699,6 +870,15 @@ window._onGroupSSE = _onGroupSSE;
 document.addEventListener('DOMContentLoaded', function() {
   // Scroll infini
   _initGroupScrollInfinite();
+
+  // Mettre à jour --mpx-input-h quand la zone de saisie change de taille
+  var _inputArea = document.getElementById('chatInputRow');
+  if (_inputArea && window.ResizeObserver) {
+    new ResizeObserver(function() {
+      var h = _inputArea.offsetHeight;
+      if (h > 0) document.documentElement.style.setProperty('--mpx-input-h', h + 'px');
+    }).observe(_inputArea);
+  }
 
   // Enter → envoyer dans groupe
   const input = document.getElementById('chatInput');

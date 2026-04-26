@@ -131,6 +131,20 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
 const _staticOpts     = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
 const _staticOptsAsset = IS_PROD ? {} : { setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=3600') };
+// Forcer UTF-8 sur tous les fichiers HTML/JS/CSS
+app.use((req, res, next) => {
+  const ext = req.path.split('.').pop().toLowerCase();
+  if (['html','js','css'].includes(ext)) {
+    const orig = res.setHeader.bind(res);
+    res.setHeader = function(name, value) {
+      if (name.toLowerCase() === 'content-type' && typeof value === 'string' && !value.includes('charset')) {
+        value = value + '; charset=utf-8';
+      }
+      return orig(name, value);
+    };
+  }
+  next();
+});
 // /js, /css, /assets servis depuis frontend/ (source unique)
 // IMPORTANT : déclarés AVANT frontend/pages pour avoir la priorité
 app.use('/js',     express.static(path.join(__dirname, '../frontend/pages/js'),     _staticOpts));
@@ -2194,6 +2208,24 @@ app.post('/api/push/unsubscribe', requireAuth, async (req, res) => {
     res.json({ ok: true });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+
+// Recherche membres pour groupes/messages (tous utilisateurs connectes)
+app.get('/api/members/search', requireAuth, async (req, res) => {
+  try {
+    const q = (req.query.q || '').trim().toLowerCase();
+    if (!q || q.length < 2) return res.json([]);
+    const users = await db.getAllUsers();
+    const filtered = users
+      .filter(u => u.isActive && u.id !== req.user.id)
+      .filter(u => u.name.toLowerCase().includes(q))
+      .slice(0, 10)
+      .map(u => ({ id: u.id, name: u.name, plan: u.plan, avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '' }));
+    res.json(filtered);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+// ══ GROUPES DE DISCUSSION ══════════════════════════════════
+require('./groups')(app, _migPool, db, requireAuth, parseId, _sseClients, sendPush);
 
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {

@@ -6158,7 +6158,7 @@ async function loadConversations() {
         item = document.createElement('div');
         item.dataset.userid = String(c.id);
         item.dataset.name = c.name.replace(/"/g,'&quot;');
-        item.addEventListener('click', (function(cv){ return function(){ openChat(cv.id,cv.name,cv.avatarColor||'#6c63ff',cv.avatarPhoto||'',cv.plan||''); }; })(c));
+        item.addEventListener('click', (function(cv){ return function(){ if (window._currentGroupId) return; openChat(cv.id,cv.name,cv.avatarColor||'#6c63ff',cv.avatarPhoto||'',cv.plan||''); }; })(c));
         list.appendChild(item);
       }
       const items = list.querySelectorAll('.mpx-conv-item');
@@ -6196,7 +6196,7 @@ async function loadConversations() {
     // Ouvrir automatiquement si redirig depuis une notification
     if (window._openChatWith) {
       const target = convs.find(c => c.id === window._openChatWith);
-      if (target) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '', target.plan || '');
+      if (target && !window._currentGroupId) openChat(target.id, target.name, target.avatarColor || '#6c63ff', target.avatarPhoto || '', target.plan || '');
       window._openChatWith = null;
     }
   } catch(e) {
@@ -6204,6 +6204,7 @@ async function loadConversations() {
   }
 }
 async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
+  if (window._currentGroupId) return;
   _currentChatUserId   = userId;
   window._currentChatUserId = userId;
   window.__typingChatUserId = userId;
@@ -6295,7 +6296,7 @@ async function openChat(userId, userName, avatarColor, avatarPhoto, userPlan) {
   if (_chatPollingTimer) clearInterval(_chatPollingTimer);
   var _presenceRefreshCount = 0;
   _chatPollingTimer = setInterval(() => {
-    if (_currentChatUserId === userId && !_chatBusy) {
+    if (_currentChatUserId === userId && !_chatBusy && !window._currentGroupId) {
       _loadChatMessages(userId);
       loadConversations();
       _updateMsgBadge();
@@ -6867,7 +6868,7 @@ async function sendChatMessage() {
 
   try {
     await PaganiAPI.sendMessage(_currentChatUserId, content, image, reply ? reply.id : null);
-    loadConversations();
+    if (!window._currentGroupId) loadConversations();
   } catch(e) {
     if (messages) { const opt = messages.querySelector('[data-optimistic]'); if (opt) opt.remove(); }
     if (input && content) input.value = content;

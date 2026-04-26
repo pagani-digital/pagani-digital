@@ -140,17 +140,17 @@
 
       <!-- Saisie -->
       <div class="mpx-input-area" id="chatInputRow" style="display:none">
-        <!-- Barre de citation (reply) -->
-        <div id="chatReplyBar" style="display:none;align-items:center;gap:0.6rem;padding:6px 12px 0;">
-          <div class="mpx-reply-preview">
-            <div class="mpx-reply-preview-inner">
-              <span class="mpx-reply-name" id="chatReplyName"></span>
-              <span class="mpx-reply-text" id="chatReplyText"></span>
+        <!-- Barre de citation (reply) : pleine largeur AU-DESSUS de l'input -->
+        <div id="chatReplyBar" style="display:none;flex-direction:column;margin-bottom:0.4rem">
+          <div style="display:flex;align-items:center;gap:0.5rem;background:rgba(108,99,255,0.08);border-left:3px solid var(--accent2);border-radius:0 8px 8px 0;padding:0.35rem 0.6rem 0.35rem 0.8rem">
+            <div style="flex:1;min-width:0">
+              <span class="mpx-reply-name" id="chatReplyName" style="display:block;font-size:0.7rem;font-weight:700;color:var(--accent2)"></span>
+              <span class="mpx-reply-text" id="chatReplyText" style="display:block;font-size:0.75rem;opacity:0.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></span>
             </div>
+            <button class="mpx-reply-cancel" onclick="_clearReply()" title="Annuler" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:0.9rem;padding:0.2rem;flex-shrink:0">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
-          <button class="mpx-reply-cancel" onclick="_clearReply()" title="Annuler">
-            <i class="fas fa-times"></i>
-          </button>
         </div>
         <!-- Prévisualisation image avant envoi -->
         <div id="chatImagePreview" style="display:none;padding:0.4rem 0.8rem 0;">
@@ -410,10 +410,13 @@
     }
     .mpx-photo-btn:hover { color: var(--accent); }
 
-    /* Fix champ saisie pleine largeur dans groupe */
+    /* Fix zone saisie : colonne pour que reply bar soit AU-DESSUS de l'input */
     #chatInputRow {
       width: 100%;
       box-sizing: border-box;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0;
     }
     #chatInputRow .mpx-input-box {
       width: 100%;
@@ -430,6 +433,7 @@
       position: absolute;
       bottom: calc(100% + 6px);
       left: 0;
+      right: auto;
       background: var(--bg2);
       border: 1px solid var(--border);
       border-radius: 14px;
@@ -437,16 +441,25 @@
       z-index: 200;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4);
       min-width: 180px;
+      max-width: calc(100vw - 2rem);
       animation: fadeIn 0.15s ease;
     }
-    .mpx-msg-row.own .mpx-bubble-menu { left: auto; right: 0; }
+    /* Messages envoyés (mine) : ancrer à droite */
+    .mpx-bubble-row.mine .mpx-bubble-menu { left: auto; right: 0; }
+    /* Sécurité mobile : ne jamais déborder à gauche */
+    @media (max-width: 580px) {
+      .mpx-bubble-menu { left: 0 !important; right: auto !important; max-width: calc(100vw - 1.5rem); }
+      .mpx-bubble-row.mine .mpx-bubble-menu { left: auto !important; right: 0 !important; }
+    }
     .mpx-bubble-menu-emojis {
-      display: flex; gap: 0.3rem; justify-content: center;
+      display: flex; gap: 0.2rem; justify-content: space-between;
       padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); margin-bottom: 0.4rem;
+      flex-wrap: nowrap;
     }
     .mpx-bubble-menu-emojis button {
-      background: none; border: none; font-size: 1.3rem; cursor: pointer;
-      padding: 0.2rem 0.3rem; border-radius: 8px; transition: background 0.15s;
+      background: none; border: none; font-size: 1.2rem; cursor: pointer;
+      padding: 0.2rem; border-radius: 8px; transition: background 0.15s;
+      flex: 1; text-align: center;
     }
     .mpx-bubble-menu-emojis button:hover { background: rgba(108,99,255,0.12); }
     .mpx-bubble-menu-actions { display: flex; flex-direction: column; gap: 0.2rem; }
@@ -501,7 +514,22 @@
     }
     .mpx-group-count { font-size:0.7rem; color:var(--text2); }
 
-    /* Boutons action groupe — toujours visibles même sur mobile */
+    /* Icône swipe reply — cachée par défaut, visible uniquement pendant le swipe (via JS) */
+    .mpx-swipe-icon {
+      position: absolute;
+      top: 50%;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%) scale(0);
+      color: var(--accent2);
+      font-size: 1rem;
+      z-index: 5;
+      transition: none;
+    }
+    .mpx-bubble-row.mine .mpx-swipe-icon  { right: -28px; }
+    .mpx-bubble-row:not(.mine) .mpx-swipe-icon { left: -28px; }
+
+/* Boutons action groupe header (membres, modifier, quitter) */
     .mpx-group-action-btn {
       background: none;
       border: none;
@@ -519,8 +547,36 @@
     }
     .mpx-group-action-btn:hover { color: var(--accent); background: rgba(108,99,255,0.1); }
 
-    /* Chip réaction active (la mienne) */
-    .mpx-rx-chip.mine { background:rgba(108,99,255,0.2); border-color:rgba(108,99,255,0.5); }
+    .mpx-bubble-reactions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      margin-top: 0.2rem;
+      padding: 0 0.2rem;
+    }
+    .grp-row.mine .mpx-bubble-reactions { justify-content: flex-end; }
+    .grp-row:not(.mine) .mpx-bubble-reactions { justify-content: flex-start; }
+
+    /* ── Groupe : scoped .grp-row — réutilise le layout DM ── */
+    .grp-row { position: relative; }
+    .grp-row .mpx-bubble { min-width: 60px; }
+    /* Nom expéditeur au-dessus de la bulle */
+    .mpx-group-sender-name {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.18rem;
+      padding-left: 0.4rem;
+    }
+    /* Réactions sous la bulle */
+    .mpx-bubble-reactions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      padding: 0.1rem 0.2rem 0.2rem;
+    }
+    .mpx-bubble-row.mine .mpx-bubble-reactions { justify-content: flex-end; }
+    .mpx-bubble-row:not(.mine) .mpx-bubble-reactions { justify-content: flex-start; }
 
     /* ── Chip membre sélectionné ── */
     .mpx-member-chip {
@@ -738,7 +794,7 @@
       setInterval(_updateMsgBadge, 15000);
       // Rafraîchir la liste des conversations toutes les 5s si aucun chat ouvert
       setInterval(function() {
-        if (!_currentChatUserId) loadConversations();
+        if (!_currentChatUserId && !window._currentGroupId) loadConversations();
       }, 5000);
     });
 

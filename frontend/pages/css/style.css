@@ -7011,7 +7011,7 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 /* Bouton scroll vers le bas */
 .mpx-scroll-down-btn {
   position: absolute;
-  bottom: 80px;
+  bottom: calc(var(--mpx-input-h, 72px) + 12px);
   right: 1.2rem;
   width: 40px;
   height: 40px;

@@ -326,6 +326,63 @@ async function runMigrations(pool) {
     await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS module_id INTEGER REFERENCES video_modules(id) ON DELETE SET NULL`);
     await pool.query(`ALTER TABLE trainer_submissions ADD COLUMN IF NOT EXISTS unit_price NUMERIC DEFAULT 0`);
   });
+
+  // Groupes de discussion
+  await run('groups', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS groups (
+      id         SERIAL PRIMARY KEY,
+      name       TEXT NOT NULL,
+      photo      TEXT DEFAULT '',
+      created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+  });
+
+  await run('group_members', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS group_members (
+      group_id   INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      role       TEXT NOT NULL DEFAULT 'member',
+      joined_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (group_id, user_id)
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id)`);
+  });
+
+  await run('group_messages', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS group_messages (
+      id          SERIAL PRIMARY KEY,
+      group_id    INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+      sender_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      content     TEXT DEFAULT '',
+      image       TEXT DEFAULT '',
+      reply_to_id INTEGER REFERENCES group_messages(id) ON DELETE SET NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_group_messages_group ON group_messages(group_id)`);
+  });
+
+  await run('group_message_reads', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS group_message_reads (
+      message_id INTEGER NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      read_at    TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (message_id, user_id)
+    )`);
+  });
+
+  await run('group_message_reactions', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS group_message_reactions (
+      id         SERIAL PRIMARY KEY,
+      message_id INTEGER NOT NULL REFERENCES group_messages(id) ON DELETE CASCADE,
+      user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      emoji      TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(message_id, user_id)
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_group_msg_reactions ON group_message_reactions(message_id)`);
+  });
 }
 
 module.exports = { runMigrations };
