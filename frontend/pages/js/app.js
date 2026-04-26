@@ -2582,7 +2582,7 @@ async function register(e) {
     const user = await PaganiAPI.register({ name, email, password: pass, refCode: ref, mmPhone, mmOperator, mmName });
     window._currentUser = user;
     if (window.PaganiNotif) await PaganiNotif.newUser(name);
-    window.location.href = 'index.html';
+    showDashboard(user);
   } catch (ex) {
     const msgs = { EMAIL_TAKEN: "Cet email est deja utilise.", MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire." };
     if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";

@@ -58,7 +58,7 @@
         <p id="loginError" class="error-msg"></p>
         <button type="submit" class="btn-primary" style="width:100%">Se connecter</button>
       </form>
-      <p class="auth-switch">Pas de compte ? <a href="#" onclick="showRegister()">S'inscrire</a></p>
+      <p class="auth-switch">Pas de compte ? <a href="#" onclick="event.preventDefault();showRegister()">S'inscrire</a></p>
     </div>
   </div>
   <!-- REGISTER FORM -->
@@ -120,7 +120,7 @@
         <p id="regError" class="error-msg"></p>
         <button type="submit" class="btn-primary" style="width:100%">Créer mon compte</button>
       </form>
-      <p class="auth-switch">Déjà un compte ? <a href="#" onclick="showLogin()">Se connecter</a></p>
+      <p class="auth-switch">Déjà un compte ? <a href="#" onclick="event.preventDefault();showLogin()">Se connecter</a></p>
     </div>
   </div>
   <!-- DASHBOARD (affiché si connecté) -->
