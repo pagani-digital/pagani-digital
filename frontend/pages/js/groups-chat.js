@@ -881,15 +881,29 @@ function _animateReaction(msgId) {
 //  MODAL MEMBRES
 // ══════════════════════════════════════════════════════════
 
-function openGroupMembersModal() {
+async function openGroupMembersModal() {
   if (!_currentGroupData) return;
   const g = _currentGroupData, me = getUser();
+
+  // Charger la présence de tous les membres en parallèle
+  const presenceMap = {};
+  await Promise.all((g.members||[]).map(function(m) {
+    return fetch(API_BASE() + '/presence/' + m.user_id, { headers: { 'Authorization': 'Bearer ' + _jwt() } })
+      .then(function(r){ return r.json(); })
+      .then(function(p){ presenceMap[m.user_id] = p.online; })
+      .catch(function(){});
+  }));
+
   document.getElementById('groupMembersTitle').textContent = g.name + ' — ' + (g.members||[]).length + ' membre(s)';
   document.getElementById('groupMembersList').innerHTML = (g.members||[]).map(function(m) {
     const isCreator = m.user_id === g.created_by;
+    const isOnline  = !!presenceMap[m.user_id];
     const av = m.avatar_photo
       ? '<img src="' + m.avatar_photo + '" style="width:36px;height:36px;border-radius:50%;object-fit:cover" />'
       : '<div class="avatar-circle avatar-sm" style="background:' + (m.avatar_color||'#6c63ff') + '">' + getInitials(m.name||'?') + '</div>';
+    const onlineDot = isOnline
+      ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent2);margin-left:0.4rem;vertical-align:middle" title="En ligne"></span>'
+      : '';
     const roleLabel = '<span class="mpx-member-row-role ' + m.role + '">' + (isCreator ? 'Créateur' : m.role === 'admin' ? 'Admin' : 'Membre') + '</span>';
     let actions = '';
     if (g.role === 'admin' && m.user_id !== (me&&me.id) && !isCreator) {
@@ -899,11 +913,13 @@ function openGroupMembersModal() {
       }
       actions += '<button class="mpx-member-action danger" onclick="removeGroupMemberFromGroup(' + m.user_id + ')"><i class="fas fa-user-minus"></i> Retirer</button>';
     }
-    return '<div class="mpx-member-row">' + av
-      + '<div class="mpx-member-row-info"><div class="mpx-member-row-name">' + m.name + '</div>' + roleLabel + '</div>'
+    return '<div class="mpx-member-row">'
+      + '<div style="position:relative;flex-shrink:0">' + av + (isOnline ? '<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;border-radius:50%;background:var(--accent2);border:2px solid var(--bg2)"></span>' : '') + '</div>'
+      + '<div class="mpx-member-row-info"><div class="mpx-member-row-name">' + m.name + onlineDot + '</div>' + roleLabel + '</div>'
       + (actions ? '<div class="mpx-member-actions">' + actions + '</div>' : '')
       + '</div>';
   }).join('');
+
   document.getElementById('groupMembersAdminActions').style.display = g.role === 'admin' ? 'block' : 'none';
   document.getElementById('addMemberSearch').value = '';
   document.getElementById('addMemberResults').innerHTML = '';
