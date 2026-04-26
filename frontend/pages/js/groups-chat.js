@@ -345,6 +345,16 @@ function _memberColor(userId) {
 
 
 
+function _groupDateLabel(dateStr) {
+  const d     = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+  const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (sameDay(d, today))     return "Aujourd'hui";
+  if (sameDay(d, yesterday)) return 'Hier';
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: d.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+}
+
 function renderGroupMessages() {
   const box = document.getElementById('chatMessages');
   const me  = getUser();
@@ -353,7 +363,14 @@ function renderGroupMessages() {
     return;
   }
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
-  box.innerHTML = _groupMessages.map(function(msg){ return _buildGroupMsgHTML(msg, me); }).join('');
+  box.innerHTML = _groupMessages.map(function(msg, i){
+    var sep = '';
+    var prevMsg = _groupMessages[i - 1];
+    if (!prevMsg || _groupDateLabel(msg.created_at) !== _groupDateLabel(prevMsg.created_at)) {
+      sep = '<div class="mpx-date-sep">' + _groupDateLabel(msg.created_at) + '</div>';
+    }
+    return sep + _buildGroupMsgHTML(msg, me);
+  }).join('');
   box.querySelectorAll('.mpx-bubble[data-msgid]').forEach(function(b){ _attachBubbleLongPress(b); });
   box.querySelectorAll('.grp-row[data-msgid]').forEach(function(row){ _attachSwipeReply(row); });
   if (atBottom) box.scrollTop = box.scrollHeight;
