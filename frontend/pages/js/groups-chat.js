@@ -38,6 +38,9 @@ function switchMsgTab(tab, btn) {
 }
 
 function _closeActiveChat() {
+  if (_groupTypingHideTimer) { clearTimeout(_groupTypingHideTimer); _groupTypingHideTimer = null; }
+  var el = document.getElementById('chatTypingIndicator');
+  if (el) el.style.display = 'none';
   document.getElementById('chatEmpty').style.display    = 'flex';
   document.getElementById('chatMessages').style.display = 'none';
   document.getElementById('chatMessages').innerHTML     = '';
@@ -473,8 +476,38 @@ function _openImgFull(src) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  ENVOI MESSAGE + IMAGE + REPLY
+//  TYPING INDICATOR GROUPE
 // ══════════════════════════════════════════════════════════
+
+let _groupTypingTimer = null;
+let _groupTypingHideTimer = null;
+
+function _sendGroupTyping() {
+  const gid = window._currentGroupId;
+  if (!gid) return;
+  const me = getUser();
+  if (!me) return;
+  fetch(API_BASE() + '/groups/' + gid + '/typing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+    body: JSON.stringify({ name: me.name })
+  }).catch(function(){});
+}
+
+function _showGroupTyping(name) {
+  var el  = document.getElementById('chatTypingIndicator');
+  var txt = document.getElementById('chatTypingText');
+  if (!el || !txt) return;
+  txt.textContent = name.split(' ')[0] + ' est en train d’écrire…';
+  el.style.display = 'block';
+  // Masquer automatiquement après 4s si pas de nouveau signal
+  clearTimeout(_groupTypingHideTimer);
+  _groupTypingHideTimer = setTimeout(function() {
+    el.style.display = 'none';
+  }, 4000);
+}
+
+
 
 async function sendGroupMessage() {
   const gid = window._currentGroupId;
@@ -825,6 +858,9 @@ function openEditGroupModal() {
 // ══════════════════════════════════════════════════════════
 
 function _onGroupSSE(payload) {
+  if (payload.type === 'GROUP_TYPING' && window._currentGroupId === payload.groupId) {
+    _showGroupTyping(payload.name);
+  }
   if (payload.type === 'GROUP_MESSAGE') {
     const g = _allGroups.find(function(x){ return x.id === payload.groupId; });
     if (g) {
@@ -888,6 +924,10 @@ document.addEventListener('DOMContentLoaded', function() {
   if (input) {
     input.addEventListener('keydown', function(e) {
       if (e.key === 'Enter' && window._currentGroupId) { e.preventDefault(); sendGroupMessage(); }
+    });
+    input.addEventListener('input', function() {
+      if (!window._currentGroupId) return;
+      _sendGroupTyping();
     });
   }
 

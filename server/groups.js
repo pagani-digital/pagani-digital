@@ -5,6 +5,9 @@
 
 module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, parseId, _sseClients, sendPush) {
 
+  // Map groupId -> Map(userId -> { name, expiresAt })
+  const _groupTypingMap = new Map();
+
   function _notifyGroupMembers(members, payload) {
     const data = 'data: ' + JSON.stringify(payload) + '\n\n';
     members.forEach(function(m) {
@@ -217,7 +220,25 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
     } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
   });
 
-  // POST /api/groups/:id/messages — envoyer un message
+  // POST /api/groups/:id/typing
+  app.post('/api/groups/:id/typing', requireAuth, async function(req, res) {
+    const gid = parseId(req.params.id);
+    if (!gid) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const member = await _isGroupMember(gid, req.user.id);
+    if (!member) return res.status(403).json({ error: 'NON_MEMBRE' });
+    const me = await db.getUserById(req.user.id);
+    const members = await _migPool.query('SELECT user_id FROM group_members WHERE group_id=$1', [gid]);
+    // Notifier tous les membres sauf l'expéditeur via SSE
+    const data = 'data: ' + JSON.stringify({ type: 'GROUP_TYPING', groupId: gid, userId: req.user.id, name: me.name }) + '\n\n';
+    members.rows.forEach(function(m) {
+      if (m.user_id === req.user.id) return;
+      const clients = _sseClients.get(m.user_id);
+      if (clients) clients.forEach(function(c) { try { c.write(data); } catch(e) {} });
+    });
+    res.json({ ok: true });
+  });
+
+
   app.post('/api/groups/:id/messages', requireAuth, async function(req, res) {
     const gid     = parseId(req.params.id);
     const content = (req.body.content || '').trim();

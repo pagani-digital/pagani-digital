@@ -359,7 +359,7 @@ function _connectSSE(userId) {
         return;
       }
       // Events groupes
-      if (notif.type === 'GROUP_MESSAGE' || notif.type === 'GROUP_REACTION' || notif.type === 'GROUP_MSG_DELETE') {
+      if (notif.type === 'GROUP_MESSAGE' || notif.type === 'GROUP_REACTION' || notif.type === 'GROUP_MSG_DELETE' || notif.type === 'GROUP_TYPING') {
         if (typeof window._onGroupSSE === 'function') window._onGroupSSE(notif);
         if (notif.type === 'GROUP_MESSAGE') _notifToToast(notif);
         return;
