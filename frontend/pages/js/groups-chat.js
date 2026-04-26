@@ -98,6 +98,7 @@ async function loadGroups() {
 }
 
 function renderGroupList() {
+  window._allGroups = _allGroups;
   const list = document.getElementById('groupList');
   if (!_allGroups.length) {
     list.innerHTML = '<div style="padding:2rem 1rem;text-align:center;color:var(--text2);font-size:0.85rem"><i class="fas fa-users" style="font-size:2rem;opacity:0.3;display:block;margin-bottom:0.8rem"></i>Aucun groupe.<br><small>Créez-en un avec le bouton +</small></div>';

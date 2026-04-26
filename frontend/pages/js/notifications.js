@@ -53,7 +53,8 @@ function _notifToToast(notif) {
     const m = notif.link.match(/with=(\d+)/);
     if (m && window._currentChatUserId && parseInt(m[1]) === window._currentChatUserId) return;
   }
-  _showToast(notif.type === 'PRIVATE_MESSAGE' ? 'Nouveau message' : 'Notification', notif.message || '', icon, url);
+  var _title = notif._title || (notif.type === 'PRIVATE_MESSAGE' ? 'Nouveau message' : (NOTIF_TYPES[notif.type] ? NOTIF_TYPES[notif.type].title : 'Notification'));
+  _showToast(_title, notif.message || '', icon, url);
 }
 
 /**
@@ -63,6 +64,9 @@ function _notifToToast(notif) {
  */
 
 const NOTIF_TYPES = {
+  GROUP_MESSAGE:      { icon: "fas fa-users",           color: "#6c63ff", title: "Message groupe"            },
+  GROUP_INVITE:       { icon: "fas fa-user-plus",       color: "#6c63ff", title: "Invitation groupe"          },
+  MENTION:            { icon: "fas fa-at",              color: "#00d4aa", title: "Mention"                    },
   NEW_USER:           { icon: "fas fa-user-plus",       color: "#6c63ff", title: "Nouvel inscrit"              },
   NEW_SUBSCRIPTION:   { icon: "fas fa-id-card",         color: "#00d4aa", title: "Nouvel abonnement"           },
   CANCEL_SUB:         { icon: "fas fa-times-circle",    color: "#ff4d6d", title: "Annulation abonnement"       },
@@ -361,7 +365,47 @@ function _connectSSE(userId) {
       // Events groupes
       if (notif.type === 'GROUP_MESSAGE' || notif.type === 'GROUP_REACTION' || notif.type === 'GROUP_MSG_DELETE' || notif.type === 'GROUP_TYPING') {
         if (typeof window._onGroupSSE === 'function') window._onGroupSSE(notif);
-        if (notif.type === 'GROUP_MESSAGE') _notifToToast(notif);
+        if (notif.type === 'GROUP_MESSAGE' && window._currentGroupId !== notif.groupId) {
+        // Ne pas afficher le toast si l'utilisateur courant est mentionné dans le message
+        var _me = window._currentUser || (typeof getUser === 'function' ? getUser() : null);
+        var _msgContent = notif.message && notif.message.content ? notif.message.content : '';
+        var _myName = _me ? _me.name : '';
+        var _myFirst = _myName.split(' ')[0];
+        var _mentionRegex = /@(\S+)/gi;
+        var _mentioned = false;
+        var _mm;
+        while ((_mm = _mentionRegex.exec(_msgContent)) !== null) {
+          var _tag = _mm[1].toLowerCase();
+          if (_myName && (_tag === _myName.toLowerCase() || _tag === _myFirst.toLowerCase())) { _mentioned = true; break; }
+        }
+        if (_mentioned) { return; }
+        // Construire un objet notif lisible depuis le payload SSE
+        var _msg = notif.message;
+        var _text = typeof _msg === 'string' ? _msg : (_msg && (_msg.content || (_msg.image ? '📷 Photo' : ''))) || '';
+        var _senderName = _msg && _msg.sender_name ? _msg.sender_name : '';
+        var _grpName = '';
+        if (window._allGroups && Array.isArray(window._allGroups)) {
+          var _grp = window._allGroups.find(function(g){ return g.id === notif.groupId; });
+          if (_grp) _grpName = _grp.name;
+        }
+        var _toastMsg = _senderName + ' : ' + _text.slice(0, 60);
+        var _link = notif.link || ('messages.html?tab=groups&group=' + notif.groupId);
+        if (_grpName) {
+          _notifToToast({ type: 'GROUP_MESSAGE', message: _toastMsg, link: _link, _title: 'Message dans "' + _grpName + '"' });
+        } else {
+          // Charger le nom du groupe depuis le serveur
+          var _api = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+          var _tok = localStorage.getItem('pd_jwt');
+          fetch(_api + '/groups/' + notif.groupId, { headers: { 'Authorization': 'Bearer ' + _tok } })
+            .then(function(r){ return r.json(); })
+            .then(function(g){
+              var _name = g && g.name ? g.name : 'Groupe';
+              _notifToToast({ type: 'GROUP_MESSAGE', message: _toastMsg, link: _link, _title: 'Message dans "' + _name + '"' });
+            }).catch(function(){
+              _notifToToast({ type: 'GROUP_MESSAGE', message: _toastMsg, link: _link, _title: 'Message groupe' });
+            });
+        }
+      }
         return;
       }
     } catch(e) {}
@@ -396,8 +440,13 @@ function _connectSSE(userId) {
     // Rafraîchir panel si ouvert
     const panel = document.getElementById('notifPanel');
     if (panel && panel.classList.contains('open')) renderNotifPanel(userId);
-    // Toast in-app
-    try { const notif = JSON.parse(e.data); _notifToToast(notif); } catch(ee) {}
+    // Toast in-app (exclure GROUP_MESSAGE déjà géré par le handler SSE groupe)
+    try {
+      const notif = JSON.parse(e.data);
+      if (notif.type !== 'GROUP_MESSAGE' && notif.type !== 'GROUP_REACTION' && notif.type !== 'GROUP_MSG_DELETE' && notif.type !== 'GROUP_TYPING') {
+        _notifToToast(notif);
+      }
+    } catch(ee) {}
   };
   _sseSource.onerror = () => {
     _sseSource.close();

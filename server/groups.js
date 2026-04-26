@@ -10,10 +10,23 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
 
   function _notifyGroupMembers(members, payload) {
     const data = 'data: ' + JSON.stringify(payload) + '\n\n';
+    const memberIds = new Set(members.map(function(m){ return m.user_id; }));
     members.forEach(function(m) {
       const clients = _sseClients.get(m.user_id);
       if (clients) clients.forEach(function(c) { try { c.write(data); } catch(e) {} });
     });
+    // Admin connecté sur userId=0 : notifier seulement s'il est membre du groupe
+    const adminClients = _sseClients.get(0);
+    if (adminClients && adminClients.size) {
+      // Vérifier si un admin est dans la liste des membres
+      db.getAllUsers().then(function(users) {
+        const adminIds = users.filter(function(u){ return u.role === 'admin'; }).map(function(u){ return u.id; });
+        const adminIsMember = adminIds.some(function(id){ return memberIds.has(id); });
+        if (adminIsMember) {
+          adminClients.forEach(function(c) { try { c.write(data); } catch(e) {} });
+        }
+      }).catch(function(){});
+    }
   }
 
   async function _isGroupMember(groupId, userId) {
@@ -267,34 +280,47 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
         'INSERT INTO group_message_reads (message_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
         [msg.id, req.user.id]
       );
-      const members = await _migPool.query('SELECT user_id FROM group_members WHERE group_id=$1', [gid]);
+      // Extraire les mentions du message
+      const mentionedNames = [];
+      if (content) {
+        const _mReg = /@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g;
+        let _m;
+        while ((_m = _mReg.exec(content)) !== null) mentionedNames.push(_m[1].toLowerCase());
+      }
+            const members = await _migPool.query('SELECT user_id FROM group_members WHERE group_id=$1', [gid]);
       _notifyGroupMembers(members.rows, { type: 'GROUP_MESSAGE', groupId: gid, message: msg });
       const gName = await _migPool.query('SELECT name FROM groups WHERE id=$1', [gid]);
       const groupName = gName.rows[0] ? gName.rows[0].name : 'Groupe';
       for (const m of members.rows) {
         if (m.user_id === req.user.id) continue;
-        await db.createNotification({
-          userId: m.user_id, type: 'GROUP_MESSAGE',
-          message: sender.name + ' dans "' + groupName + '" : ' + content.slice(0, 60),
-          link: 'messages.html?tab=groups&group=' + gid
-        });
+        const mUser = await db.getUserById(m.user_id);
+        const _mName = mUser ? mUser.name.toLowerCase() : '';
+        const _mFirst = _mName.split(' ')[0];
+        const isMentioned = mentionedNames.length && mUser && (mentionedNames.includes(_mName) || mentionedNames.includes(_mFirst));
+        if (!isMentioned) {
+          const _gmUserId = mUser && mUser.role === 'admin' ? 0 : m.user_id;
+          await db.createNotification({
+            userId: _gmUserId, type: 'GROUP_MESSAGE',
+            message: sender.name + ' dans "' + groupName + '" : ' + content.slice(0, 60),
+            link: 'messages.html?tab=groups&group=' + gid
+          });
+        }
         sendPush(m.user_id, sender.name + ' — ' + groupName, (content || 'Photo').slice(0, 80), 'messages.html?tab=groups&group=' + gid);
       }
-      // Notifications mentions @Nom
+            // Notifications mentions @Nom
       if (content) {
-        const mentionRegex = /@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g;
-        const mentionedNames = [];
-        let match;
-        while ((match = mentionRegex.exec(content)) !== null) mentionedNames.push(match[1].toLowerCase());
         if (mentionedNames.length) {
           const allUsers = await db.getAllUsers();
           const memberIds = new Set(members.rows.map(function(m){ return m.user_id; }));
           for (const u of allUsers) {
             if (u.id === req.user.id) continue;
             if (!memberIds.has(u.id)) continue;
-            if (mentionedNames.includes(u.name.toLowerCase())) {
+            const _uName = u.name.toLowerCase();
+            const _uFirst = _uName.split(' ')[0];
+            if (mentionedNames.includes(_uName) || mentionedNames.includes(_uFirst)) {
+              const _mentionUserId = u.role === 'admin' ? 0 : u.id;
               await db.createNotification({
-                userId: u.id, type: 'MENTION',
+                userId: _mentionUserId, type: 'MENTION',
                 message: sender.name + ' vous a mentionné dans "' + groupName + '" : ' + content.slice(0, 60),
                 link: 'messages.html?tab=groups&group=' + gid
               });
