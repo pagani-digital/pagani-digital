@@ -37,6 +37,15 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
     return r.rows[0] || null;
   }
 
+  async function _insertSystemMessage(groupId, content) {
+    const r = await _migPool.query(
+      `INSERT INTO group_messages (group_id, sender_id, content, type) VALUES ($1, NULL, $2, 'system') RETURNING *`,
+      [groupId, content]
+    );
+    const members = await _migPool.query('SELECT user_id FROM group_members WHERE group_id=$1', [groupId]);
+    _notifyGroupMembers(members.rows, { type: 'GROUP_MESSAGE', groupId, message: Object.assign({}, r.rows[0], { type: 'system' }) });
+  }
+
   // POST /api/groups — créer un groupe
   app.post('/api/groups', requireAuth, async function(req, res) {
     const name      = (req.body.name || '').trim().slice(0, 100);
@@ -153,6 +162,7 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
         message: adder.name + ' vous a ajouté au groupe "' + groupName + '"',
         link: 'messages.html?tab=groups&group=' + gid
       });
+      await _insertSystemMessage(gid, adder.name + ' a ajouté ' + (await db.getUserById(uid)).name + ' au groupe');
       res.json({ ok: true });
     } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
   });
@@ -168,6 +178,7 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
       const g = await _migPool.query('SELECT created_by FROM groups WHERE id=$1', [gid]);
       if (g.rows[0] && g.rows[0].created_by === uid) return res.status(403).json({ error: 'IMPOSSIBLE_RETIRER_CREATEUR' });
       await _migPool.query('DELETE FROM group_members WHERE group_id=$1 AND user_id=$2', [gid, uid]);
+      await _insertSystemMessage(gid, (await db.getUserById(uid)).name + ' a été retiré du groupe');
       res.json({ ok: true });
     } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
   });
@@ -197,6 +208,7 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
       if (!g.rows[0]) return res.status(404).json({ error: 'GROUPE_INTROUVABLE' });
       if (g.rows[0].created_by === req.user.id) return res.status(400).json({ error: 'CREATEUR_NE_PEUT_PAS_QUITTER' });
       await _migPool.query('DELETE FROM group_members WHERE group_id=$1 AND user_id=$2', [gid, req.user.id]);
+      await _insertSystemMessage(gid, (await db.getUserById(req.user.id)).name + ' a quitté le groupe');
       res.json({ ok: true });
     } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
   });
@@ -215,14 +227,14 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
         " (SELECT json_agg(json_build_object('emoji', emoji, 'user_id', user_id)) FROM group_message_reactions WHERE message_id = gm.id) AS reactions," +
         ' (SELECT COUNT(*) FROM group_message_reads WHERE message_id = gm.id) AS read_count,' +
         ' reply.content AS reply_content, reply_u.name AS reply_sender_name' +
-        ' FROM group_messages gm JOIN users u ON u.id = gm.sender_id' +
+        ' FROM group_messages gm LEFT JOIN users u ON u.id = gm.sender_id' +
         ' LEFT JOIN group_messages reply ON reply.id = gm.reply_to_id' +
         ' LEFT JOIN users reply_u ON reply_u.id = reply.sender_id' +
         ' WHERE gm.group_id = $1' + (before ? ' AND gm.created_at < $3' : '') +
         ' ORDER BY gm.created_at DESC LIMIT $2';
       const r = await _migPool.query(q, before ? [gid, limit, before] : [gid, limit]);
       for (const msg of r.rows) {
-        if (msg.sender_id !== req.user.id) {
+        if (msg.sender_id !== req.user.id && msg.type !== 'system') {
           await _migPool.query(
             'INSERT INTO group_message_reads (message_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
             [msg.id, req.user.id]

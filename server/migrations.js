@@ -354,13 +354,23 @@ async function runMigrations(pool) {
     await pool.query(`CREATE TABLE IF NOT EXISTS group_messages (
       id          SERIAL PRIMARY KEY,
       group_id    INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-      sender_id   INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      sender_id   INTEGER REFERENCES users(id) ON DELETE CASCADE,
       content     TEXT DEFAULT '',
       image       TEXT DEFAULT '',
+      type        TEXT DEFAULT 'message',
       reply_to_id INTEGER REFERENCES group_messages(id) ON DELETE SET NULL,
       created_at  TIMESTAMPTZ DEFAULT NOW()
     )`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_group_messages_group ON group_messages(group_id)`);
+  });
+
+  await run('group_messages_type_col', async () => {
+    await pool.query(`ALTER TABLE group_messages ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'message'`);
+    await pool.query(`ALTER TABLE group_messages ALTER COLUMN sender_id DROP NOT NULL`);
+  });
+
+  await run('group_messages_sender_nullable', async () => {
+    await pool.query(`ALTER TABLE group_messages ALTER COLUMN sender_id DROP NOT NULL`);
   });
 
   await run('group_message_reads', async () => {

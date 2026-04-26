@@ -419,6 +419,12 @@ function renderGroupMessages() {
 }
 
 function _buildGroupMsgHTML(msg, me) {
+  // Message système (join/leave/kick)
+  if (msg.type === 'system') {
+    return '<div style="text-align:center;padding:0.4rem 1rem;font-size:0.75rem;color:var(--text2);font-style:italic">'
+      + '<span style="background:var(--bg2);border:1px solid var(--border);border-radius:50px;padding:0.2rem 0.8rem">'
+      + esc(msg.content) + '</span></div>';
+  }
   const isOwn = me && msg.sender_id === me.id;
 
   // Avatar — identique au DM (mpx-bubble-av)
@@ -1108,7 +1114,7 @@ function _onGroupSSE(payload) {
   if (payload.type === 'GROUP_MESSAGE') {
     const g = _allGroups.find(function(x){ return x.id === payload.groupId; });
     if (g) {
-      g.last_message = payload.message.content || 'Photo';
+      g.last_message = payload.message.type === 'system' ? payload.message.content : (payload.message.content || 'Photo');
       if (window._currentGroupId !== payload.groupId) g.unread_count = (parseInt(g.unread_count)||0) + 1;
       renderGroupList();
       _updateGroupTabBadge();
