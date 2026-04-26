@@ -828,6 +828,7 @@ function _showBubbleMenu(bubble) {
     + '</div>'
     + '<div class="mpx-bubble-menu-actions">'
     + '<button onclick="_setGroupReply(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-reply"></i> Répondre</button>'
+    + (msg.content ? '<button onclick="_copyGroupMsg(\'' + msg.content.replace(/'/g,"\\'").replace(/\\/g,'\\\\') + '\');_closeBubbleMenu()"><i class="fas fa-copy"></i> Copier</button>' : '')
     + ((isOwn || isAdmin) ? '<button class="danger" onclick="deleteGroupMessage(' + msgId + ');_closeBubbleMenu()"><i class="fas fa-trash"></i> Supprimer</button>' : '')
     + '</div>';
   // Positionner le menu sur la bulle
@@ -845,6 +846,20 @@ function _showBubbleMenu(bubble) {
 
 function _closeBubbleMenu() {
   document.querySelectorAll('.mpx-bubble-menu').forEach(function(m){ m.remove(); });
+}
+
+function _copyGroupMsg(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch(function(){});
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
 }
 
 // ── Swipe pour répondre ───────────────────────────────────
