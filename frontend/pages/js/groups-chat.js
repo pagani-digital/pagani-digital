@@ -483,8 +483,104 @@ function _openImgFull(src) {
 }
 
 // ══════════════════════════════════════════════════════════
-//  TYPING INDICATOR GROUPE
+//  MENTION AUTOCOMPLETE GROUPE
 // ══════════════════════════════════════════════════════════
+
+var _grpMentionDropdown = null;
+var _grpMentionStart    = -1;
+
+function _initGroupMentionAutocomplete(input) {
+  // Supprimer l'ancien listener si existe
+  if (input._grpMentionHandler) input.removeEventListener('input', input._grpMentionHandler);
+  if (input._grpKeyHandler)     input.removeEventListener('keydown', input._grpKeyHandler);
+
+  // Créer le dropdown une seule fois
+  if (!_grpMentionDropdown) {
+    _grpMentionDropdown = document.createElement('div');
+    _grpMentionDropdown.style.cssText = 'position:fixed;z-index:99999;background:var(--bg2);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:220px;max-width:300px;overflow:hidden;display:none';
+    document.body.appendChild(_grpMentionDropdown);
+  }
+
+  function _close() {
+    _grpMentionDropdown.style.display = 'none';
+    _grpMentionDropdown.innerHTML = '';
+    _grpMentionStart = -1;
+  }
+
+  function _getMembers() {
+    if (!_currentGroupData || !_currentGroupData.members) return [];
+    return _currentGroupData.members.map(function(m) {
+      return { id: m.user_id, name: m.name, avatarPhoto: m.avatar_photo || '', avatarColor: m.avatar_color || '#6c63ff' };
+    });
+  }
+
+  function _insert(name) {
+    var val    = input.value;
+    var before = val.slice(0, _grpMentionStart);
+    var after  = val.slice(input.selectionStart);
+    input.value = before + '@' + name + ' ' + after;
+    input.focus();
+    var pos = _grpMentionStart + name.length + 2;
+    input.selectionStart = input.selectionEnd = pos;
+    _close();
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function _build(query) {
+    var members = _getMembers().filter(function(u) {
+      return u.name.toLowerCase().includes(query.toLowerCase());
+    }).slice(0, 6);
+    if (!members.length) { _close(); return; }
+    _grpMentionDropdown.innerHTML = '';
+    members.forEach(function(u) {
+      var initials = u.name.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2);
+      var av = u.avatarPhoto
+        ? '<img src="' + u.avatarPhoto + '" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
+        : '<div style="width:34px;height:34px;border-radius:50%;background:' + u.avatarColor + ';display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:700;color:#fff;flex-shrink:0">' + initials + '</div>';
+      var item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:0.7rem;padding:0.6rem 0.9rem;cursor:pointer;transition:background 0.15s';
+      item.innerHTML = av + '<div style="font-size:0.88rem;font-weight:700">' + esc(u.name) + '</div>';
+      item.addEventListener('mouseenter', function(){ item.style.background = 'rgba(108,99,255,0.1)'; });
+      item.addEventListener('mouseleave', function(){ item.style.background = ''; });
+      item.addEventListener('mousedown', function(e){ e.preventDefault(); _insert(u.name); });
+      _grpMentionDropdown.appendChild(item);
+    });
+    var rect = input.getBoundingClientRect();
+    _grpMentionDropdown.style.left = rect.left + 'px';
+    _grpMentionDropdown.style.top  = (rect.top - _grpMentionDropdown.offsetHeight - 4) + 'px';
+    _grpMentionDropdown.style.display = 'block';
+    // Repositionner après affichage
+    var ddH = _grpMentionDropdown.offsetHeight;
+    _grpMentionDropdown.style.top = (rect.top - ddH - 4) + 'px';
+  }
+
+  input._grpMentionHandler = function() {
+    if (!window._currentGroupId) return;
+    var val    = input.value;
+    var caret  = input.selectionStart;
+    var before = val.slice(0, caret);
+    var atIdx  = before.lastIndexOf('@');
+    if (atIdx === -1) { _close(); return; }
+    var query = before.slice(atIdx + 1);
+    if (query.split(' ').length > 2 || query.length > 40) { _close(); return; }
+    _grpMentionStart = atIdx;
+    if (!query.trim()) { _close(); return; }
+    _build(query.trim());
+  };
+
+  input._grpKeyHandler = function(e) {
+    if (_grpMentionDropdown.style.display === 'none') return;
+    if (e.key === 'Escape') { _close(); }
+  };
+
+  input.addEventListener('input',   input._grpMentionHandler);
+  input.addEventListener('keydown', input._grpKeyHandler);
+  document.addEventListener('click', function(e) {
+    if (!_grpMentionDropdown.contains(e.target)) _close();
+  });
+}
+
+
 
 let _groupTypingTimer = null;
 let _groupTypingHideTimer = null;
@@ -936,8 +1032,8 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!window._currentGroupId) return;
       _sendGroupTyping();
     });
-    // Activer l'autocomplete @ sur l'input groupe (réutilise le système des commentaires)
-    if (typeof _initMentionAutocomplete === 'function') _initMentionAutocomplete(input);
+    // Activer l'autocomplete @ sur l'input groupe (membres du groupe uniquement)
+    _initGroupMentionAutocomplete(input);
   }
 
   // Bouton image → groupe si groupe actif

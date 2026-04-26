@@ -280,6 +280,30 @@ module.exports = function registerGroupRoutes(app, _migPool, db, requireAuth, pa
         });
         sendPush(m.user_id, sender.name + ' — ' + groupName, (content || 'Photo').slice(0, 80), 'messages.html?tab=groups&group=' + gid);
       }
+      // Notifications mentions @Nom
+      if (content) {
+        const mentionRegex = /@([A-Z\u00C0-\u024F][\w\u00C0-\u024F]*(?:\s[A-Z\u00C0-\u024F][\w\u00C0-\u024F]*)?)/g;
+        const mentionedNames = [];
+        let match;
+        while ((match = mentionRegex.exec(content)) !== null) mentionedNames.push(match[1].toLowerCase());
+        if (mentionedNames.length) {
+          const allUsers = await db.getAllUsers();
+          const memberIds = new Set(members.rows.map(function(m){ return m.user_id; }));
+          for (const u of allUsers) {
+            if (u.id === req.user.id) continue;
+            if (!memberIds.has(u.id)) continue;
+            if (mentionedNames.includes(u.name.toLowerCase())) {
+              await db.createNotification({
+                userId: u.id, type: 'MENTION',
+                message: sender.name + ' vous a mentionné dans "' + groupName + '" : ' + content.slice(0, 60),
+                link: 'messages.html?tab=groups&group=' + gid
+              });
+              sendPush(u.id, sender.name + ' vous a mentionné', content.slice(0, 80), 'messages.html?tab=groups&group=' + gid);
+            }
+          }
+        }
+      }
+
       res.json(msg);
     } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
   });
