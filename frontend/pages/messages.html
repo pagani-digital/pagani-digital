@@ -206,6 +206,16 @@
       </div>
       <div class="mpx-modal-body">
         <input type="text" id="newGroupName" class="mpx-modal-search" placeholder="Nom du groupe..." style="margin-bottom:0.8rem" maxlength="100" />
+        <!-- Photo optionnelle -->
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem">
+          <div id="newGroupPhotoPreview" style="width:48px;height:48px;border-radius:12px;background:var(--bg3);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+            <i class="fas fa-image" style="color:var(--text2);font-size:1.1rem"></i>
+          </div>
+          <label style="display:inline-flex;align-items:center;gap:0.4rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.35rem 0.8rem;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:600">
+            <i class="fas fa-camera"></i> Photo (optionnel)
+            <input type="file" id="newGroupPhotoInput" accept="image/*" style="display:none" onchange="_previewNewGroupPhoto(this)" />
+          </label>
+        </div>
         <div class="mpx-modal-search-wrap" style="margin-bottom:0.6rem">
           <i class="fas fa-search"></i>
           <input type="text" id="newGroupSearch" class="mpx-modal-search"
@@ -217,6 +227,35 @@
         <p class="mpx-modal-status" id="newGroupStatus"></p>
         <button class="btn-primary" style="width:100%;margin-top:0.8rem" onclick="createGroup()">
           <i class="fas fa-plus"></i> Créer le groupe
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal modifier groupe -->
+  <div class="mpx-modal-overlay" id="editGroupModal" style="display:none" onclick="if(event.target===this)closeEditGroupModal()">
+    <div class="mpx-modal">
+      <div class="mpx-modal-head">
+        <h3><i class="fas fa-edit"></i> Modifier le groupe</h3>
+        <button class="mpx-modal-close" onclick="closeEditGroupModal()">&times;</button>
+      </div>
+      <div class="mpx-modal-body">
+        <!-- Photo groupe -->
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+          <div id="editGroupAvatarPreview" style="width:64px;height:64px;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#fff;font-weight:700;overflow:hidden;flex-shrink:0"></div>
+          <div style="display:flex;flex-direction:column;gap:0.5rem">
+            <label style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.3);color:var(--accent);padding:0.4rem 0.9rem;border-radius:8px;cursor:pointer;font-size:0.82rem;font-weight:600">
+              <i class="fas fa-camera"></i> Changer la photo
+              <input type="file" id="editGroupPhotoInput" accept="image/*" style="display:none" onchange="_previewEditGroupPhoto(this)" />
+            </label>
+            <button onclick="_removeEditGroupPhoto()" style="background:none;border:none;color:var(--red);font-size:0.78rem;cursor:pointer;text-align:left;padding:0"><i class="fas fa-times"></i> Supprimer la photo</button>
+          </div>
+        </div>
+        <!-- Nom groupe -->
+        <input type="text" id="editGroupNameInput" class="mpx-modal-search" placeholder="Nom du groupe..." maxlength="100" style="margin-bottom:0.8rem" />
+        <p class="mpx-modal-status" id="editGroupStatus"></p>
+        <button class="btn-primary" style="width:100%" onclick="saveEditGroup()">
+          <i class="fas fa-save"></i> Enregistrer
         </button>
       </div>
     </div>

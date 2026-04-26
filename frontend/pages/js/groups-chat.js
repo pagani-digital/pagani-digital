@@ -132,7 +132,26 @@ function _updateGroupTabBadge() {
 //  MODAL CRÉATION GROUPE
 // ══════════════════════════════════════════════════════════
 
+var _newGroupPhotoB64 = '';
+
+function _previewNewGroupPhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Image trop grande (max 2 Mo).'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _newGroupPhotoB64 = e.target.result;
+    var prev = document.getElementById('newGroupPhotoPreview');
+    prev.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" />';
+  };
+  reader.readAsDataURL(file);
+}
+
 function showNewGroupModal() {
+  _newGroupPhotoB64 = '';
+  document.getElementById('newGroupPhotoPreview').innerHTML = '<i class="fas fa-image" style="color:var(--text2);font-size:1.1rem"></i>';
+  var inp = document.getElementById('newGroupPhotoInput');
+  if (inp) inp.value = '';
   _newGroupMembers = [];
   document.getElementById('newGroupName').value         = '';
   document.getElementById('newGroupSearch').value       = '';
@@ -200,7 +219,7 @@ async function createGroup() {
     const r = await fetch(API_BASE() + '/groups', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
-      body: JSON.stringify({ name, memberIds: _newGroupMembers.map(function(m){ return m.id; }) })
+      body: JSON.stringify({ name, photo: _newGroupPhotoB64 || '', memberIds: _newGroupMembers.map(function(m){ return m.id; }) })
     });
     const group = await r.json();
     if (!r.ok) { status.style.color = 'var(--red)'; status.textContent = group.error || 'Erreur'; return; }
@@ -1002,19 +1021,80 @@ async function leaveOrDeleteGroup() {
   } catch(e) {}
 }
 
+var _editGroupPhotoB64 = '';
+var _editGroupRemovePhoto = false;
+
 function openEditGroupModal() {
   if (!_currentGroupData) return;
-  const name = prompt('Nouveau nom du groupe :', _currentGroupData.name);
-  if (!name || !name.trim()) return;
-  fetch(API_BASE() + '/groups/' + window._currentGroupId, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
-    body: JSON.stringify({ name: name.trim() })
-  }).then(function(r){ return r.json(); }).then(function(g) {
-    _currentGroupData.name = g.name;
+  _editGroupPhotoB64 = '';
+  _editGroupRemovePhoto = false;
+  document.getElementById('editGroupNameInput').value = _currentGroupData.name;
+  document.getElementById('editGroupStatus').textContent = '';
+  var prev = document.getElementById('editGroupAvatarPreview');
+  if (_currentGroupData.photo) {
+    prev.innerHTML = '<img src="' + _currentGroupData.photo + '" style="width:100%;height:100%;object-fit:cover" />';
+  } else {
+    prev.textContent = _currentGroupData.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+    prev.style.background = 'var(--accent)';
+  }
+  document.getElementById('editGroupModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('editGroupNameInput').focus(); }, 50);
+}
+
+function closeEditGroupModal() {
+  document.getElementById('editGroupModal').style.display = 'none';
+}
+
+function _previewEditGroupPhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) { alert('Image trop grande (max 2 Mo).'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    _editGroupPhotoB64 = e.target.result;
+    _editGroupRemovePhoto = false;
+    document.getElementById('editGroupAvatarPreview').innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100%;object-fit:cover" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+function _removeEditGroupPhoto() {
+  _editGroupPhotoB64 = '';
+  _editGroupRemovePhoto = true;
+  var prev = document.getElementById('editGroupAvatarPreview');
+  prev.textContent = (_currentGroupData.name||'G').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+  prev.style.background = 'var(--accent)';
+  document.getElementById('editGroupPhotoInput').value = '';
+}
+
+async function saveEditGroup() {
+  var name   = document.getElementById('editGroupNameInput').value.trim();
+  var status = document.getElementById('editGroupStatus');
+  if (!name) { status.style.color = 'var(--red)'; status.textContent = 'Le nom est obligatoire.'; return; }
+  status.style.color = 'var(--text2)'; status.textContent = 'Enregistrement...';
+  var body = { name: name };
+  if (_editGroupPhotoB64)    body.photo = _editGroupPhotoB64;
+  if (_editGroupRemovePhoto) body.photo = '';
+  try {
+    var r = await fetch(API_BASE() + '/groups/' + window._currentGroupId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _jwt() },
+      body: JSON.stringify(body)
+    });
+    var g = await r.json();
+    if (!r.ok) { status.style.color = 'var(--red)'; status.textContent = g.error || 'Erreur'; return; }
+    _currentGroupData.name  = g.name;
+    _currentGroupData.photo = g.photo || '';
     document.getElementById('chatHeaderName').textContent = g.name;
+    var av = document.getElementById('chatHeaderAvatar');
+    if (g.photo) {
+      av.innerHTML = '<img src="' + g.photo + '" style="width:40px;height:40px;object-fit:cover;border-radius:12px" />';
+    } else {
+      av.innerHTML = '<div class="mpx-group-avatar" style="width:40px;height:40px;font-size:0.9rem">' + g.name.split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2) + '</div>';
+    }
+    closeEditGroupModal();
     loadGroups();
-  }).catch(function(){});
+  } catch(e) { status.style.color = 'var(--red)'; status.textContent = 'Erreur serveur.'; }
 }
 
 // ══════════════════════════════════════════════════════════
