@@ -557,8 +557,10 @@
     .grp-row.mine .mpx-bubble-reactions { justify-content: flex-end; }
     .grp-row:not(.mine) .mpx-bubble-reactions { justify-content: flex-start; }
 
-    /* ── Groupe : scoped .grp-row — réutilise le layout DM ── */
+    /* ── Groupe : scoped .grp-row ── */
     .grp-row { position: relative; }
+    .grp-row.mine { flex-direction: row-reverse; }
+    .grp-row .mpx-bubble-wrap { position: relative; }
     .grp-row .mpx-bubble { min-width: 60px; }
     /* Nom expéditeur au-dessus de la bulle */
     .mpx-group-sender-name {

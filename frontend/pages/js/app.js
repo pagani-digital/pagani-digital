@@ -6479,11 +6479,13 @@ function _buildBubbleHTML(m, isMine, otherAv, dateSep, nextIsSame, isNew) {
   return dateSep + `<div class="mpx-bubble-row${isMine ? ' mine' : ''}${animClass}" ${rowSwipeAttr} id="msg-${m.id}">
     ${avatarHtml}
     <div class="mpx-bubble-wrap">
-      ${replyBtn}
-      <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr} ${m.storyImage ? 'style="max-width:140px;padding:0.4rem;"' : ''}>
-        ${quoteHtml}${storyImageHtml}${imageHtml}${textHtml}
-        <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
-        ${rxTrigger}
+      <div class="mpx-bubble-wrap-inner">
+        <div class="mpx-bubble ${isMine ? 'mine' : 'theirs'}${(m.image && !m.content) ? ' img-only' : ''}" ${bubbleLpAttr} ${m.storyImage ? 'style="max-width:140px;padding:0.4rem;"' : ''}>
+          ${quoteHtml}${storyImageHtml}${imageHtml}${textHtml}
+          <span class="mpx-bubble-meta">${timeStr}${tickHtml}</span>
+          ${rxTrigger}
+        </div>
+        ${replyBtn}
       </div>
     </div>
   </div>

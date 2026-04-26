@@ -8408,11 +8408,9 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 }
 
 
-/* Bouton reply — hors du flux, positionné en absolu à l'extérieur de la bulle */
+/* Bouton reply - inline à côté de la bulle */
 .mpx-reply-btn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%) scale(0.7);
+  position: static;
   background: var(--bg2);
   border: 1px solid var(--border);
   color: var(--text2);
@@ -8423,37 +8421,37 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   display: flex; align-items: center; justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s, transform 0.18s, background 0.15s, color 0.15s;
+  transition: opacity 0.18s, background 0.15s, color 0.15s;
   box-shadow: 0 1px 6px rgba(0,0,0,0.22);
-  z-index: 2;
+  flex-shrink: 0;
 }
-/* Bouton à droite pour les messages reçus (theirs) */
-.mpx-bubble-row:not(.mine) .mpx-reply-btn {
-  right: -36px;
+
+/* wrap-inner : bulle + bouton côte à côte */
+.mpx-bubble-wrap-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
 }
-/* Bouton à gauche pour les messages envoyés (mine) */
-.mpx-bubble-row.mine .mpx-reply-btn {
-  left: -36px;
-}
-/* Apparaît uniquement au swipe (classe JS) — mobile */
+.mpx-bubble-row.mine .mpx-bubble-wrap-inner { flex-direction: row-reverse; }
+
+/* Apparaît uniquement au swipe (classe JS) - mobile */
 .mpx-reply-btn--active {
   opacity: 1;
   pointer-events: auto;
-  transform: translateY(-50%) scale(1);
   background: var(--accent);
   color: #fff;
   border-color: var(--accent);
 }
+
 /* Sur desktop : apparaît discrètement au hover de la row */
 @media (hover: hover) {
   .mpx-bubble-row:hover .mpx-reply-btn {
     opacity: 0.5;
     pointer-events: auto;
-    transform: translateY(-50%) scale(0.9);
   }
   .mpx-bubble-row:hover .mpx-reply-btn:hover {
     opacity: 1;
-    transform: translateY(-50%) scale(1);
     background: var(--accent);
     color: #fff;
     border-color: var(--accent);

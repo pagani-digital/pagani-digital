@@ -390,14 +390,17 @@ function _buildGroupMsgHTML(msg, me) {
     + avatarHtml
     + '<div class="mpx-bubble-wrap">'
       + senderName
-      + replyBtn
-      + '<div class="mpx-bubble ' + (isOwn ? 'mine' : 'theirs') + '" data-msgid="' + msg.id + '"'
-        + (msg.image && !msg.content ? ' style="background:none;border:none;box-shadow:none;padding:0"' : '') + '>'
-        + quoteBlock
-        + (msg.content ? esc(msg.content) : '')
-        + imgBlock
-        + '<span class="mpx-bubble-meta">' + time + '</span>'
-        + rxTrigger
+      + '<div class="mpx-bubble-wrap-inner">'
+        + (isOwn ? '' : '')
+        + '<div class="mpx-bubble ' + (isOwn ? 'mine' : 'theirs') + '" data-msgid="' + msg.id + '"'
+          + (msg.image && !msg.content ? ' style="background:none;border:none;box-shadow:none;padding:0"' : '') + '>'
+          + quoteBlock
+          + (msg.content ? esc(msg.content) : '')
+          + imgBlock
+          + '<span class="mpx-bubble-meta">' + time + '</span>'
+          + rxTrigger
+        + '</div>'
+        + replyBtn
       + '</div>'
       + rxZone
     + '</div>'
