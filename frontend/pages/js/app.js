@@ -10464,7 +10464,7 @@ window.addEventListener('pageshow', function(e) {
 (function() {
   if (window.innerWidth > 768) return;
   var body = document.body;
-  if (body.classList.contains('post-body') || body.classList.contains('msg-page-body')) return;
+  if (body.classList.contains('post-body')) return;
   var navbar = document.querySelector('nav.navbar');
   if (!navbar) return;
   var wrapper = document.createElement('div');

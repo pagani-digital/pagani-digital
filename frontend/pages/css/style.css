@@ -7296,14 +7296,16 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 
 /* ── RESPONSIVE MOBILE ── */
 @media (max-width: 860px) {
-  .mpx-app { padding: 1rem 3%; height: calc(100vh - 120px); }
+  .mpx-app { padding: 1rem 3%; height: calc(100dvh - 120px); }
   .mpx-sidebar { width: 260px; min-width: 220px; }
 }
 
 @media (max-width: 580px) {
   .mpx-app {
     padding: 0;
-    height: calc(100vh - 70px);
+    height: auto;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     border-radius: 0;
   }
@@ -7876,7 +7878,7 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 }
 @media (max-width: 580px) {
   body.chat-open .navbar { display: none; }
-  body.chat-open .mpx-app { height: 100vh; }
+  body.chat-open .mpx-app { flex: 1; min-height: 0; height: auto; }
 }
 @media (max-width: 580px) {
   .mpx-chat-header {
@@ -10057,7 +10059,7 @@ html, body {
   .comm-header span:nth-child(5), .comm-row span:nth-child(5) { display: none; }
 
   /* Messagerie */
-  .mpx-app { padding: 0; height: calc(100vh - 70px); }
+  .mpx-app { padding: 0; height: calc(100dvh - 70px); }
   .mpx-sidebar { width: 100%; min-width: 0; border-radius: 0; border: none; }
   .mpx-chat { border-radius: 0; border: none; }
 
