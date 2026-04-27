@@ -182,55 +182,7 @@
     <div class="feed-layout">
 
       <!-- COLONNE GAUCHE : infos communauté -->
-      <aside class="feed-sidebar">
-        <div class="sidebar-card">
-          <div class="sidebar-logo">Pagani<span>Digital</span></div>
-          <p>La communauté business digital : Crypto, Contenu & Facebook.</p>
-          <div class="sidebar-stats">
-            <div><strong>2 500+</strong><span>Membres</span></div>
-            <div><strong>80+</strong><span>Formations</span></div>
-          </div>
-          <a href="dashboard.html" class="btn-primary" id="sidebarJoinBtn" style="width:100%;text-align:center;display:block;margin-top:1rem">Rejoindre</a>
-        </div>
-
-        <!-- PLANS TARIFAIRES (non connecté) / MEMBRES ACTIFS (connecté) -->
-        <div class="sidebar-card" id="sidebarGuestPlans">
-          <h3 class="sidebar-why-title"><i class="fas fa-tag"></i> Nos offres</h3>
-          <div class="sb-plans">
-            <a href="plans.html" class="sb-plan">
-              <span class="sb-plan-name">Starter</span>
-              <span class="sb-plan-desc">Accès gratuit aux contenus de base</span>
-              <span class="sb-plan-badge sb-starter">Gratuit</span>
-            </a>
-            <a href="plans.html" class="sb-plan sb-plan-featured">
-              <span class="sb-plan-name">Pro <i class="fas fa-star" style="color:var(--accent);font-size:0.7rem"></i></span>
-              <span class="sb-plan-desc">Formations complètes + 35% commission</span>
-              <span class="sb-plan-badge sb-pro">30 000 AR/mois</span>
-            </a>
-            <a href="plans.html" class="sb-plan">
-              <span class="sb-plan-name">Elite <i class="fas fa-crown" style="color:var(--gold);font-size:0.7rem"></i></span>
-              <span class="sb-plan-desc">Tout inclus + 50% commission</span>
-              <span class="sb-plan-badge sb-elite">90 000 AR/mois</span>
-            </a>
-          </div>
-        </div>
-
-        <!-- MEMBRES ACTIFS (connecté) -->
-        <div class="sidebar-card" id="sidebarActiveMembers" style="display:none">
-          <h3 class="sidebar-why-title"><i class="fas fa-circle" style="color:var(--accent2);font-size:0.6rem"></i> Actifs récemment</h3>
-          <div id="sidebarActiveMembersList" class="sb-active-list"></div>
-          <a href="explore.html" style="font-size:0.78rem;color:var(--accent);display:block;margin-top:0.8rem;text-align:center">Voir tous les membres <i class="fas fa-arrow-right"></i></a>
-        </div>
-
-        <!-- HASHTAGS TENDANCE -->
-        <div class="sidebar-card" id="trendingCard" style="display:none">
-          <h3 style="font-size:0.88rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.5rem">
-            <i class="fas fa-hashtag" style="color:var(--accent)"></i> Tendances
-          </h3>
-          <div class="trending-wrap" id="trendingHashtags"></div>
-        </div>
-
-      </aside>
+            <aside class="feed-sidebar"></aside>
 
       <!-- COLONNE CENTRALE : fil de posts -->
       <main class="feed-main">
@@ -484,15 +436,6 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       const fab = document.getElementById('mobileJoinFab');
       if (fab && !user && window.innerWidth <= 768) fab.style.display = 'flex';
 
-      // Sidebar : adapter selon connexion
-      const joinBtn      = document.getElementById('sidebarJoinBtn');
-      const guestPlans   = document.getElementById('sidebarGuestPlans');
-      const activeMembers = document.getElementById('sidebarActiveMembers');
-      if (user) {
-        if (joinBtn)      joinBtn.style.display = 'none';
-        if (guestPlans)   guestPlans.style.display = 'none';
-        if (activeMembers) { activeMembers.style.display = 'block'; _loadActiveMembers(); }
-      }
       await renderFeed();
       await loadStories();
       _updateStoryNavBtns();
@@ -539,33 +482,6 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       loadFooterSocialLinks();
     })();
 
-    async function _loadActiveMembers() {
-      const list = document.getElementById('sidebarActiveMembersList');
-      if (!list) return;
-      try {
-        const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
-        const members = await fetch(API + '/members').then(r => r.json());
-        // Trier par présence récente, prendre les 6 premiers
-        const recent = members
-          .filter(m => m.lastSeen)
-          .sort((a, b) => b.lastSeen - a.lastSeen)
-          .slice(0, 6);
-        if (!recent.length) { list.closest('.sidebar-card').style.display = 'none'; return; }
-        list.innerHTML = recent.map(m => {
-          const initials = (m.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-          const av = m.avatarPhoto
-            ? `<img src="${m.avatarPhoto}" />`
-            : `<span>${initials}</span>`;
-          const diff = Math.floor((Date.now() - m.lastSeen) / 60000);
-          const when = diff < 1 ? 'En ligne' : diff < 60 ? `Il y a ${diff}min` : `Il y a ${Math.floor(diff/60)}h`;
-          const online = diff < 5;
-          return `<a href="profil.html?id=${m.id}" class="sb-active-member">
-            <div class="sb-active-av" style="background:${m.avatarColor||'#6c63ff'}">${av}<span class="sb-active-dot${online?' online':''}"></span></div>
-            <div class="sb-active-info"><strong>${m.name.split(' ')[0]}</strong><span>${when}</span></div>
-          </a>`;
-        }).join('');
-      } catch(e) {}
-    }
 
     function _scrollStories(dir) {
       var bar = document.getElementById('storiesBar');

@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
   _initNavbarIcons();
   // Sidebar gauche fixe sur les pages concernées
   _initLeftSidebar();
+  // Sidebar droite fixe
+  _initRightSidebar();
   // Dashboard sidebar verticale
   _initDashboardSidebar();
 });
@@ -72,6 +74,7 @@ function _initNavbarIcons() {
 
 // ===== SIDEBAR GAUCHE FIXE =====
 var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
+var _RIGHT_SIDEBAR_PAGES = ['index.html'];
 
 function _initLeftSidebar() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
@@ -105,6 +108,104 @@ function _initLeftSidebar() {
       else _show();
     }, 100);
   });
+}
+
+// ===== SIDEBAR DROITE FIXE =====
+function _initRightSidebar() {
+  var page = window.location.pathname.split('/').pop() || 'index.html';
+  if (!_RIGHT_SIDEBAR_PAGES.includes(page)) return;
+
+  function _show() {
+    if (window.innerWidth <= 1360) { _hide(); return; }
+    if (document.getElementById('rightSidebar')) return;
+    var sidebar = document.createElement('div');
+    sidebar.id = 'rightSidebar';
+    sidebar.className = 'right-sidebar';
+    sidebar.innerHTML = _buildRightSidebarHTML();
+    document.body.appendChild(sidebar);
+    document.body.classList.add('has-right-sidebar');
+    _fillRightSidebar();
+  }
+
+  function _hide() {
+    var el = document.getElementById('rightSidebar');
+    if (el) el.remove();
+    document.body.classList.remove('has-right-sidebar');
+  }
+
+  _show();
+  var _t;
+  window.addEventListener('resize', function() {
+    clearTimeout(_t);
+    _t = setTimeout(function() {
+      if (window.innerWidth <= 1360) _hide(); else _show();
+    }, 100);
+  });
+}
+
+function _buildRightSidebarHTML() {
+  return [
+    '<div class="sb-identity rsb-card" id="rsbIdentity">',
+      '<div class="sidebar-logo">Pagani<span>Digital</span></div>',
+      '<div class="sb-tagline">',
+        '<span class="sb-flag">🇲🇬</span>',
+        '<span>Le réseau social business</span>',
+        '<span class="sb-num1">#1</span>',
+        '<span>des entrepreneurs</span>',
+        '<span class="sb-malagasy">MALAGASY.</span>',
+      '</div>',
+      '<p class="sb-sub">Connectez-vous, apprenez et générez des revenus avec la communauté business malgache.</p>',
+      '<div class="sidebar-stats">',
+        '<div><strong>2 500+</strong><span>Membres actifs</span></div>',
+        '<div><strong>80+</strong><span>Formations</span></div>',
+        '<div><strong>50%</strong><span>Commission max</span></div>',
+      '</div>',
+      '<a href="dashboard.html" class="btn-primary sb-join-btn" id="rsbJoinBtn"><i class="fas fa-rocket"></i> Rejoindre gratuitement</a>',
+    '</div>',
+    '<div class="rsb-card" id="rsbPlansOrMembers"></div>',
+  ].join('');
+}
+
+async function _fillRightSidebar() {
+  var tries = 0;
+  while (!window._currentUser && tries < 15) {
+    await new Promise(function(r) { setTimeout(r, 200); });
+    tries++;
+  }
+  var user = window._currentUser;
+  var joinBtn = document.getElementById('rsbJoinBtn');
+  var plansEl = document.getElementById('rsbPlansOrMembers');
+  if (!plansEl) return;
+
+  if (user) {
+    if (joinBtn) joinBtn.style.display = 'none';
+    // Membres actifs
+    plansEl.innerHTML = '<h3 class="sidebar-why-title"><i class="fas fa-circle" style="color:var(--accent2);font-size:0.6rem"></i> Actifs récemment</h3><div id="rsbActiveMembersList" class="sb-active-list"></div><a href="explore.html" style="font-size:0.78rem;color:var(--accent);display:block;margin-top:0.8rem;text-align:center">Voir tous les membres <i class="fas fa-arrow-right"></i></a>';
+    _loadRsbActiveMembers();
+  } else {
+    // Plans tarifaires
+    plansEl.innerHTML = '<h3 class="sidebar-why-title"><i class="fas fa-tag"></i> Choisissez votre accès</h3><div class="sb-plans"><a href="plans.html" class="sb-plan"><span class="sb-plan-name">Starter</span><span class="sb-plan-desc">Accès gratuit aux contenus de base</span><span class="sb-plan-badge sb-starter">Gratuit</span></a><a href="plans.html" class="sb-plan sb-plan-featured"><span class="sb-plan-name">Pro <i class="fas fa-star" style="color:var(--accent);font-size:0.7rem"></i></span><span class="sb-plan-desc">Formations complètes + 35% commission</span><span class="sb-plan-badge sb-pro">30 000 AR/mois</span></a><a href="plans.html" class="sb-plan"><span class="sb-plan-name">Elite <i class="fas fa-crown" style="color:var(--gold);font-size:0.7rem"></i></span><span class="sb-plan-desc">Tout inclus + 50% commission</span><span class="sb-plan-badge sb-elite">90 000 AR/mois</span></a></div>';
+  }
+}
+
+async function _loadRsbActiveMembers() {
+  var list = document.getElementById('rsbActiveMembersList');
+  if (!list) return;
+  try {
+    var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    var members = await fetch(API + '/members').then(function(r) { return r.json(); });
+    var recent = members.filter(function(m) { return m.lastSeen; })
+      .sort(function(a, b) { return b.lastSeen - a.lastSeen; }).slice(0, 6);
+    if (!recent.length) { list.closest('.rsb-card').style.display = 'none'; return; }
+    list.innerHTML = recent.map(function(m) {
+      var initials = (m.name || '?').split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
+      var av = m.avatarPhoto ? '<img src="' + m.avatarPhoto + '" />' : '<span>' + initials + '</span>';
+      var diff = Math.floor((Date.now() - m.lastSeen) / 60000);
+      var when = diff < 1 ? 'En ligne' : diff < 60 ? 'Il y a ' + diff + 'min' : 'Il y a ' + Math.floor(diff / 60) + 'h';
+      var online = diff < 5;
+      return '<a href="profil.html?id=' + m.id + '" class="sb-active-member"><div class="sb-active-av" style="background:' + (m.avatarColor || '#6c63ff') + '">' + av + '<span class="sb-active-dot' + (online ? ' online' : '') + '"></span></div><div class="sb-active-info"><strong>' + m.name.split(' ')[0] + '</strong><span>' + when + '</span></div></a>';
+    }).join('');
+  } catch(e) {}
 }
 
 // ===== DASHBOARD SIDEBAR VERTICALE =====
