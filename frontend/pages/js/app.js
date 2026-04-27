@@ -772,23 +772,27 @@ function _updatePostStats(postId, post) {
 // ===== EMOJI PICKER COMMENTAIRES =====
 const COMMENT_EMOJIS = ['😂','❤️','😍','👍','🔥','😊','🎉','😭','🙏','💪','😎','🤔','😅','👏','🥰','✅','⭐','🚀','💡','🎯'];
 function toggleCommentEmoji(inputId, btn) {
-  // Fermer tout picker deja ouvert
-  document.querySelectorAll('.comment-emoji-picker').forEach(p => {
+  document.querySelectorAll('.comment-emoji-picker').forEach(function(p) {
     if (p.dataset.for !== inputId) p.remove();
   });
-  const existing = document.querySelector(`.comment-emoji-picker[data-for="${inputId}"]`);
+  var existing = document.querySelector('.comment-emoji-picker[data-for="' + inputId + '"]');
   if (existing) { existing.remove(); return; }
-  const picker = document.createElement('div');
+  var picker = document.createElement('div');
   picker.className = 'comment-emoji-picker';
   picker.dataset.for = inputId;
-  picker.innerHTML = COMMENT_EMOJIS.map(e =>
-    `<button type="button" onclick="_insertCommentEmoji('${inputId}','${e}')">${e}</button>`
-  ).join('');
-  // Positionner au-dessus du bouton
-  btn.parentElement.style.position = 'relative';
-  btn.parentElement.appendChild(picker);
-  // Fermer en cliquant ailleurs
-  setTimeout(() => {
+  picker.innerHTML = COMMENT_EMOJIS.map(function(e) {
+    return '<button type="button" onclick="_insertCommentEmoji(\'' + inputId + '\',\'' + e + '\')">' + e + '</button>';
+  }).join('');
+  picker.style.visibility = 'hidden';
+  document.body.appendChild(picker);
+  var r = btn.getBoundingClientRect();
+  var pH = picker.offsetHeight;
+  var pW = picker.offsetWidth;
+  var left = Math.max(8, Math.min(r.left, window.innerWidth - pW - 8));
+  picker.style.left = left + 'px';
+  picker.style.top = (r.top - pH - 6) + 'px';
+  picker.style.visibility = '';
+  setTimeout(function() {
     document.addEventListener('click', function close(ev) {
       if (!picker.contains(ev.target) && ev.target !== btn) {
         picker.remove();
@@ -895,9 +899,10 @@ async function _silentRefreshFeed() {
         // Ne pas ecraser si des commentaires sont en attente de confirmation serveur
         if (_pendingComments.has(post.id)) return;
         const isGuest = !user;
-        commList.innerHTML = (post.comments||[]).length === 0
-          ? '<p class="no-comments">Aucun commentaire. Soyez le premier !</p>'
-          : (post.comments||[]).map(c => _buildCommentHTML(c, post.id, user, isGuest)).join('');
+        // Sur le feed : ne pas afficher "Aucun commentaire" — juste les commentaires existants
+        if ((post.comments||[]).length > 0) {
+          commList.innerHTML = (post.comments||[]).map(c => _buildCommentHTML(c, post.id, user, isGuest)).join('');
+        }
       }
     });
   } catch(e) {}
@@ -1363,13 +1368,26 @@ function toggleComments(postId) {
     }
     return;
   }
-  // Sur feed/profil : afficher seulement le champ de saisie
+  // Sur feed/profil : afficher seulement le champ de saisie (pas la liste)
   const section = document.getElementById('comments-' + postId);
   if (!section) return;
   const isOpen = section.style.display !== 'none';
-  section.style.display = isOpen ? 'none' : 'block';
-  if (!isOpen) {
-    section.style.animation = 'slideDown 0.25s ease';
+  if (isOpen) {
+    section.style.display = 'none';
+    section.style.animation = '';
+  } else {
+    // Masquer la liste de commentaires — on ne veut que le champ de saisie
+    const list = document.getElementById('comments-list-' + postId);
+    if (list) list.style.display = 'none';
+    section.style.animation = 'none';
+    section.style.opacity = '0';
+    section.style.transform = 'translateY(-6px)';
+    section.style.display = 'block';
+    void section.offsetHeight;
+    section.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+    section.style.opacity = '1';
+    section.style.transform = 'translateY(0)';
+    setTimeout(() => { section.style.transition = ''; section.style.opacity = ''; section.style.transform = ''; }, 220);
     const input = document.getElementById('comment-input-' + postId);
     if (input) setTimeout(() => { input.focus(); _initMentionAutocomplete(input); }, 100);
   }
@@ -2431,13 +2449,13 @@ function _updateReactionCount(postId, reactions) {
   const totalComments = post ? (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0) : 0;
   const top = Object.entries(reactions || {}).sort((a,b) => b[1].length - a[1].length)[0];
   const topEmoji = top ? top[0] : null;
-  // Mettre a jour sans reecrire innerHTML pour ne pas casser les onclick existants
+  // Mettre a jour sans reecrire innerHTML — preserve les onclick existants sur le span commentaires
   const spans = statsEl.querySelectorAll('span');
   if (spans[0]) {
     if (total > 0) {
       spans[0].style.cursor = 'pointer';
       spans[0].onclick = function() { showReactionDetails(postId); };
-      spans[0].innerHTML = (topEmoji || '❤️') + ' ' + total + ' réaction' + (total !== 1 ? 's' : '');
+      spans[0].innerHTML = topEmoji + ' ' + total + ' réaction' + (total !== 1 ? 's' : '');
     } else {
       spans[0].style.cursor = '';
       spans[0].onclick = null;
@@ -2445,10 +2463,12 @@ function _updateReactionCount(postId, reactions) {
     }
   }
   if (spans[1]) {
-    const txt = ' ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '');
     const icon = spans[1].querySelector('i');
-    if (icon && icon.nextSibling) icon.nextSibling.textContent = txt;
-    else if (icon) icon.insertAdjacentText('afterend', txt);
+    if (icon && icon.nextSibling) {
+      icon.nextSibling.textContent = ' ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '');
+    } else if (icon) {
+      icon.insertAdjacentText('afterend', ' ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : ''));
+    }
   }
 }
 
