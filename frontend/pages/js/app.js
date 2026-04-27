@@ -2429,14 +2429,27 @@ function _updateReactionCount(postId, reactions) {
   const total = Object.values(reactions || {}).reduce((s, ids) => s + ids.length, 0);
   const post = _postsCache.find(p => p.id === postId);
   const totalComments = post ? (post.comments||[]).reduce((a,c) => a + 1 + (c.replies||[]).length, 0) : 0;
-  // Top emoji pour affichage
   const top = Object.entries(reactions || {}).sort((a,b) => b[1].length - a[1].length)[0];
-  const topEmoji = top ? top[0] : '❤️';
-  statsEl.innerHTML =
-    (total > 0
-      ? '<span style="cursor:pointer" onclick="showReactionDetails(' + postId + ')">' + topEmoji + ' ' + total + ' r\u00e9action' + (total !== 1 ? 's' : '') + '</span>'
-      : '<span><i class="fas fa-heart" style="color:var(--red)"></i> 0 r\u00e9action</span>') +
-    '<span><i class="fas fa-comment" style="color:var(--accent)"></i> ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '') + '</span>';
+  const topEmoji = top ? top[0] : null;
+  // Mettre a jour sans reecrire innerHTML pour ne pas casser les onclick existants
+  const spans = statsEl.querySelectorAll('span');
+  if (spans[0]) {
+    if (total > 0) {
+      spans[0].style.cursor = 'pointer';
+      spans[0].onclick = function() { showReactionDetails(postId); };
+      spans[0].innerHTML = (topEmoji || '❤️') + ' ' + total + ' réaction' + (total !== 1 ? 's' : '');
+    } else {
+      spans[0].style.cursor = '';
+      spans[0].onclick = null;
+      spans[0].innerHTML = '<i class="fas fa-heart" style="color:var(--red)"></i> 0 réaction';
+    }
+  }
+  if (spans[1]) {
+    const txt = ' ' + totalComments + ' commentaire' + (totalComments !== 1 ? 's' : '');
+    const icon = spans[1].querySelector('i');
+    if (icon && icon.nextSibling) icon.nextSibling.textContent = txt;
+    else if (icon) icon.insertAdjacentText('afterend', txt);
+  }
 }
 
 function _updateReactionUI(postId, reactions, myEmoji) {
