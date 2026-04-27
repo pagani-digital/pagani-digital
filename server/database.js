@@ -1553,15 +1553,15 @@ async function getPostsAlgo(userId) {
     const likes    = Array.isArray(p.likes)    ? p.likes    : [];
     const comments = Array.isArray(p.comments) ? p.comments : [];
     const totalComments = comments.reduce((a, c) => a + 1 + (Array.isArray(c.replies) ? c.replies.length : 0), 0);
-    // Commentaires récents (7 derniers jours) pour le score
-    const sevenDaysAgo = now - 7 * 24 * 3600000;
+    // Commentaires récents (48h) pour le score — Option D
+    const fortyEightHoursAgo = now - 48 * 3600000;
     const recentComments = comments.reduce((a, c) => {
       const cDate = new Date(c.date || 0).getTime();
-      const cCount = cDate > sevenDaysAgo ? 1 : 0;
-      const rCount = Array.isArray(c.replies) ? c.replies.filter(r => new Date(r.date || 0).getTime() > sevenDaysAgo).length : 0;
+      const cCount = cDate > fortyEightHoursAgo ? 1 : 0;
+      const rCount = Array.isArray(c.replies) ? c.replies.filter(r => new Date(r.date || 0).getTime() > fortyEightHoursAgo).length : 0;
       return a + cCount + rCount;
     }, 0);
-    p._totalComments = recentComments; // utilisé pour le score viral
+    p._totalComments = recentComments;
 
     // ── Idée 2 : Récence exponentielle ──────────────────────────────────────
     // Décroît très vite après 24h, quasi nul après 72h
@@ -1648,6 +1648,28 @@ async function getPostsAlgo(userId) {
   // Trier par score décroissant
   posts.sort((a, b) => b._score - a._score);
 
+  // ── Option C : coefficient d'âge sur le score total ─────────────────────
+  // 0-3j → ×1.0 | 3-7j → ×0.7 | 7-14j → ×0.4 | 14-30j → ×0.15 | +30j → ×0.05
+  posts.forEach(p => {
+    const ageH = (now - new Date(p.createdAt || p.date).getTime()) / 3600000;
+    let ageFactor;
+    if      (ageH < 72)   ageFactor = 1.0;
+    else if (ageH < 168)  ageFactor = 0.7;
+    else if (ageH < 336)  ageFactor = 0.4;
+    else if (ageH < 720)  ageFactor = 0.15;
+    else                  ageFactor = 0.05;
+    p._score *= ageFactor;
+    p._ageH = ageH;
+  });
+
+  // ── Posts < 2h toujours en tête, triés par date DESC ─────────────────────
+  // Ensuite les autres triés par score (Option C+D)
+  const freshPosts = posts.filter(p => p._ageH < 2).sort((a, b) => a._ageH - b._ageH);
+  const olderPosts = posts.filter(p => p._ageH >= 2).sort((a, b) => b._score - a._score);
+  posts.length = 0;
+  freshPosts.forEach(p => posts.push(p));
+  olderPosts.forEach(p => posts.push(p));
+
   // ── Fix 4 : Diversité équilibrée ────────────────────────────────────────────
   // Max 2 posts consécutifs du même auteur
   // Les posts différés sont réinsérés toutes les 5 positions (pas rejetés en fin)
@@ -1694,7 +1716,7 @@ async function getPostsAlgo(userId) {
   }
 
   // Nettoyer les champs internes
-  result.forEach(p => { delete p._score; delete p._authorId; delete p._totalComments; });
+  result.forEach(p => { delete p._score; delete p._authorId; delete p._totalComments; delete p._ageH; });
   return result;
 }
 
