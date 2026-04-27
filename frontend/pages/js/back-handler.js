@@ -68,15 +68,8 @@
       // Quelque chose a été fermé → repousser l'état pour garder l'interception active
       _pushState();
     } else {
-      // Rien à fermer → naviguer vers la page précédente logique
-      var path = window.location.pathname;
-      if (path === '/' || path.includes('index')) {
-        // Déjà sur index, ne rien faire
-        _pushState();
-        return;
-      }
-      // Toutes les autres pages → index
-      window.location.href = 'index.html';
+      // Rien à fermer → retour réel dans l'historique du navigateur
+      history.back();
     }
   }
 

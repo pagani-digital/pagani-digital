@@ -10479,3 +10479,25 @@ window.addEventListener('pageshow', function(e) {
   document.documentElement.style.height = '100%';
   document.documentElement.style.overflow = 'hidden';
 })();
+
+
+// Sauvegarde/restauration position scroll au retour (bfcache + history.back)
+(function() {
+  var key = 'pd_scroll_' + window.location.pathname;
+  var scroller = function() { return document.getElementById('mobile-scroll-wrapper') || window; };
+
+  window.addEventListener('pagehide', function() {
+    var el = scroller();
+    sessionStorage.setItem(key, el === window ? window.scrollY : el.scrollTop);
+  });
+
+  window.addEventListener('pageshow', function(e) {
+    var saved = sessionStorage.getItem(key);
+    if (saved === null) return;
+    var el = scroller();
+    setTimeout(function() {
+      if (el === window) window.scrollTo(0, +saved);
+      else el.scrollTop = +saved;
+    }, 50);
+  });
+})();
