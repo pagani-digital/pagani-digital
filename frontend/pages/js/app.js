@@ -814,6 +814,7 @@ let _feedObserver = null;
 const DEFAULT_NEWS = [];
 // Cache local des posts (mis a jour depuis le serveur)
 let _postsCache = [];
+let _pendingNewPosts = []; // buffer nouveaux posts en attente d'affichage
 let _feedRendering = false; // verrou anti-race condition
 let _pendingComments = new Map(); // postId -> [commentaires en attente de confirmation serveur]
 const _commentSort  = {}; // postId -> 'recent' | 'oldest' | 'top'
@@ -849,18 +850,30 @@ async function _silentRefreshFeed() {
       }
       return freshMap.get(p.id);
     });
-    // 2. Ajouter les posts du serveur absents du cache
+    // 2. Détecter les posts du serveur absents du cache
     const cacheIds = new Set(_postsCache.map(p => p.id));
-    fresh.forEach(p => {
-      if (!cacheIds.has(p.id)) {
+    const newPosts = [];
+    fresh.forEach(p => { if (!cacheIds.has(p.id)) newPosts.push(p); });
+
+    if (newPosts.length) {
+      // Ajouter au buffer sans toucher au DOM
+      newPosts.forEach(p => {
+        if (!_pendingNewPosts.find(x => x.id === p.id)) _pendingNewPosts.push(p);
         _postsCache.unshift(p);
-        if (container && !document.getElementById('post-' + p.id)) {
-          const el = buildPostCard(p, user, isAdmin);
-          el.classList.add('post-animate');
-          container.insertBefore(el, container.firstChild);
-        }
+      });
+      // Afficher le bouton flottant
+      const btn = document.getElementById('newPostsBtn');
+      if (btn) {
+        const count = _pendingNewPosts.length;
+        document.getElementById('newPostsCount').textContent = count;
+        document.getElementById('newPostsPlural').textContent  = count > 1 ? 's' : '';
+        document.getElementById('newPostsPlural2').textContent = count > 1 ? 's' : '';
+        btn.style.display = 'flex';
+        btn.style.animation = 'none';
+        void btn.offsetWidth;
+        btn.style.animation = 'slideDown 0.25s ease';
       }
-    });
+    }
     if (!container) return;
     // 3. Mettre a jour les stats des posts deja dans le DOM
     fresh.forEach(post => {
@@ -889,6 +902,28 @@ async function _silentRefreshFeed() {
     });
   } catch(e) {}
 }
+
+function _showPendingPosts() {
+  const btn = document.getElementById('newPostsBtn');
+  if (btn) btn.style.display = 'none';
+  if (!_pendingNewPosts.length) return;
+  const container = document.getElementById('feedPosts');
+  if (!container) return;
+  const user    = getUser();
+  const isAdmin = user && user.role === 'admin';
+  // Insérer les nouveaux posts en tête du DOM
+  [..._pendingNewPosts].reverse().forEach(p => {
+    if (!document.getElementById('post-' + p.id)) {
+      const el = buildPostCard(p, user, isAdmin);
+      el.classList.add('post-animate');
+      container.insertBefore(el, container.firstChild);
+    }
+  });
+  _pendingNewPosts = [];
+  // Scroll vers le haut en douceur
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 async function _loadPosts() {
   try {
     const remote = await PaganiAPI.getPosts();
@@ -902,8 +937,12 @@ async function _loadPosts() {
 }
 // Rendu initial du feed (reset + 1re page)
 async function renderFeed() {
-  if (_feedRendering) return; // ignorer les appels simultans
+  if (_feedRendering) return;
   _feedRendering = true;
+  // Reset buffer + masquer bouton
+  _pendingNewPosts = [];
+  const _npBtn = document.getElementById('newPostsBtn');
+  if (_npBtn) _npBtn.style.display = 'none';
   const container = document.getElementById('feedPosts');
   if (!container) { _feedRendering = false; return; }
   _feedPage   = 0;
@@ -1089,6 +1128,8 @@ function buildPostCard(post, user, isAdmin) {
   const comments = post.comments || [];
   const isGuest  = !user;
   const totalComments = comments.reduce((acc, c) => acc + 1 + (c.replies ? c.replies.length : 0), 0);
+  const ageHours = (Date.now() - new Date(post.date || post.createdAt).getTime()) / 3600000;
+  const isNew    = ageHours < 2;
   const article = document.createElement("article");
   article.className = "post-card";
   article.id = `post-${post.id}`;
@@ -1103,6 +1144,7 @@ function buildPostCard(post, user, isAdmin) {
             ${post.author === "Admin" ? '<span class="verified-badge" title="Compte officiel"><i class="fas fa-check-circle"></i></span>' : ""}
           </strong>
           <span class="post-time">${timeAgo(post.date)}</span>
+          ${isNew ? '<span style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.68rem;font-weight:700;color:#fff;background:linear-gradient(135deg,var(--accent),#8b5cf6);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.3rem;vertical-align:middle">🆕 Nouveau</span>' : ''}
         </div>
       </div>
       <div class="post-header-right">
@@ -1655,6 +1697,10 @@ async function publishNews(e) {
         comments: Array.isArray(newPost.comments) ? newPost.comments : [],
         date:     newPost.date || newPost.createdAt || new Date().toISOString(),
       };
+      // Retirer du buffer si present (evite doublon avec le poll)
+      _pendingNewPosts = _pendingNewPosts.filter(p => p.id !== normalized.id);
+      const _npBtn = document.getElementById('newPostsBtn');
+      if (_npBtn) _npBtn.style.display = 'none';
       _postsCache.unshift(normalized);
       const container = document.getElementById('feedPosts');
       if (container) {
@@ -1664,6 +1710,7 @@ async function publishNews(e) {
           const el = buildPostCard(normalized, user, isAdmin);
           el.classList.add('post-animate');
           container.insertBefore(el, container.firstChild);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
         // Mettre a jour la sentinelle/fin selon le nouvel etat du cache
         const oldEnd = container.querySelector('.feed-end');
@@ -9207,12 +9254,17 @@ async function submitUserPost() {
         comments: Array.isArray(newPost.comments) ? newPost.comments : [],
         date:     newPost.date || newPost.createdAt || new Date().toISOString(),
       };
+      // Retirer du buffer si present (evite doublon avec le poll)
+      _pendingNewPosts = _pendingNewPosts.filter(p => p.id !== normalized.id);
+      const _npBtn = document.getElementById('newPostsBtn');
+      if (_npBtn) _npBtn.style.display = 'none';
       _postsCache.unshift(normalized);
       const container = document.getElementById('feedPosts');
       if (container && !document.getElementById('post-' + normalized.id)) {
         const el = buildPostCard(normalized, user, false);
         el.classList.add('post-animate');
         container.insertBefore(el, container.firstChild);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   } catch(e) {
