@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <script>
     (function(){
-      // Fix viewport height mobile : évite le saut au 1er scroll
-      // On fixe la hauteur une seule fois au chargement
       var vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', vh + 'px');
+      if (localStorage.getItem('pd_theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
     })();
   </script>
 
@@ -21,7 +20,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Pagani Digital" />
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="stylesheet" href="/css/style.css?v=1777106940613" />
+  <link rel="stylesheet" href="/css/style.css?v=1777301649147" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     .post-hashtag { color:var(--accent); font-weight:600; text-decoration:none; cursor:pointer; transition:opacity 0.15s; }

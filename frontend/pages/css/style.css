@@ -15,6 +15,53 @@
   --gold: #f59e0b;
 }
 
+[data-theme="light"] {
+  --bg: #f0f2f5;
+  --bg2: #ffffff;
+  --bg3: #e8eaf0;
+  --text: #1a1a2e;
+  --text2: #5a6478;
+  --border: #d1d5e0;
+}
+
+[data-theme="light"] body {
+  background: var(--bg);
+}
+
+[data-theme="light"] .footer {
+  background: var(--bg2);
+  border-top-color: var(--border);
+}
+
+[data-theme="light"] .navbar {
+  background: rgba(240,242,245,0.95);
+  border-bottom-color: var(--border);
+}
+
+@media (min-width: 769px) {
+  [data-theme="light"] .navbar {
+    background: #ffffff;
+    box-shadow: 0 1px 0 var(--border);
+  }
+}
+
+.theme-toggle-btn {
+  position: relative;
+  background: rgba(108,99,255,0.12);
+  border: 1px solid rgba(108,99,255,0.25);
+  color: var(--text2);
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle-btn:hover { background: rgba(108,99,255,0.22); color: var(--text); }
+
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
@@ -72,6 +119,104 @@ ul { list-style: none; }
 .nav-links { display: flex; align-items: center; gap: 2rem; }
 .nav-links a { color: var(--text2); font-size: 0.95rem; transition: color 0.2s; }
 .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+/* ===== NAVBAR DESKTOP — style Facebook ===== */
+@media (min-width: 769px) {
+  .navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 0 1.5rem;
+    height: 56px;
+    background: var(--bg2);
+    backdrop-filter: none;
+    box-shadow: 0 1px 0 var(--border);
+    border-bottom: none;
+    gap: 0;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: stretch;
+    z-index: 501;
+  }
+
+  /* Compenser la hauteur fixe de la navbar */
+  body { padding-top: 56px; }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    font-size: 1.4rem;
+    justify-self: start;
+  }
+
+  /* Navigation centrale */
+  .nav-links {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    height: 56px;
+    justify-self: center;
+  }
+
+  .nav-links li {
+    display: flex;
+    align-items: stretch;
+  }
+
+  .nav-links a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 1.2rem;
+    height: 100%;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text2);
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .nav-links a:hover {
+    background: var(--bg3);
+    color: var(--accent);
+    border-radius: 8px;
+  }
+
+  .nav-links a.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 700;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  /* Bouton Mon Espace */
+  .nav-links a.btn-nav {
+    background: var(--accent);
+    color: #fff !important;
+    border-radius: 8px;
+    padding: 0 1rem;
+    margin: auto 0.4rem;
+    height: 34px;
+    border-bottom: none;
+    font-weight: 600;
+    align-self: center;
+  }
+  .nav-links a.btn-nav:hover { opacity: 0.88; }
+  .nav-links a.btn-nav.active { border-bottom: none; }
+
+  /* Partie droite */
+  .nav-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    justify-self: end;
+  }
+}
 
 .btn-nav {
   display: inline-flex;
@@ -7613,78 +7758,10 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
    DESIGN AM�LIORATIONS � UX & DYNAMISME
    ===================================================== */
 
-/* -- �tape 1 : Navbar scroll effect + indicateur actif -- */
-.navbar {
-  transition: background 0.3s ease, box-shadow 0.3s ease, padding 0.3s ease;
-}
-.navbar.scrolled {
-  background: rgba(10, 14, 26, 0.98);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
-  padding-top: 0.6rem;
-  padding-bottom: 0.6rem;
-}
-.nav-links a {
-  position: relative;
-  transition: color 0.2s;
-}
-.nav-links a::after {
-  content: '';
-  position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.25s ease;
-}
-.nav-links a:hover::after,
-.nav-links a.active::after {
-  width: 100%;
-}
-.nav-links a.active {
-  color: var(--text);
-  font-weight: 600;
-}
-.logo {
-  transition: opacity 0.2s;
-  cursor: pointer;
-}
+/* -- Navbar scroll effect -- */
+.navbar { transition: background 0.3s ease, box-shadow 0.3s ease; }
+.logo { transition: opacity 0.2s; cursor: pointer; }
 .logo:hover { opacity: 0.85; }
-
-/* -- �tape 2 : Boutons � effet brillance + feedback tactile -- */
-.btn-primary {
-  position: relative;
-  overflow: hidden;
-}
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 60%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.5s ease;
-  pointer-events: none;
-}
-.btn-primary:hover::before { left: 150%; }
-.btn-primary:active { transform: scale(0.97) translateY(0) !important; }
-
-.btn-outline {
-  position: relative;
-  overflow: hidden;
-  transition: background 0.2s, color 0.2s, transform 0.15s, box-shadow 0.2s;
-}
-.btn-outline:hover {
-  box-shadow: 0 4px 16px rgba(108,99,255,0.25);
-  transform: translateY(-2px);
-}
-.btn-outline:active { transform: scale(0.97) !important; }
-
-/* -- �tape 3 : Inputs � focus am�lior� -- */
-.form-group input:focus,
-.form-group textarea:focus,
 .upgrade-input:focus,
 .vselect:focus {
   box-shadow: 0 0 0 3px rgba(108,99,255,0.15);

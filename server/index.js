@@ -130,7 +130,7 @@ app.options('*', cors(corsOptions));
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '15mb' }));
 const _staticOpts     = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
-const _staticOptsAsset = IS_PROD ? {} : { setHeaders: (res) => res.setHeader('Cache-Control', 'public, max-age=3600') };
+const _staticOptsAsset = IS_PROD ? {} : { etag: false, lastModified: false, setHeaders: (res) => res.setHeader('Cache-Control', 'no-store') };
 // Forcer UTF-8 sur tous les fichiers HTML/JS/CSS
 app.use((req, res, next) => {
   const ext = req.path.split('.').pop().toLowerCase();
