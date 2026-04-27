@@ -2526,7 +2526,7 @@ ul { list-style: none; }
 /* ===== RESPONSIVE ===== */
 @media (max-width: 768px) {
   /* ── Navbar ── */
-  .navbar { padding: 0.75rem 4%; position: relative; }
+  .navbar { padding: 0.75rem 4%; will-change: auto; transform: none; }
   .nav-links {
     display: none;
     flex-direction: column;

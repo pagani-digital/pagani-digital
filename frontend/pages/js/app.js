@@ -10459,3 +10459,23 @@ window.addEventListener('pageshow', function(e) {
     renderFeed();
   }
 });
+
+// Fix Chrome mobile : body overflow:hidden + wrapper scrollable (meme technique que post.html)
+(function() {
+  if (window.innerWidth > 768) return;
+  var body = document.body;
+  if (body.classList.contains('post-body') || body.classList.contains('msg-page-body')) return;
+  var navbar = document.querySelector('nav.navbar');
+  if (!navbar) return;
+  var wrapper = document.createElement('div');
+  wrapper.id = 'mobile-scroll-wrapper';
+  wrapper.style.cssText = 'overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;flex:1;min-height:0';
+  while (navbar.nextSibling) wrapper.appendChild(navbar.nextSibling);
+  body.appendChild(wrapper);
+  body.style.overflow = 'hidden';
+  body.style.height = '100%';
+  body.style.display = 'flex';
+  body.style.flexDirection = 'column';
+  document.documentElement.style.height = '100%';
+  document.documentElement.style.overflow = 'hidden';
+})();
