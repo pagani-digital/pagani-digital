@@ -2257,6 +2257,48 @@ ul { list-style: none; }
 }
 .sidebar-cta-btn:hover { opacity: 0.88; transform: translateY(-1px); }
 
+/* Sidebar plans tarifaires */
+.sb-plans { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
+.sb-plan {
+  display: flex; flex-direction: column; gap: 0.2rem;
+  padding: 0.7rem 0.9rem; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--bg2);
+  text-decoration: none; transition: border-color 0.2s, background 0.2s;
+}
+.sb-plan:hover { border-color: var(--accent); background: rgba(108,99,255,0.06); }
+.sb-plan-featured { border-color: rgba(108,99,255,0.4); background: rgba(108,99,255,0.07); }
+.sb-plan-name { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.sb-plan-desc { font-size: 0.75rem; color: var(--text2); line-height: 1.4; }
+.sb-plan-badge { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 50px; width: fit-content; margin-top: 0.2rem; }
+.sb-starter { background: rgba(150,150,150,0.15); color: var(--text2); }
+.sb-pro     { background: rgba(108,99,255,0.15);  color: var(--accent); }
+.sb-elite   { background: rgba(245,158,11,0.15);  color: var(--gold); }
+
+/* Sidebar membres actifs */
+.sb-active-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
+.sb-active-member {
+  display: flex; align-items: center; gap: 0.7rem;
+  text-decoration: none; padding: 0.35rem 0.4rem; border-radius: 10px;
+  transition: background 0.15s;
+}
+.sb-active-member:hover { background: var(--bg2); }
+.sb-active-av {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 700; color: #fff; position: relative;
+}
+.sb-active-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.sb-active-av span:not(.sb-active-dot) { font-size: 0.72rem; font-weight: 700; }
+.sb-active-dot {
+  position: absolute; bottom: 0; right: 0;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--border); border: 2px solid var(--bg3);
+}
+.sb-active-dot.online { background: var(--accent2); }
+.sb-active-info { display: flex; flex-direction: column; min-width: 0; }
+.sb-active-info strong { font-size: 0.82rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-active-info span   { font-size: 0.7rem; color: var(--text2); }
+
 /* FAQ Plans */
 .plans-faq {
   padding: 3.5rem 5%;
@@ -9086,7 +9128,7 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   overflow: hidden;
   overscroll-behavior-x: contain;
   position: relative;
-  padding: 0.5rem 2rem;
+  padding: 0.5rem 0;
 }
 @media (max-width: 768px) {
   .stories-bar-wrap {

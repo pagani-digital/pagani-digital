@@ -190,57 +190,36 @@
             <div><strong>2 500+</strong><span>Membres</span></div>
             <div><strong>80+</strong><span>Formations</span></div>
           </div>
-          <a href="dashboard.html" class="btn-primary" style="width:100%;text-align:center;display:block;margin-top:1rem">Rejoindre</a>
+          <a href="dashboard.html" class="btn-primary" id="sidebarJoinBtn" style="width:100%;text-align:center;display:block;margin-top:1rem">Rejoindre</a>
         </div>
 
-        <!-- POURQUOI NOUS CHOISIR dans la sidebar -->
-        <div class="sidebar-card sidebar-why">
-          <h3 class="sidebar-why-title"><i class="fas fa-star"></i> Pourquoi nous choisir ?</h3>
-          <div class="sidebar-why-list">
-            <div class="sidebar-why-item">
-              <i class="fas fa-play-circle"></i>
-              <div>
-                <strong>Formations Vidéo HD</strong>
-                <span>Du débutant à l'expert</span>
-              </div>
-            </div>
-            <div class="sidebar-why-item">
-              <i class="fas fa-link"></i>
-              <div>
-                <strong>Affiliation Rémunérée</strong>
-                <span>Jusqu'à 50% de commission</span>
-              </div>
-            </div>
-            <div class="sidebar-why-item">
-              <i class="fab fa-facebook"></i>
-              <div>
-                <strong>Facebook & Contenu</strong>
-                <span>Stratégies pro incluses</span>
-              </div>
-            </div>
-            <div class="sidebar-why-item">
-              <i class="fas fa-mobile-alt"></i>
-              <div>
-                <strong>Paiement Mobile Money</strong>
-                <span>MVola, Orange, Airtel</span>
-              </div>
-            </div>
-            <div class="sidebar-why-item">
-              <i class="fas fa-users"></i>
-              <div>
-                <strong>Communauté Active</strong>
-                <span>2 500+ membres</span>
-              </div>
-            </div>
+        <!-- PLANS TARIFAIRES (non connecté) / MEMBRES ACTIFS (connecté) -->
+        <div class="sidebar-card" id="sidebarGuestPlans">
+          <h3 class="sidebar-why-title"><i class="fas fa-tag"></i> Nos offres</h3>
+          <div class="sb-plans">
+            <a href="plans.html" class="sb-plan">
+              <span class="sb-plan-name">Starter</span>
+              <span class="sb-plan-desc">Accès gratuit aux contenus de base</span>
+              <span class="sb-plan-badge sb-starter">Gratuit</span>
+            </a>
+            <a href="plans.html" class="sb-plan sb-plan-featured">
+              <span class="sb-plan-name">Pro <i class="fas fa-star" style="color:var(--accent);font-size:0.7rem"></i></span>
+              <span class="sb-plan-desc">Formations complètes + 35% commission</span>
+              <span class="sb-plan-badge sb-pro">30 000 AR/mois</span>
+            </a>
+            <a href="plans.html" class="sb-plan">
+              <span class="sb-plan-name">Elite <i class="fas fa-crown" style="color:var(--gold);font-size:0.7rem"></i></span>
+              <span class="sb-plan-desc">Tout inclus + 50% commission</span>
+              <span class="sb-plan-badge sb-elite">90 000 AR/mois</span>
+            </a>
           </div>
         </div>
 
-        <!-- CTA Tarifs discret -->
-        <div class="sidebar-card sidebar-cta">
-          <p>🚀 Accédez à toutes les formations et générez des revenus passifs.</p>
-          <a href="plans.html" class="sidebar-cta-btn">
-            <i class="fas fa-tag"></i> Voir les offres
-          </a>
+        <!-- MEMBRES ACTIFS (connecté) -->
+        <div class="sidebar-card" id="sidebarActiveMembers" style="display:none">
+          <h3 class="sidebar-why-title"><i class="fas fa-circle" style="color:var(--accent2);font-size:0.6rem"></i> Actifs récemment</h3>
+          <div id="sidebarActiveMembersList" class="sb-active-list"></div>
+          <a href="explore.html" style="font-size:0.78rem;color:var(--accent);display:block;margin-top:0.8rem;text-align:center">Voir tous les membres <i class="fas fa-arrow-right"></i></a>
         </div>
 
         <!-- HASHTAGS TENDANCE -->
@@ -251,16 +230,6 @@
           <div class="trending-wrap" id="trendingHashtags"></div>
         </div>
 
-        <div class="sidebar-card" id="sidebarUser" style="display:none">
-          <div class="sidebar-user-info">
-            <div class="avatar-circle" id="sidebarAvatar"></div>
-            <div>
-              <strong id="sidebarName"></strong>
-              <span id="sidebarPlan" class="plan-badge" style="font-size:0.7rem;padding:0.15rem 0.6rem"></span>
-            </div>
-          </div>
-          <a href="dashboard.html" style="color:var(--accent);font-size:0.85rem;margin-top:0.8rem;display:block"><i class="fas fa-user"></i> Mon profil</a>
-        </div>
       </aside>
 
       <!-- COLONNE CENTRALE : fil de posts -->
@@ -514,6 +483,16 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       // Bouton flottant Rejoindre : visible seulement si non connecte sur mobile
       const fab = document.getElementById('mobileJoinFab');
       if (fab && !user && window.innerWidth <= 768) fab.style.display = 'flex';
+
+      // Sidebar : adapter selon connexion
+      const joinBtn      = document.getElementById('sidebarJoinBtn');
+      const guestPlans   = document.getElementById('sidebarGuestPlans');
+      const activeMembers = document.getElementById('sidebarActiveMembers');
+      if (user) {
+        if (joinBtn)      joinBtn.style.display = 'none';
+        if (guestPlans)   guestPlans.style.display = 'none';
+        if (activeMembers) { activeMembers.style.display = 'block'; _loadActiveMembers(); }
+      }
       await renderFeed();
       await loadStories();
       _updateStoryNavBtns();
@@ -559,6 +538,34 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       });
       loadFooterSocialLinks();
     })();
+
+    async function _loadActiveMembers() {
+      const list = document.getElementById('sidebarActiveMembersList');
+      if (!list) return;
+      try {
+        const API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+        const members = await fetch(API + '/members').then(r => r.json());
+        // Trier par présence récente, prendre les 6 premiers
+        const recent = members
+          .filter(m => m.lastSeen)
+          .sort((a, b) => b.lastSeen - a.lastSeen)
+          .slice(0, 6);
+        if (!recent.length) { list.closest('.sidebar-card').style.display = 'none'; return; }
+        list.innerHTML = recent.map(m => {
+          const initials = (m.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+          const av = m.avatarPhoto
+            ? `<img src="${m.avatarPhoto}" />`
+            : `<span>${initials}</span>`;
+          const diff = Math.floor((Date.now() - m.lastSeen) / 60000);
+          const when = diff < 1 ? 'En ligne' : diff < 60 ? `Il y a ${diff}min` : `Il y a ${Math.floor(diff/60)}h`;
+          const online = diff < 5;
+          return `<a href="profil.html?id=${m.id}" class="sb-active-member">
+            <div class="sb-active-av" style="background:${m.avatarColor||'#6c63ff'}">${av}<span class="sb-active-dot${online?' online':''}"></span></div>
+            <div class="sb-active-info"><strong>${m.name.split(' ')[0]}</strong><span>${when}</span></div>
+          </a>`;
+        }).join('');
+      } catch(e) {}
+    }
 
     function _scrollStories(dir) {
       var bar = document.getElementById('storiesBar');

@@ -71,7 +71,7 @@ function _initNavbarIcons() {
 }
 
 // ===== SIDEBAR GAUCHE FIXE =====
-var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html'];
+var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
 
 function _initLeftSidebar() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
@@ -1220,12 +1220,13 @@ async function _silentRefreshFeed() {
     // Ne pas ecraser un post qui a des commentaires en attente de confirmation
     _postsCache = _postsCache.map(p => {
       if (!freshMap.has(p.id)) return p;
+      const freshP = freshMap.get(p.id);
+      // Préserver l'image déjà résolue (évite de repasser à '__HAS_IMAGE__')
+      const resolvedImage = (p.image && p.image !== '__HAS_IMAGE__') ? p.image : freshP.image;
       if (_pendingComments.has(p.id)) {
-        // Garder les commentaires locaux, mettre a jour le reste
-        const fresh = freshMap.get(p.id);
-        return { ...fresh, comments: p.comments };
+        return { ...freshP, image: resolvedImage, comments: p.comments };
       }
-      return freshMap.get(p.id);
+      return { ...freshP, image: resolvedImage };
     });
     // 2. Détecter les posts du serveur absents du cache
     const cacheIds = new Set(_postsCache.map(p => p.id));
@@ -1552,7 +1553,7 @@ function buildPostCard(post, user, isAdmin) {
       </div>
     </div>
     <div class="post-body">
-      <h3 class="post-title">${post.title}${post.boostScore > 0 && isAdmin ? ' <span style="font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle">🚀 Boosté</span>' : ''}</h3>
+      ${post.author === 'Admin' && post.title ? `<h3 class="post-title">${post.title}${post.boostScore > 0 && isAdmin ? ' <span style="font-size:0.7rem;background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.3);padding:0.15rem 0.5rem;border-radius:50px;margin-left:0.4rem;vertical-align:middle">🚀 Boosté</span>' : ''}</h3>` : ''}
       <div class="post-content">${formatPostContent(post.content)}</div>
       ${post.image === '__HAS_IMAGE__'
         ? `<div class="post-image-wrap"><img data-postid="${post.id}" data-lazy="1" src="" class="post-image post-image-lazy" alt="" style="min-height:180px;background:var(--bg2)" /></div>`
@@ -2366,7 +2367,7 @@ function _observeLazyImages(root) {
   (root || document).querySelectorAll('img[data-lazy]').forEach(img => _imgObserver.observe(img));
 }
 function openPostImage(postId) {
-  const post = _postsCache.find(n => n.id == postId);
+  const post = _postsCache.find(n => n.id == postId) || (_profilePostsCache && _profilePostsCache.find(n => n.id == postId));
   if (!post || !post.image || post.image === '__HAS_IMAGE__') return;
   const overlay = document.createElement("div");
   overlay.id = "postImageOverlay";
