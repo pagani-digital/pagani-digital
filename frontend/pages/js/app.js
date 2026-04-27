@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
   _initNavbarIcons();
   // Sidebar gauche fixe sur les pages concernées
   _initLeftSidebar();
+  // Dashboard sidebar verticale
+  _initDashboardSidebar();
 });
 
 // ===== NAVBAR ICÔNES + LABELS =====
@@ -102,6 +104,133 @@ function _initLeftSidebar() {
       if (window.innerWidth <= 1100) _hide();
       else _show();
     }, 100);
+  });
+}
+
+// ===== DASHBOARD SIDEBAR VERTICALE =====
+function _initDashboardSidebar() {
+  var page = window.location.pathname.split('/').pop() || '';
+  if (page !== 'dashboard.html') return;
+
+  function _apply() {
+    if (window.innerWidth > 1100) {
+      document.body.classList.add('dash-sidebar-mode');
+      _renderAdminSidebarIfNeeded();
+    } else {
+      document.body.classList.remove('dash-sidebar-mode');
+    }
+  }
+
+  _apply();
+  var _t;
+  window.addEventListener('resize', function() {
+    clearTimeout(_t);
+    _t = setTimeout(_apply, 100);
+  });
+}
+
+function _renderAdminSidebarIfNeeded() {
+  // Attendre que l'utilisateur soit connu
+  var tries = 0;
+  var interval = setInterval(function() {
+    tries++;
+    var user = window._currentUser;
+    if (!user && tries < 30) return;
+    clearInterval(interval);
+    if (!user || user.role !== 'admin') return;
+    if (document.getElementById('dashAdminSidebar')) return;
+
+    // Cacher les dash-tabs originaux et injecter la sidebar admin
+    var tabs = document.querySelector('.dash-tabs');
+    if (tabs) tabs.style.display = 'none';
+
+    var sidebar = document.createElement('div');
+    sidebar.id = 'dashAdminSidebar';
+    sidebar.className = 'dash-admin-sidebar';
+    sidebar.innerHTML = _buildAdminSidebarHTML();
+    document.body.appendChild(sidebar);
+
+    // Marquer l'onglet actif initial
+    _updateAdminSidebarActive('admin');
+  }, 200);
+}
+
+function _buildAdminSidebarHTML() {
+  var groups = [
+    {
+      label: 'TABLEAU DE BORD',
+      items: [
+        { section: 'admin',    icon: 'fas fa-th-large',        label: 'Vue d\'ensemble',   tab: 'admin' },
+      ]
+    },
+    {
+      label: 'GESTION',
+      items: [
+        { section: 'users',          icon: 'fas fa-users',          label: 'Utilisateurs' },
+        { section: 'subscriptions',  icon: 'fas fa-id-card',        label: 'Abonnements' },
+        { section: 'videopurchases', icon: 'fas fa-shopping-cart',  label: 'Achats vid\u00e9os' },
+        { section: 'modulepurchases',icon: 'fas fa-layer-group',    label: 'Achats modules' },
+        { section: 'ebookpurchases', icon: 'fas fa-shopping-bag',   label: 'Achats Ebooks' },
+      ]
+    },
+    {
+      label: 'CONTENU',
+      items: [
+        { section: 'videos',  icon: 'fas fa-film',       label: 'Vid\u00e9os',  tab: 'videos' },
+        { section: 'ebooks',  icon: 'fas fa-book-open',  label: 'Ebooks',   tab: 'ebooks' },
+        { section: 'modules', icon: 'fas fa-layer-group',label: 'Modules' },
+      ]
+    },
+    {
+      label: 'FORMATEURS',
+      items: [
+        { section: 'trainers',           icon: 'fas fa-chalkboard-teacher', label: 'Formateurs' },
+        { section: 'trainersubmissions', icon: 'fas fa-file-upload',        label: 'Contenus soumis' },
+        { section: 'trainerearnings',    icon: 'fas fa-coins',              label: 'Gains formateurs' },
+      ]
+    },
+    {
+      label: 'FINANCES',
+      items: [
+        { section: 'finance',     icon: 'fas fa-chart-line', label: 'Finance & Revenus' },
+        { section: 'leaderboard', icon: 'fas fa-trophy',     label: 'Leaderboard' },
+        { section: 'shares',      icon: 'fab fa-facebook',   label: 'Partages FB' },
+        { section: 'opportunites',icon: 'fas fa-briefcase',  label: 'Opportunit\u00e9s' },
+      ]
+    },
+    {
+      label: 'PARAM\u00c8TRES',
+      items: [
+        { section: 'pricing',    icon: 'fas fa-tags',            label: 'Tarifs' },
+        { section: 'payments',   icon: 'fas fa-mobile-alt',      label: 'Comptes paiement' },
+        { section: 'plans',      icon: 'fas fa-chart-pie',       label: 'R\u00e9partition plans' },
+        { section: 'navbarbtn',  icon: 'fas fa-external-link-alt',label: 'Bouton Navbar' },
+        { section: 'sociallinks',icon: 'fas fa-share-alt',       label: 'Liens Sociaux' },
+      ]
+    }
+  ];
+
+  var html = '<div class="das-header"><i class="fas fa-shield-alt"></i><span>Admin</span></div>';
+
+  groups.forEach(function(group) {
+    html += '<div class="das-group-label">' + group.label + '</div>';
+    group.items.forEach(function(item) {
+      var onclick = item.tab
+        ? 'switchTab(\'' + item.tab + '\', document.getElementById(\'' + item.tab + 'TabBtn\'))'
+        : 'switchTab(\'admin\', document.getElementById(\'adminTabBtn\')); setTimeout(function(){ switchAdminSection(\'' + item.section + '\', null); }, 50)';
+      html += '<button class="das-item" data-section="' + item.section + '" onclick="' + onclick + '; _updateAdminSidebarActive(\'' + item.section + '\')">' +
+        '<i class="' + item.icon + '"></i>' +
+        '<span>' + item.label + '</span>' +
+        '</button>';
+    });
+  });
+
+  return html;
+}
+
+function _updateAdminSidebarActive(section) {
+  document.querySelectorAll('.das-item').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.section === section);
   });
 }
 

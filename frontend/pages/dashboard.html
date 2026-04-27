@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard - Pagani Digital</title>
   <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-  <link rel="stylesheet" href="/css/style.css?v=1777304630358" />
+  <link rel="stylesheet" href="/css/style.css?v=1777311357456" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Avb2QiuDEEvB4bZJYdft2mNjVShBftLdPG8FJ0V7irTLQ8Uo0qcPxh4Plq7G5tGm0rU+1SPhVotteLpBERwTkw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     .lb-search-wrap { position:relative; }
@@ -155,14 +155,14 @@
       <button class="dash-tab admin-tab" id="videosTabBtn" onclick="switchTab('videos', this)" style="display:none"><i class="fas fa-film"></i> Vidéos</button>
       <button class="dash-tab admin-tab" id="ebooksTabBtn" onclick="switchTab('ebooks', this)" style="display:none"><i class="fas fa-book-open"></i> Ebooks</button>
     </div>
-    <!-- STORIES BAR -->
-    <div class="stories-bar-wrap" id="storiesBarWrap">
-      <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
-      <div id="storiesBar" style="display:none"></div>
-      <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
-    </div>
     <!-- TAB : MES PUBLICATIONS -->
     <div id="tab-myposts">
+      <!-- STORIES BAR -->
+      <div class="stories-bar-wrap" id="storiesBarWrap">
+        <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
+        <div id="storiesBar" style="display:none"></div>
+        <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
+      </div>
       <div class="dash-section">
         <div class="sub-user-header">
           <div>
@@ -528,34 +528,7 @@
           <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadAdminStats()"><i class="fas fa-sync-alt"></i> Actualiser</button>
         </div>
         <!-- KPI FINANCE -->
-        <div id="adminFinanceBlock" style="margin-bottom:1.2rem">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.7rem">
-            <span style="font-size:0.78rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em">
-              <i class="fas fa-chart-line" style="color:var(--accent2);margin-right:0.4rem"></i>Finance & Revenus
-            </span>
-            <button onclick="switchAdminSection('finance', this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);border:1px solid rgba(0,212,170,0.25);color:var(--accent2);padding:0.2rem 0.7rem;border-radius:50px;cursor:pointer;font-family:inherit">
-              Voir le détail
-            </button>
-          </div>
-          <div class="admin-kpi-grid" id="financeKpiGrid">
-            <div class="admin-kpi" style="border-left:3px solid var(--accent2)">
-              <div class="admin-kpi-icon" style="background:rgba(0,212,170,0.12)"><i class="fas fa-shopping-cart" style="color:var(--accent2)"></i></div>
-              <div><strong id="kpiTotalSales">—</strong><span>Ventes totales</span></div>
-            </div>
-            <div class="admin-kpi" style="border-left:3px solid var(--gold)">
-              <div class="admin-kpi-icon" style="background:rgba(245,158,11,0.12)"><i class="fas fa-chalkboard-teacher" style="color:var(--gold)"></i></div>
-              <div><strong id="kpiTrainerBrut">—</strong><span>Brut formateurs</span></div>
-            </div>
-            <div class="admin-kpi" style="border-left:3px solid #6c63ff">
-              <div class="admin-kpi-icon" style="background:rgba(108,99,255,0.12)"><i class="fas fa-coins" style="color:var(--accent)"></i></div>
-              <div><strong id="kpiWithdrawPending">—</strong><span>Retraits en attente</span></div>
-            </div>
-            <div class="admin-kpi" style="border-left:3px solid #00d4aa">
-              <div class="admin-kpi-icon" style="background:rgba(0,212,170,0.15)"><i class="fas fa-hand-holding-usd" style="color:var(--accent2)"></i></div>
-              <div><strong id="kpiNetAdmin">—</strong><span>Net admin</span></div>
-            </div>
-          </div>
-        </div>
+        
         <!-- KPI COMPACTS -->
         <div class="admin-kpi-grid" id="adminKpiGrid">
           <div class="admin-kpi"><div class="admin-kpi-icon" style="background:rgba(108,99,255,0.15)"><i class="fas fa-users" style="color:var(--accent)"></i></div><div><strong id="kpiTotal">—</strong><span>Membres</span></div></div>

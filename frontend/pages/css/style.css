@@ -4273,6 +4273,11 @@ ul { list-style: none; }
   padding-bottom: 0;
   flex-wrap: wrap;
 }
+
+/* Masquer la subnav horizontale sur desktop (remplacée par la sidebar) */
+@media (min-width: 1101px) {
+  .admin-subnav { display: none; }
+}
 .admin-subnav-btn {
   background: transparent;
   border: none;
@@ -10610,3 +10615,201 @@ img, video, iframe, embed, object {
 }
 .reaction-picker--body .rp-btn:hover { transform: scale(1.35); background: rgba(108,99,255,0.12); }
 .reaction-picker--body .rp-btn.rp-active { transform: scale(1.2); }
+
+/* ===== DASHBOARD SIDEBAR VERTICALE (desktop uniquement) ===== */
+@media (min-width: 1101px) {
+
+  body.dash-sidebar-mode .dash-tabs {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 220px;
+    height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 1rem 0.7rem 1.5rem;
+    border-bottom: none;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    background: var(--bg2);
+    scrollbar-width: none;
+    z-index: 399;
+    /* Dégradé subtil en haut */
+    background-image: linear-gradient(180deg, rgba(108,99,255,0.06) 0%, transparent 120px);
+  }
+  body.dash-sidebar-mode .dash-tabs::-webkit-scrollbar { display: none; }
+
+  /* Label section */
+  body.dash-sidebar-mode .dash-tabs::before {
+    content: 'MON ESPACE';
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    padding: 0 0.5rem 0.8rem;
+    opacity: 0.6;
+  }
+
+  body.dash-sidebar-mode .dash-tab {
+    border-radius: 10px;
+    border-bottom: none;
+    padding: 0.65rem 0.9rem;
+    justify-content: flex-start;
+    font-size: 0.875rem;
+    gap: 0.75rem;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+    border-left: 3px solid transparent;
+  }
+  body.dash-sidebar-mode .dash-tab:hover {
+    background: rgba(108,99,255,0.08);
+    color: var(--text);
+    transform: translateX(2px);
+  }
+  body.dash-sidebar-mode .dash-tab i {
+    width: 18px;
+    text-align: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+  }
+  body.dash-sidebar-mode .dash-tab.active {
+    background: rgba(108,99,255,0.14);
+    border-left-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  body.dash-sidebar-mode .dash-tab.active i {
+    color: var(--accent);
+  }
+  body.dash-sidebar-mode .admin-tab {
+    margin-top: 0.5rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.8rem;
+  }
+  body.dash-sidebar-mode .admin-tab.active {
+    background: rgba(245,158,11,0.12);
+    border-left-color: var(--gold) !important;
+    color: var(--gold) !important;
+  }
+  body.dash-sidebar-mode .admin-tab.active i {
+    color: var(--gold) !important;
+  }
+
+  /* Decaler tout le contenu du dashboard */
+  body.dash-sidebar-mode #dashboardSection {
+    padding-left: 220px;
+  }
+}
+
+/* ===== DASHBOARD ADMIN SIDEBAR ===== */
+@media (min-width: 1101px) {
+
+  .dash-admin-sidebar {
+    position: fixed;
+    top: 56px;
+    left: 0;
+    width: 220px;
+    height: calc(100vh - 56px);
+    background: var(--bg2);
+    background-image: linear-gradient(180deg, rgba(245,158,11,0.05) 0%, transparent 100px);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    overflow-x: hidden;
+    z-index: 399;
+    padding: 0.8rem 0.6rem 2rem;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .dash-admin-sidebar::-webkit-scrollbar { display: none; }
+
+  /* Header admin */
+  .das-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.6rem 0.8rem;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--gold);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+  }
+  .das-header i { font-size: 1rem; }
+
+  /* Label de groupe */
+  .das-group-label {
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--text2);
+    letter-spacing: 0.1em;
+    padding: 0.8rem 0.6rem 0.3rem;
+    opacity: 0.55;
+  }
+
+  /* Item de navigation */
+  .das-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 9px;
+    border: none;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: var(--text2);
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
+    transition: background 0.15s, color 0.15s, transform 0.12s;
+    white-space: nowrap;
+  }
+  .das-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 0.88rem;
+    flex-shrink: 0;
+    opacity: 0.8;
+  }
+  .das-item:hover {
+    background: rgba(245,158,11,0.07);
+    color: var(--text);
+    transform: translateX(2px);
+  }
+  .das-item.active {
+    background: rgba(245,158,11,0.12);
+    border-left-color: var(--gold);
+    color: var(--gold);
+    font-weight: 700;
+  }
+  .das-item.active i { opacity: 1; color: var(--gold); }
+
+  /* Decaler le contenu quand sidebar admin presente */
+  body.dash-sidebar-mode #dashboardSection {
+    padding-left: 220px;
+  }
+}
+
+/* Masquer la sous-nav admin horizontale sur desktop (remplacée par la sidebar) */
+@media (min-width: 1101px) {
+  body.dash-sidebar-mode .admin-subnav { display: none !important; }
+}
+
+/* Masquer la sous-nav admin horizontale sur desktop (remplacée par la sidebar) */
+@media (min-width: 1101px) {
+  body.dash-sidebar-mode .admin-subnav { display: none !important; }
+}
+
+/* Tabs admin hors de #dashboardSection — appliquer le décalage sidebar */
+@media (min-width: 1101px) {
+  body.dash-sidebar-mode #tab-videos,
+  body.dash-sidebar-mode #tab-ebooks {
+    padding-left: 220px;
+  }
+}
