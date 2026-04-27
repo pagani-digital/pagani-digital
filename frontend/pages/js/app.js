@@ -34,7 +34,213 @@ document.addEventListener('DOMContentLoaded', function() {
     navRight.insertBefore(btn, navRight.firstChild);
     _updateThemeBtn();
   }
+  // Navbar : ajouter labels sous les icônes sur desktop
+  _initNavbarIcons();
+  // Sidebar gauche fixe sur les pages concernées
+  _initLeftSidebar();
 });
+
+// ===== NAVBAR ICÔNES + LABELS =====
+function _initNavbarIcons() {
+  if (window.innerWidth <= 768) return;
+  var NAV_ICONS = {
+    'index.html':       { icon: 'fas fa-home',        label: 'Accueil' },
+    'formations.html':  { icon: 'fas fa-graduation-cap', label: 'Formations' },
+    'ebooks.html':      { icon: 'fas fa-book-open',   label: 'Ebooks' },
+    'affiliation.html': { icon: 'fas fa-link',        label: 'Affiliation' },
+    'explore.html':     { icon: 'fas fa-compass',     label: 'Explorer' },
+    'plans.html':       { icon: 'fas fa-tag',         label: 'Tarifs' },
+    'dashboard.html':   { icon: 'fas fa-user-circle', label: 'Mon Espace' }
+  };
+  document.querySelectorAll('.nav-links a').forEach(function(a) {
+    var href = (a.getAttribute('href') || '').split('?')[0];
+    var page = href.split('/').pop();
+    var info = NAV_ICONS[page];
+    if (!info || a.classList.contains('btn-nav')) return;
+    a.innerHTML = '<i class="' + info.icon + '"></i><span class="nav-label">' + info.label + '</span>';
+    a.classList.add('nav-icon-link');
+  });
+  // Bouton Mon Espace
+  var btnNav = document.querySelector('.nav-links a.btn-nav');
+  if (btnNav) {
+    var info = NAV_ICONS['dashboard.html'];
+    btnNav.innerHTML = '<i class="' + info.icon + '"></i><span>' + info.label + '</span>';
+  }
+}
+
+// ===== SIDEBAR GAUCHE FIXE =====
+var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html'];
+
+function _initLeftSidebar() {
+  var page = window.location.pathname.split('/').pop() || 'index.html';
+  if (!_SIDEBAR_PAGES.includes(page)) return;
+
+  function _show() {
+    if (window.innerWidth <= 1100) { _hide(); return; }
+    if (document.getElementById('leftSidebar')) return;
+    var sidebar = document.createElement('div');
+    sidebar.id = 'leftSidebar';
+    sidebar.className = 'left-sidebar';
+    sidebar.innerHTML = _buildSidebarHTML(page);
+    document.body.appendChild(sidebar);
+    document.body.classList.add('has-left-sidebar');
+    _fillSidebarUser();
+  }
+
+  function _hide() {
+    var el = document.getElementById('leftSidebar');
+    if (el) el.remove();
+    document.body.classList.remove('has-left-sidebar');
+  }
+
+  _show();
+
+  var _resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(function() {
+      if (window.innerWidth <= 1100) _hide();
+      else _show();
+    }, 100);
+  });
+}
+
+function _buildSidebarHTML(currentPage) {
+  var NAV_ITEMS = [
+    { href: 'index.html',       icon: 'fas fa-home',           label: 'Accueil' },
+    { href: 'formations.html',  icon: 'fas fa-graduation-cap', label: 'Formations' },
+    { href: 'ebooks.html',      icon: 'fas fa-book-open',      label: 'Ebooks' },
+    { href: 'affiliation.html', icon: 'fas fa-link',           label: 'Affiliation' },
+    { href: 'explore.html',     icon: 'fas fa-compass',        label: 'Explorer' },
+    { href: 'groups-chat.html', icon: 'fas fa-users',          label: 'Groupes' },
+  ];
+
+  var navHTML = NAV_ITEMS.map(function(item) {
+    var active = currentPage === item.href ? ' active' : '';
+    return '<a href="' + item.href + '" class="lsb-item' + active + '">' +
+      '<i class="' + item.icon + '"></i>' +
+      '<span>' + item.label + '</span>' +
+    '</a>';
+  }).join('');
+
+  return [
+    // Profil utilisateur
+    '<div class="lsb-profile" id="lsbProfile">',
+      '<div class="lsb-profile-guest" id="lsbGuest">',
+        '<a href="dashboard.html" class="lsb-join-btn">',
+          '<i class="fas fa-rocket"></i> Rejoindre Pagani Digital',
+        '</a>',
+      '</div>',
+      '<a href="dashboard.html?tab=profile" class="lsb-profile-user" id="lsbUser" style="display:none">',
+        '<div class="lsb-avatar" id="lsbAvatar"></div>',
+        '<div class="lsb-profile-info">',
+          '<strong id="lsbName">...</strong>',
+          '<span id="lsbPlan" class="lsb-plan-badge"></span>',
+        '</div>',
+      '</a>',
+    '</div>',
+    '<div class="lsb-divider"></div>',
+    // Navigation
+    '<nav class="lsb-nav">',
+      navHTML,
+      // Bouton admin custom (injecté dynamiquement)
+      '<div id="lsbAdminBtn"></div>',
+      // Opportunités
+      '<a href="dashboard.html?tab=opportunites" class="lsb-item">',
+        '<i class="fas fa-briefcase"></i><span>Opportunités</span>',
+      '</a>',
+    '</nav>',
+    '<div class="lsb-divider"></div>',
+    // Section connecté
+    '<div class="lsb-bottom" id="lsbBottom" style="display:none">',
+      '<a href="dashboard.html" class="lsb-item">',
+        '<i class="fas fa-th-large"></i><span>Mon Dashboard</span>',
+      '</a>',
+      '<a href="messages.html" class="lsb-item">',
+        '<i class="fas fa-envelope"></i><span>Messages</span>',
+        '<span class="lsb-badge" id="lsbMsgBadge" style="display:none">0</span>',
+      '</a>',
+      '<a href="notifications.html" class="lsb-item">',
+        '<i class="fas fa-bell"></i><span>Notifications</span>',
+        '<span class="lsb-badge" id="lsbNotifBadge" style="display:none">0</span>',
+      '</a>',
+    '</div>',
+  ].join('');
+}
+
+async function _fillSidebarUser() {
+  // Attendre que l'utilisateur soit chargé
+  var tries = 0;
+  while (!window._currentUser && tries < 20) {
+    await new Promise(function(r) { setTimeout(r, 200); });
+    tries++;
+  }
+  var user = window._currentUser;
+  var guestEl  = document.getElementById('lsbGuest');
+  var userEl   = document.getElementById('lsbUser');
+  var bottomEl = document.getElementById('lsbBottom');
+  var avatarEl = document.getElementById('lsbAvatar');
+  var nameEl   = document.getElementById('lsbName');
+  var planEl   = document.getElementById('lsbPlan');
+
+  if (!guestEl) return;
+
+  if (user) {
+    guestEl.style.display  = 'none';
+    userEl.style.display   = 'flex';
+    bottomEl.style.display = 'block';
+    nameEl.textContent = user.name.split(' ')[0];
+    planEl.textContent = user.plan;
+    planEl.className = 'lsb-plan-badge lsb-plan-' + user.plan.toLowerCase();
+    if (user.avatarPhoto) {
+      avatarEl.innerHTML = '<img src="' + user.avatarPhoto + '" />';
+    } else {
+      avatarEl.textContent = (user.name || '?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);
+      avatarEl.style.background = user.avatarColor || 'var(--accent)';
+    }
+    // Badges messages + notifs
+    _updateSidebarBadges();
+    // Bouton admin custom
+    _loadSidebarAdminBtn();
+  } else {
+    guestEl.style.display  = 'flex';
+    userEl.style.display   = 'none';
+    bottomEl.style.display = 'none';
+    _loadSidebarAdminBtn();
+  }
+}
+
+async function _updateSidebarBadges() {
+  try {
+    var msgBadge   = document.getElementById('lsbMsgBadge');
+    var notifBadge = document.getElementById('lsbNotifBadge');
+    if (!msgBadge) return;
+    var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    var token = localStorage.getItem('pd_jwt');
+    if (!token) return;
+    var headers = { 'Authorization': 'Bearer ' + token };
+    var [msg, notif] = await Promise.all([
+      fetch(API + '/messages/unread-count', { headers }).then(function(r){return r.json();}).catch(function(){return {count:0};}),
+      fetch(API + '/notifications/unread-count', { headers }).then(function(r){return r.json();}).catch(function(){return {count:0};})
+    ]);
+    if (msg.count > 0)   { msgBadge.textContent   = msg.count;   msgBadge.style.display   = 'inline-flex'; }
+    if (notif.count > 0) { notifBadge.textContent = notif.count; notifBadge.style.display = 'inline-flex'; }
+  } catch(e) {}
+}
+
+async function _loadSidebarAdminBtn() {
+  try {
+    var wrap = document.getElementById('lsbAdminBtn');
+    if (!wrap) return;
+    var API = (window.PaganiConfig && window.PaganiConfig.API_BASE_URL) || (window.location.origin + '/api');
+    var data = await fetch(API + '/navbar-button').then(function(r){return r.json();}).catch(function(){return null;});
+    if (!data || !data.enabled || !data.link) return;
+    wrap.innerHTML = '<a href="' + data.link + '" target="_blank" rel="noopener" class="lsb-item lsb-admin-btn">' +
+      (data.icon_url ? '<img src="' + data.icon_url + '" style="width:20px;height:20px;object-fit:contain;border-radius:4px" />' : '<i class="fas fa-external-link-alt"></i>') +
+      '<span>' + (data.label || 'Lien') + '</span>' +
+    '</a>';
+  } catch(e) {}
+}
 
 // ===== STORIES =====
 const STORY_COLORS = ['#6c63ff','#00d4aa','#ff4d6d','#f59e0b','#8b5cf6','#1877f2','#25d366','#e91e8c'];

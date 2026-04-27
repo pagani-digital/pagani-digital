@@ -62,6 +62,150 @@
 }
 .theme-toggle-btn:hover { background: rgba(108,99,255,0.22); color: var(--text); }
 
+/* ===== NAVBAR ICÔNES + LABELS ===== */
+@media (min-width: 769px) {
+  .nav-icon-link {
+    flex-direction: column !important;
+    gap: 2px !important;
+    padding: 0 1rem !important;
+    font-size: 0.68rem !important;
+    height: 100% !important;
+  }
+  .nav-icon-link i { font-size: 1.2rem; }
+  .nav-icon-link .nav-label { font-size: 0.68rem; line-height: 1; }
+}
+
+/* ===== SIDEBAR GAUCHE FIXE ===== */
+.left-sidebar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 260px;
+  height: calc(100vh - 56px);
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 400;
+  padding: 1rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  scrollbar-width: none;
+}
+.left-sidebar::-webkit-scrollbar { display: none; }
+
+/* Décalage du body quand sidebar présente */
+@media (min-width: 1101px) {
+  body.has-left-sidebar { padding-left: 260px; }
+}
+
+/* Profil utilisateur */
+.lsb-profile { padding: 0.4rem 0.4rem 0.6rem; }
+.lsb-profile-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background 0.15s;
+  cursor: pointer;
+}
+.lsb-profile-user:hover { background: var(--bg3); }
+.lsb-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.lsb-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.lsb-profile-info { flex: 1; min-width: 0; }
+.lsb-profile-info strong { display: block; font-size: 0.92rem; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lsb-plan-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 50px;
+  display: inline-block;
+  margin-top: 0.15rem;
+}
+.lsb-plan-starter { background: rgba(150,150,150,0.15); color: var(--text2); }
+.lsb-plan-pro     { background: rgba(108,99,255,0.15);  color: var(--accent); }
+.lsb-plan-elite   { background: rgba(245,158,11,0.15);  color: var(--gold); }
+
+.lsb-join-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  color: #fff;
+  padding: 0.65rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+.lsb-join-btn:hover { opacity: 0.88; }
+
+/* Séparateur */
+.lsb-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.4rem 0.4rem;
+}
+
+/* Navigation items */
+.lsb-nav { display: flex; flex-direction: column; gap: 0.15rem; }
+.lsb-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  color: var(--text2);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+  cursor: pointer;
+}
+.lsb-item:hover { background: var(--bg3); color: var(--text); }
+.lsb-item.active {
+  background: rgba(108,99,255,0.12);
+  color: var(--accent);
+  font-weight: 700;
+}
+.lsb-item i { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+.lsb-item.lsb-admin-btn { color: var(--accent2); }
+.lsb-item.lsb-admin-btn:hover { background: rgba(0,212,170,0.1); }
+
+/* Badge notifications/messages */
+.lsb-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  min-width: 18px; height: 18px;
+  border-radius: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+/* Section bottom */
+.lsb-bottom { display: flex; flex-direction: column; gap: 0.15rem; }
+
 body {
   font-family: 'Segoe UI', system-ui, sans-serif;
   background: var(--bg);
