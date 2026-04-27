@@ -393,6 +393,30 @@ async function runMigrations(pool) {
     )`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_group_msg_reactions ON group_message_reactions(message_id)`);
   });
+
+  // opportunites : jobs en ligne & affiliation externe
+  await run('opportunites', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS opportunites (
+      id               SERIAL PRIMARY KEY,
+      titre            TEXT NOT NULL,
+      description      TEXT DEFAULT '',
+      categorie        TEXT DEFAULT 'Autre',
+      icone            TEXT DEFAULT 'fas fa-briefcase',
+      couleur          TEXT DEFAULT '#6c63ff',
+      badge            TEXT DEFAULT '',
+      lien_affiliation TEXT DEFAULT '',
+      actif            BOOLEAN DEFAULT true,
+      ordre            INTEGER DEFAULT 0,
+      clics            INTEGER DEFAULT 0,
+      created_at       TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_opportunites_actif ON opportunites(actif)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_opportunites_ordre ON opportunites(ordre)`);
+  });
+  // opportunites : ajout colonne image
+  await run('opportunites.image', async () => {
+    await pool.query(`ALTER TABLE opportunites ADD COLUMN IF NOT EXISTS image TEXT DEFAULT ''`);
+  });
 }
 
 module.exports = { runMigrations };

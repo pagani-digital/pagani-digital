@@ -145,6 +145,7 @@
       <button class="dash-tab" onclick="switchTab('profile', this)"><i class="fas fa-user"></i> Mon Profil</button>
       <button class="dash-tab" onclick="switchTab('wallet', this)"><i class="fas fa-wallet"></i> Wallet</button>
       <button class="dash-tab" id="subTabBtn" onclick="switchTab('subscription', this)"><i class="fas fa-id-card"></i> Abonnement</button>
+      <button class="dash-tab" id="opportunitesTabBtn" onclick="switchTab('opportunites', this)"><i class="fas fa-briefcase"></i> Opportunités</button>
       <button class="dash-tab" id="myVideosTabBtn" onclick="switchTab('myvideos', this)" style="display:none"><i class="fas fa-film"></i> Mes Vidéos <span class="admin-subnav-badge" id="myVideosPendingBadge" style="display:none">!</span></button>
       <button class="dash-tab admin-tab" id="adminTabBtn" onclick="switchTab('admin', this)" style="display:none"><i class="fas fa-shield-alt"></i> Admin</button>
 
@@ -385,6 +386,21 @@
         <div id="myVideosPurchaseList"></div>
       </div>
     </div>
+    <!-- TAB : OPPORTUNITÉS -->
+    <div id="tab-opportunites" style="display:none">
+      <div class="dash-section">
+        <div class="sub-user-header">
+          <div>
+            <h2><i class="fas fa-briefcase" style="color:var(--accent)"></i> Opportunités</h2>
+            <p style="color:var(--text2);font-size:0.88rem;margin-top:0.3rem">Jobs en ligne, microjobs et plateformes sélectionnées pour vous.</p>
+          </div>
+          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadOpportunites()">
+            <i class="fas fa-sync-alt"></i> Actualiser
+          </button>
+        </div>
+        <div id="opportunitesList"></div>
+      </div>
+    </div>
     <!-- TAB : ABONNEMENT UTILISATEUR -->
     <div id="tab-subscription" style="display:none">
       <div class="dash-section">
@@ -608,6 +624,9 @@
           <button class="admin-subnav-btn" onclick="switchAdminSection('leaderboard', this)">
             <i class="fas fa-trophy" style="color:var(--gold)"></i> Leaderboard
           </button>
+          <button class="admin-subnav-btn" onclick="switchAdminSection('opportunites', this)">
+            <i class="fas fa-briefcase" style="color:var(--accent)"></i> Opportunités
+          </button>
         </div>
         </div>
         <!-- SECTION : FORMATEURS -->
@@ -737,6 +756,20 @@
             <h4 style="font-size:0.9rem;margin-bottom:1rem"><i class="fas fa-history" style="color:var(--accent)"></i> Historique des récompenses</h4>
             <div id="lbHistoryList"></div>
           </div>
+        </div>
+
+        <!-- SECTION : OPPORTUNITÉS ADMIN -->
+        <div id="adminSection-opportunites" class="admin-sub-section" style="display:none">
+          <div class="admin-section-header" style="margin-bottom:1rem">
+            <div>
+              <h3><i class="fas fa-briefcase" style="color:var(--accent)"></i> Opportunités</h3>
+              <p style="font-size:0.78rem;color:var(--text2);margin-top:0.3rem">Gérez les jobs en ligne et liens d'affiliation partagés avec les membres.</p>
+            </div>
+            <button class="btn-primary" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="openOpportuniteModal()">
+              <i class="fas fa-plus"></i> Ajouter
+            </button>
+          </div>
+          <div id="adminOpportunitesList"></div>
         </div>
 
         <!-- SECTION : ACHATS EBOOKS -->
@@ -2126,9 +2159,241 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
     }
   </script>
   <script>
+    // ── OPPORTUNITÉS ADMIN ──
+    let _oppEditId = null;
+
+    async function loadAdminOpportunites() {
+      const list = document.getElementById('adminOpportunitesList');
+      if (!list) return;
+      list.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+      const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+      const token = localStorage.getItem('pd_jwt');
+      try {
+        const items = await fetch(API + '/admin/opportunites', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+        if (!items.length) {
+          list.innerHTML = '<p style="color:var(--text2);padding:1rem">Aucune opportunité. Cliquez sur "Ajouter" pour commencer.</p>';
+          return;
+        }
+        list.innerHTML = items.map(o => {
+          const badge = o.badge ? '<span style="font-size:0.68rem;background:' + o.couleur + '22;color:' + o.couleur + ';border:1px solid ' + o.couleur + '44;padding:0.1rem 0.5rem;border-radius:50px">' + o.badge + '</span>' : '';
+          const statut = o.actif
+            ? '<span style="font-size:0.72rem;color:var(--green);background:rgba(0,200,100,0.1);padding:0.15rem 0.5rem;border-radius:50px">Actif</span>'
+            : '<span style="font-size:0.72rem;color:var(--text2);background:var(--bg3);padding:0.15rem 0.5rem;border-radius:50px">Inactif</span>';
+          return '<div style="display:flex;align-items:center;gap:0.8rem;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1rem;margin-bottom:0.5rem">'
+            + '<div style="width:38px;height:38px;border-radius:8px;background:' + o.couleur + '18;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="' + o.icone + '" style="color:' + o.couleur + '"></i></div>'
+            + '<div style="flex:1;min-width:0">'
+              + '<div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap"><strong style="font-size:0.88rem">' + o.titre + '</strong>' + badge + statut + '</div>'
+              + '<div style="font-size:0.72rem;color:var(--text2);margin-top:0.1rem">' + o.categorie + ' · <i class="fas fa-mouse-pointer"></i> ' + (o.clics || 0) + ' clics · ordre ' + o.ordre + '</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:0.4rem;flex-shrink:0">'
+              + '<button onclick="openOpportuniteModal(' + o.id + ')" style="background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.25);color:var(--accent);border-radius:8px;padding:0.35rem 0.7rem;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-edit"></i></button>'
+              + '<button onclick="deleteOpportunite(' + o.id + ',\'' + o.titre.replace(/'/g,"\\'" ) + '\')" style="background:rgba(255,77,109,0.1);border:1px solid rgba(255,77,109,0.25);color:var(--red);border-radius:8px;padding:0.35rem 0.7rem;cursor:pointer;font-size:0.78rem;font-family:inherit"><i class="fas fa-trash"></i></button>'
+            + '</div>'
+          + '</div>';
+        }).join('');
+      } catch(e) {
+        list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+      }
+    }
+
+    function _toggleOppDesc(id, btn) {
+      const p = document.getElementById('opp-desc-' + id);
+      if (!p) return;
+      const expanded = p.style.webkitLineClamp === 'unset';
+      p.style.webkitLineClamp = expanded ? '3' : 'unset';
+      p.style.webkitBoxOrient = expanded ? 'vertical' : 'unset';
+      p.style.display = expanded ? '-webkit-box' : 'block';
+      p.style.overflow = expanded ? 'hidden' : 'visible';
+      btn.textContent = expanded ? 'Lire plus ▾' : 'Réduire ▴';
+    }
+
+    function _previewOppImage(input) {
+      if (!input.files || !input.files[0]) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('oppImage').value = e.target.result;
+        document.getElementById('oppImagePreviewImg').src = e.target.result;
+        document.getElementById('oppImagePreview').style.display = 'block';
+        document.getElementById('oppImageLabelText').textContent = 'Changer l\'image';
+      };
+      reader.readAsDataURL(input.files[0]);
+    }
+
+    function _removeOppImage() {
+      document.getElementById('oppImage').value = '';
+      document.getElementById('oppImagePreviewImg').src = '';
+      document.getElementById('oppImagePreview').style.display = 'none';
+      document.getElementById('oppImageLabelText').textContent = 'Uploader une image';
+      document.getElementById('oppImageFile').value = '';
+    }
+
+    async function openOpportuniteModal(id) {
+      _oppEditId = id || null;
+      const modal = document.getElementById('opportuniteModalOverlay');
+      const title = document.getElementById('opportuniteModalTitle');
+      document.getElementById('opportuniteModalMsg').textContent = '';
+      if (id) {
+        title.innerHTML = '<i class="fas fa-edit"></i> Modifier l\'opportunité';
+        const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+        const token = localStorage.getItem('pd_jwt');
+        try {
+          const items = await fetch(API + '/admin/opportunites', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+          const o = items.find(x => x.id === id);
+          if (o) {
+            document.getElementById('oppTitre').value       = o.titre;
+            document.getElementById('oppDescription').value = o.description || '';
+            document.getElementById('oppCategorie').value   = o.categorie;
+            document.getElementById('oppBadge').value       = o.badge || '';
+            document.getElementById('oppIcone').value       = o.icone;
+            document.getElementById('oppCouleur').value     = o.couleur;
+            document.getElementById('oppOrdre').value       = o.ordre;
+            document.getElementById('oppActif').checked     = o.actif;
+            document.getElementById('oppLien').value        = o.lien_affiliation || '';
+            // image
+            if (o.image) {
+              document.getElementById('oppImage').value = o.image;
+              document.getElementById('oppImagePreviewImg').src = o.image;
+              document.getElementById('oppImagePreview').style.display = 'block';
+              document.getElementById('oppImageLabelText').textContent = 'Changer l\'image';
+            } else { _removeOppImage(); }
+          }
+        } catch(e) {}
+      } else {
+        title.innerHTML = '<i class="fas fa-briefcase"></i> Nouvelle opportunité';
+        document.getElementById('oppTitre').value       = '';
+        document.getElementById('oppDescription').value = '';
+        document.getElementById('oppCategorie').value   = 'Microjob';
+        document.getElementById('oppBadge').value       = '';
+        document.getElementById('oppIcone').value       = 'fas fa-briefcase';
+        document.getElementById('oppCouleur').value     = '#6c63ff';
+        document.getElementById('oppOrdre').value       = '0';
+        document.getElementById('oppActif').checked     = true;
+        document.getElementById('oppLien').value        = '';
+        _removeOppImage();
+      }
+      modal.style.display = 'flex';
+    }
+
+    function closeOpportuniteModal() {
+      document.getElementById('opportuniteModalOverlay').style.display = 'none';
+    }
+
+    async function saveOpportunite() {
+      const msg = document.getElementById('opportuniteModalMsg');
+      const body = {
+        titre:            document.getElementById('oppTitre').value.trim(),
+        description:      document.getElementById('oppDescription').value.trim(),
+        categorie:        document.getElementById('oppCategorie').value,
+        badge:            document.getElementById('oppBadge').value.trim(),
+        icone:            document.getElementById('oppIcone').value.trim() || 'fas fa-briefcase',
+        couleur:          document.getElementById('oppCouleur').value,
+        ordre:            parseInt(document.getElementById('oppOrdre').value) || 0,
+        actif:            document.getElementById('oppActif').checked,
+        lien_affiliation: document.getElementById('oppLien').value.trim(),
+        image:            document.getElementById('oppImage').value || '',
+      };
+      if (!body.titre || !body.lien_affiliation) {
+        msg.textContent = 'Titre et lien sont obligatoires.';
+        return;
+      }
+      const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+      const token = localStorage.getItem('pd_jwt');
+      try {
+        const url    = _oppEditId ? API + '/admin/opportunites/' + _oppEditId : API + '/admin/opportunites';
+        const method = _oppEditId ? 'PUT' : 'POST';
+        await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify(body) });
+        closeOpportuniteModal();
+        loadAdminOpportunites();
+      } catch(e) { msg.textContent = 'Erreur : ' + e.message; }
+    }
+
+    async function deleteOpportunite(id, titre) {
+      if (!confirm('Supprimer "' + titre + '" ?')) return;
+      const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+      const token = localStorage.getItem('pd_jwt');
+      try {
+        await fetch(API + '/admin/opportunites/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+        loadAdminOpportunites();
+      } catch(e) {}
+    }
+
+    // ── OPPORTUNITÉS ADMIN ──
+    async function loadOpportunites() {
+      const list = document.getElementById('opportunitesList');
+      if (!list) return;
+      list.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
+      try {
+        const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+        const token = localStorage.getItem('pd_jwt');
+        const items = await fetch(API + '/opportunites', { headers: { 'Authorization': 'Bearer ' + token } }).then(r => r.json());
+        if (!items.length) {
+          list.innerHTML = '<div style="text-align:center;padding:3rem 1rem;color:var(--text2)"><i class="fas fa-briefcase" style="font-size:2.5rem;opacity:0.25;display:block;margin-bottom:0.8rem"></i><p>Aucune opportunité disponible pour le moment.</p></div>';
+          return;
+        }
+        const cats = [...new Set(items.map(o => o.categorie))];
+        list.innerHTML = cats.map(cat => {
+          const offres = items.filter(o => o.categorie === cat);
+          return '<div style="margin-bottom:2rem">'
+            + '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.9rem">'
+              + '<span style="display:inline-block;width:3px;height:16px;background:var(--accent);border-radius:2px"></span>'
+              + '<h3 style="font-size:0.78rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin:0">' + cat + '</h3>'
+            + '</div>'
+            + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">'
+            + offres.map(o => {
+                const badge = o.badge
+                  ? '<span style="font-size:0.68rem;font-weight:700;background:' + o.couleur + '22;color:' + o.couleur + ';border:1px solid ' + o.couleur + '44;padding:0.2rem 0.6rem;border-radius:50px;white-space:nowrap">' + o.badge + '</span>'
+                  : '';
+                return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;transition:transform 0.18s,border-color 0.18s,box-shadow 0.18s" onmouseover="this.style.transform=\'translateY(-3px)\';this.style.borderColor=\'' + o.couleur + '66\';this.style.boxShadow=\'0 8px 24px rgba(0,0,0,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'none\'">'
+                  // Bandeau haut : image si dispo, sinon dégradé couleur
+                  + (o.image
+                    ? '<div style="height:110px;overflow:hidden;position:relative"><img src="' + o.image + '" style="width:100%;height:100%;object-fit:cover" /><div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.55))"></div></div>'
+                    : '<div style="height:6px;background:linear-gradient(90deg,' + o.couleur + ',' + o.couleur + '88)"></div>')
+                  // Corps
+                  + '<div style="padding:1rem 1rem 0.9rem;flex:1;display:flex;flex-direction:column;gap:0.6rem">'
+                    // Icone (seulement si pas d'image) + titre + badge
+                    + '<div style="display:flex;align-items:center;gap:0.7rem">'
+                      + (!o.image
+                        ? '<div style="width:42px;height:42px;border-radius:10px;background:' + o.couleur + '18;border:1px solid ' + o.couleur + '33;display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="' + o.icone + '" style="color:' + o.couleur + ';font-size:1.2rem"></i></div>'
+                        : '')
+                      + '<div style="flex:1;min-width:0">'
+                        + '<div style="font-size:0.95rem;font-weight:800;line-height:1.3">' + o.titre + '</div>'
+                        + (badge ? '<div style="margin-top:0.2rem">' + badge + '</div>' : '')
+                      + '</div>'
+                    + '</div>'
+                    // Description
+                    + (o.description
+                      ? '<div style="font-size:0.82rem;color:var(--text2);line-height:1.55;margin:0">'
+                          + '<p id="opp-desc-' + o.id + '" style="margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">' + o.description + '</p>'
+                          + (o.description.length > 120
+                            ? '<button onclick="_toggleOppDesc(' + o.id + ',this)" style="background:none;border:none;color:var(--accent);font-size:0.78rem;font-weight:700;cursor:pointer;padding:0.2rem 0;font-family:inherit;margin-top:0.2rem">Lire plus ▾</button>'
+                            : '')
+                        + '</div>'
+                      : '')
+                    // Bouton
+                    + '<button onclick="_trackOpportuniteClick(' + o.id + ')" style="margin-top:auto;width:100%;padding:0.6rem;border:none;border-radius:10px;background:linear-gradient(135deg,' + o.couleur + ',' + o.couleur + 'cc);color:#fff;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:0.5rem;transition:opacity 0.2s" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">'
+                      + '<i class="fas fa-external-link-alt"></i> Accéder'
+                    + '</button>'
+                  + '</div>'
+                + '</div>';
+              }).join('')
+            + '</div></div>';
+        }).join('');
+      } catch(e) {
+        list.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
+      }
+    }
+
+    function _trackOpportuniteClick(id) {
+      const API = window.PaganiConfig?.API_BASE_URL || 'http://localhost:3001/api';
+      const token = localStorage.getItem('pd_jwt');
+      fetch(API + '/opportunites/go/' + id, { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json())
+        .then(data => { if (data.url) window.open(data.url, '_blank', 'noopener'); })
+        .catch(() => {});
+    }
+
     // Pré-remplir le code parrain depuis le lien de partage Facebook
-    (function applyRefCode() {
-      const params = new URLSearchParams(window.location.search);
+    (function applyRefCode() {      const params = new URLSearchParams(window.location.search);
       const ref = params.get('ref') || sessionStorage.getItem('pd_ref');
       if (!ref) return;
       sessionStorage.setItem('pd_ref', ref);
@@ -2181,6 +2446,84 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
       if (bar) obs.observe(bar, { childList: true });
     });
   </script>
+  <!-- MODAL OPPORTUNITÉ -->
+  <div id="opportuniteModalOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:1rem;overflow-y:auto" onclick="if(event.target===this)closeOpportuniteModal()">
+    <div style="background:var(--bg);border-radius:16px;padding:1.5rem;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,0.4);display:flex;flex-direction:column;gap:0.8rem;max-height:90vh;overflow-y:auto" onclick="event.stopPropagation()">
+      <div class="video-modal-header">
+        <h3 id="opportuniteModalTitle"><i class="fas fa-briefcase"></i> Nouvelle opportunité</h3>
+        <button class="video-modal-close" onclick="closeOpportuniteModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="form-group">
+        <label>Titre <span style="color:var(--red)">*</span></label>
+        <input type="text" id="oppTitre" placeholder="Ex: Fiverr — Freelance" />
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="oppDescription" rows="2" placeholder="Courte description..."></textarea>
+      </div>
+      <div class="video-modal-grid">
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="oppCategorie" class="vselect">
+            <option value="Microjob">Microjob</option>
+            <option value="Affiliation">Affiliation</option>
+            <option value="Freelance">Freelance</option>
+            <option value="Crypto">Crypto</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Badge <small style="color:var(--text2)">(optionnel)</small></label>
+          <input type="text" id="oppBadge" placeholder="Ex: Commission 30%" />
+        </div>
+        <div class="form-group">
+          <label>Icône FontAwesome</label>
+          <input type="text" id="oppIcone" placeholder="fas fa-briefcase" />
+        </div>
+        <div class="form-group">
+          <label>Couleur</label>
+          <input type="color" id="oppCouleur" value="#6c63ff" style="height:38px;padding:2px 4px" />
+        </div>
+        <div class="form-group">
+          <label>Ordre</label>
+          <input type="number" id="oppOrdre" value="0" min="0" style="max-width:100px" />
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:0.6rem;padding-top:1.4rem">
+          <label style="margin:0">Actif</label>
+          <label class="toggle-switch">
+            <input type="checkbox" id="oppActif" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-image" style="color:var(--accent)"></i> Image / Logo <small style="color:var(--text2)">(optionnel)</small></label>
+        <div style="display:flex;gap:0.6rem;align-items:center">
+          <label style="display:flex;align-items:center;gap:0.5rem;background:var(--bg2);border:2px dashed var(--border);border-radius:10px;padding:0.6rem 1rem;cursor:pointer;font-size:0.82rem;color:var(--text2);flex:1" id="oppImageLabel">
+            <i class="fas fa-upload" style="color:var(--accent)"></i>
+            <span id="oppImageLabelText">Uploader une image</span>
+            <input type="file" id="oppImageFile" accept="image/*" style="display:none" onchange="_previewOppImage(this)" />
+          </label>
+          <div id="oppImagePreview" style="display:none;position:relative;flex-shrink:0">
+            <img id="oppImagePreviewImg" src="" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:2px solid var(--accent2)" />
+            <button type="button" onclick="_removeOppImage()" style="position:absolute;top:-6px;right:-6px;background:var(--red);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:0.6rem;display:flex;align-items:center;justify-content:center"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <input type="hidden" id="oppImage" />
+      </div>
+      <div class="form-group">
+        <label><i class="fas fa-link" style="color:var(--accent)"></i> Lien d'affiliation <span style="color:var(--red)">*</span></label>
+        <input type="url" id="oppLien" placeholder="https://..." />
+        <p style="font-size:0.72rem;color:var(--text2);margin-top:0.3rem"><i class="fas fa-lock" style="color:var(--accent)"></i> Ce lien est privé — jamais visible par les membres.</p>
+      </div>
+      <p id="opportuniteModalMsg" style="font-size:0.82rem;min-height:1rem;color:var(--red)"></p>
+      <div class="crop-actions">
+        <button class="btn-outline" onclick="closeOpportuniteModal()"><i class="fas fa-times"></i> Annuler</button>
+        <button class="btn-primary" onclick="saveOpportunite()"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/js/back-handler.js"></script>
 </body>
 </html>

@@ -2227,6 +2227,104 @@ app.get('/api/members/search', requireAuth, async (req, res) => {
 // ══ GROUPES DE DISCUSSION ══════════════════════════════════
 require('./groups')(app, _migPool, db, requireAuth, parseId, _sseClients, sendPush);
 
+// ══════════════════════════════════════════════════════════
+//  OPPORTUNITES
+// ══════════════════════════════════════════════════════════
+
+// GET /api/opportunites — liste publique (sans lien_affiliation)
+app.get('/api/opportunites', requireAuth, async (req, res) => {
+  try {
+    const r = await db.pool.query(
+      `SELECT id, titre, description, categorie, icone, couleur, badge, image, actif, ordre, clics
+       FROM opportunites WHERE actif = true ORDER BY ordre ASC, created_at DESC`
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/opportunites/go/:id — retourne le lien + compteur clics
+app.get('/api/opportunites/go/:id', requireAuth, async (req, res) => {
+  try {
+    const r = await db.pool.query(
+      `UPDATE opportunites SET clics = clics + 1 WHERE id = $1 AND actif = true RETURNING lien_affiliation`,
+      [req.params.id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'NOT_FOUND' });
+    res.json({ url: r.rows[0].lien_affiliation });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/admin/opportunites — liste complète admin (avec lien_affiliation)
+app.get('/api/admin/opportunites', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const r = await db.pool.query(
+      `SELECT * FROM opportunites ORDER BY ordre ASC, created_at DESC`
+    );
+    res.json(r.rows);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/opportunites — créer
+app.post('/api/admin/opportunites', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { titre, description, categorie, icone, couleur, badge, image, lien_affiliation, actif, ordre } = req.body;
+    if (!titre || !lien_affiliation) return res.status(400).json({ error: 'CHAMPS_REQUIS' });
+    const r = await db.pool.query(
+      `INSERT INTO opportunites (titre, description, categorie, icone, couleur, badge, image, lien_affiliation, actif, ordre)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [
+        String(titre).slice(0, 100),
+        String(description || '').slice(0, 500),
+        String(categorie || 'Autre').slice(0, 50),
+        String(icone || 'fas fa-briefcase').slice(0, 50),
+        String(couleur || '#6c63ff').slice(0, 20),
+        String(badge || '').slice(0, 40),
+        String(image || '').slice(0, 2000000),
+        String(lien_affiliation).slice(0, 2000),
+        actif !== false,
+        parseInt(ordre) || 0
+      ]
+    );
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/admin/opportunites/:id — modifier
+app.put('/api/admin/opportunites/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { titre, description, categorie, icone, couleur, badge, image, lien_affiliation, actif, ordre } = req.body;
+    const r = await db.pool.query(
+      `UPDATE opportunites SET
+        titre=$1, description=$2, categorie=$3, icone=$4, couleur=$5,
+        badge=$6, image=$7, lien_affiliation=$8, actif=$9, ordre=$10
+       WHERE id=$11 RETURNING *`,
+      [
+        String(titre).slice(0, 100),
+        String(description || '').slice(0, 500),
+        String(categorie || 'Autre').slice(0, 50),
+        String(icone || 'fas fa-briefcase').slice(0, 50),
+        String(couleur || '#6c63ff').slice(0, 20),
+        String(badge || '').slice(0, 40),
+        String(image || '').slice(0, 2000000),
+        String(lien_affiliation).slice(0, 2000),
+        actif !== false,
+        parseInt(ordre) || 0,
+        req.params.id
+      ]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'NOT_FOUND' });
+    res.json(r.rows[0]);
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/admin/opportunites/:id — supprimer
+app.delete('/api/admin/opportunites/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    await db.pool.query(`DELETE FROM opportunites WHERE id = $1`, [req.params.id]);
+    res.json({ ok: true });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
     res.sendFile(path.join(__dirname, '../frontend/pages/index.html'));

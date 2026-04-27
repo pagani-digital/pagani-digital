@@ -3504,7 +3504,7 @@ function _onTsModuleChange() {
 }
 // ===== TABS DASHBOARD =====
 function switchTab(tab, btn) {
-  ["myposts", "overview", "profile", "wallet", "subscription", "myvideos", "myebooks", "trainer", "admin", "videos", "ebooks"].forEach(t => {
+  ["myposts", "overview", "profile", "wallet", "subscription", "opportunites", "myvideos", "myebooks", "trainer", "admin", "videos", "ebooks"].forEach(t => {
     const el = document.getElementById("tab-" + t);
     if (el) el.style.display = t === tab ? "block" : "none";
   });
@@ -3520,6 +3520,7 @@ function switchTab(tab, btn) {
   if (tab === "myposts")      { loadMyPosts(); _initMyPostsPanel(); }
   if (tab === "profile")      { updatePushNotifUI(); }
   if (tab === "subscription") renderUserSubscriptions();
+  if (tab === "opportunites") { if (typeof loadOpportunites === 'function') loadOpportunites(); }
   if (tab === "myvideos")     renderUserVideoPurchases();
   if (tab === "myebooks")     loadMyEbooks();
   if (tab === "admin")  loadAdminStats();
@@ -7168,6 +7169,7 @@ function switchAdminSection(section, btn) {
   if (section === 'modules')         renderAdminModules();
   if (section === 'modulepurchases') renderAdminModulePurchases();
   if (section === 'leaderboard')     { if (typeof loadAdminLeaderboard === 'function') loadAdminLeaderboard(); }
+  if (section === 'opportunites')  { if (typeof loadAdminOpportunites === 'function') loadAdminOpportunites(); }
   if (section === 'navbarbtn') loadNavbarBtnAdmin();
   if (section === 'sociallinks') loadSocialLinksAdmin();
   if (section === 'shares')          loadAdminShares();
