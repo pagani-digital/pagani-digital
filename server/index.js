@@ -5,6 +5,9 @@ const helmet    = require('helmet');
 const jwt       = require('jsonwebtoken');
 const path      = require('path');
 const rateLimit = require('express-rate-limit');
+const crypto    = require('crypto');
+const bcrypt    = require('bcryptjs');
+const nodemailer = require('nodemailer');
 const db        = require('./database');
 const webpush   = require('web-push');
 webpush.setVapidDetails(process.env.VAPID_EMAIL, process.env.VAPID_PUBLIC_KEY, process.env.VAPID_PRIVATE_KEY);
@@ -232,6 +235,84 @@ function parseId(val) {
   const n = parseInt(val, 10);
   return isNaN(n) ? null : n;
 }
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+const DEFAULT_DISPOSABLE_DOMAINS = new Set([
+  '10minutemail.com',
+  'guerrillamail.com',
+  'maildrop.cc',
+  'mailinator.com',
+  'mailnesia.com',
+  'mohmal.com',
+  'temp-mail.org',
+  'tempmail.com',
+  'tempmail.net',
+  'trashmail.com',
+  'yopmail.com',
+  'yopmail.fr',
+  'yopmail.net',
+  'sharklasers.com',
+  'spamgourmet.com',
+  'getnada.com',
+  'inboxbear.com',
+  'disposablemail.com'
+]);
+const EXTRA_DISPOSABLE_DOMAINS = process.env.DISPOSABLE_EMAIL_DOMAINS
+  ? process.env.DISPOSABLE_EMAIL_DOMAINS.split(',').map(d => d.trim().toLowerCase()).filter(Boolean)
+  : [];
+const DISPOSABLE_DOMAINS = new Set([...DEFAULT_DISPOSABLE_DOMAINS, ...EXTRA_DISPOSABLE_DOMAINS]);
+function isDisposableEmail(email) {
+  const domain = String(email || '').split('@')[1] || '';
+  if (!domain) return false;
+  for (const d of DISPOSABLE_DOMAINS) {
+    if (domain === d || domain.endsWith('.' + d)) return true;
+  }
+  return false;
+}
+function getRegCodeCooldownSec() {
+  const n = parseInt(process.env.REG_CODE_RESEND_COOLDOWN_SEC || '60', 10);
+  return Number.isFinite(n) && n > 0 ? n : 60;
+}
+function hashVerificationCode(email, code) {
+  const secret = process.env.REG_CODE_SECRET || JWT_SECRET || 'reg_code_secret';
+  return crypto.createHash('sha256').update(secret + '|' + email + '|' + code).digest('hex');
+}
+let _smtpTransport = null;
+function _getSmtpTransport() {
+  if (_smtpTransport) return _smtpTransport;
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!host || !user || !pass) return null;
+  const port = parseInt(process.env.SMTP_PORT || '587', 10);
+  const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465;
+  _smtpTransport = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  return _smtpTransport;
+}
+async function sendVerificationEmail(toEmail, code) {
+  const transport = _getSmtpTransport();
+  if (!transport) throw new Error('EMAIL_SERVICE_INDISPONIBLE');
+  const from = process.env.SMTP_FROM || 'Pagani Digital <noreply@pagani.digital>';
+  const html = `
+    <div style="font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;padding:24px;border-radius:12px">
+      <h2 style="margin:0 0 12px">Votre code de verification</h2>
+      <p style="margin:0 0 16px">Utilisez ce code pour finaliser votre inscription :</p>
+      <div style="font-size:28px;font-weight:800;letter-spacing:4px;background:#1e293b;padding:12px 16px;border-radius:10px;display:inline-block">${code}</div>
+      <p style="margin:16px 0 0;color:#94a3b8;font-size:12px">Ce code expire bientot. Ne le partagez pas.</p>
+    </div>
+  `;
+  await transport.sendMail({
+    from,
+    to: toEmail,
+    subject: 'Votre code Pagani Digital',
+    text: `Votre code de verification Pagani Digital : ${code}`,
+    html
+  });
+}
 // ══════════════════════════════════════════════════════════
 //  POOL MIGRATIONS (déclaré tôt pour les routes formateur)
 // ══════════════════════════════════════════════════════════
@@ -242,35 +323,118 @@ const _migPool = process.env.DATABASE_URL
 // ══════════════════════════════════════════════════════════
 //  AUTH
 // ══════════════════════════════════════════════════════════
-app.post('/api/auth/register', authLimiter, async (req, res) => {
+app.post('/api/auth/register/start', authLimiter, async (req, res) => {
   const { name, email, password, refCode, mmPhone, mmOperator, mmName } = req.body;
   if (!name || !email || !password) return res.status(400).json({ error: 'CHAMPS_MANQUANTS' });
   if (name.trim().length < 2 || name.trim().length > 60)
     return res.status(400).json({ error: 'NOM_INVALIDE' });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+  const emailNorm = normalizeEmail(email);
+  if (!isValidEmail(emailNorm))
     return res.status(400).json({ error: 'EMAIL_INVALIDE' });
-  if (email.trim().length > 100)
+  if (emailNorm.length > 100)
     return res.status(400).json({ error: 'EMAIL_TROP_LONG' });
+  if (isDisposableEmail(emailNorm))
+    return res.status(400).json({ error: 'EMAIL_JETABLE' });
   if (password.length < 6)          return res.status(400).json({ error: 'MOT_DE_PASSE_TROP_COURT' });
   if (password.length > 128)        return res.status(400).json({ error: 'MOT_DE_PASSE_TROP_LONG' });
   if (!mmPhone)                     return res.status(400).json({ error: 'MM_PHONE_REQUIS' });
+
+  const mmDigits = String(mmPhone || '').replace(/\D/g, '');
+  if (mmDigits.length !== 10) return res.status(400).json({ error: 'MM_PHONE_INVALIDE' });
+
   try {
-    const user = await db.createUser({ name, email, password, refCode, mmPhone, mmOperator, mmName });
+    const existing = await db.getUserByEmail(emailNorm);
+    if (existing) return res.status(400).json({ error: 'EMAIL_TAKEN' });
+
+    const pending = await db.getEmailVerification(emailNorm);
+    const cooldownSec = getRegCodeCooldownSec();
+    if (pending && pending.last_sent_at) {
+      const lastSent = new Date(pending.last_sent_at).getTime();
+      const diffSec = (Date.now() - lastSent) / 1000;
+      if (diffSec < cooldownSec) {
+        const retryAfterSec = Math.max(1, Math.ceil(cooldownSec - diffSec));
+        return res.status(429).json({ error: 'CODE_COOLDOWN', retryAfterSec });
+      }
+    }
+
+    const code = String(crypto.randomInt(100000, 1000000));
+    const codeHash = hashVerificationCode(emailNorm, code);
+    const ttlMin = parseInt(process.env.REG_CODE_TTL_MIN || '10', 10);
+    const expiresAt = new Date(Date.now() + ttlMin * 60 * 1000);
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await db.upsertEmailVerification({
+      email: emailNorm,
+      name: name.trim(),
+      passwordHash,
+      refCode: refCode || '',
+      mmPhone: mmDigits,
+      mmOperator: mmOperator || 'MVola',
+      mmName: mmName || name.trim(),
+      codeHash,
+      expiresAt
+    });
+
+    await sendVerificationEmail(emailNorm, code);
+    await db.updateEmailVerificationLastSent(emailNorm);
+    res.json({ ok: true, ttlMinutes: ttlMin });
+  } catch(e) {
+    if (e.message === 'EMAIL_SERVICE_INDISPONIBLE')
+      return res.status(500).json({ error: 'EMAIL_SERVICE_INDISPONIBLE' });
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/auth/register/verify', authLimiter, async (req, res) => {
+  const { email, code } = req.body;
+  const emailNorm = normalizeEmail(email);
+  const rawCode = String(code || '').trim();
+  if (!emailNorm || !rawCode) return res.status(400).json({ error: 'CHAMPS_MANQUANTS' });
+  if (!isValidEmail(emailNorm)) return res.status(400).json({ error: 'EMAIL_INVALIDE' });
+  if (!/^[0-9]{6}$/.test(rawCode)) return res.status(400).json({ error: 'CODE_INVALIDE' });
+
+  try {
+    const pending = await db.getEmailVerification(emailNorm);
+    if (!pending) return res.status(400).json({ error: 'CODE_INVALIDE' });
+    if (pending.attempts >= 5) return res.status(400).json({ error: 'CODE_BLOQUE' });
+    if (new Date(pending.expires_at).getTime() < Date.now())
+      return res.status(400).json({ error: 'CODE_EXPIRE' });
+
+    const codeHash = hashVerificationCode(emailNorm, rawCode);
+    if (pending.code_hash !== codeHash) {
+      await db.incrementEmailVerificationAttempts(emailNorm);
+      return res.status(400).json({ error: 'CODE_INVALIDE' });
+    }
+
+    const user = await db.createUserFromHash({
+      name: pending.name,
+      email: emailNorm,
+      passwordHash: pending.password_hash,
+      refCode: pending.ref_code,
+      mmPhone: pending.mm_phone,
+      mmOperator: pending.mm_operator,
+      mmName: pending.mm_name
+    });
+
+    await db.deleteEmailVerification(emailNorm);
     await db.createNotification({ userId: user.id, type: 'SUB_CONFIRMED',
-      message: `Bienvenue sur Pagani Digital, ${name.split(' ')[0]} ! Votre espace est pret.`,
+      message: `Bienvenue sur Pagani Digital, ${user.name.split(' ')[0]} ! Votre espace est pret.`,
       link: 'dashboard.html' });
     await db.createNotification({ userId: 0, type: 'NEW_USER',
-      message: `${name} vient de s'inscrire.`, link: 'dashboard.html?tab=admin&section=users' });
-    // Auto-follow : le nouvel utilisateur suit l'admin par défaut
+      message: `${user.name} vient de s'inscrire.`, link: 'dashboard.html?tab=admin&section=users' });
     try {
       const admins = (await db.getAllUsers()).filter(u => u.role === 'admin');
       for (const admin of admins) {
         await db.followUser(user.id, admin.id);
       }
     } catch(e) {}
-    sendPushToAdmin('Nouveau membre', name + " vient de s'inscrire", 'dashboard.html?tab=admin&section=users');
+    sendPushToAdmin('Nouveau membre', user.name + " vient de s'inscrire", 'dashboard.html?tab=admin&section=users');
     res.json({ token: makeToken(user), user: safeUser(user) });
   } catch(e) { res.status(400).json({ error: e.message }); }
+});
+
+app.post('/api/auth/register', authLimiter, async (req, res) => {
+  res.status(400).json({ error: 'EMAIL_VERIFICATION_REQUIRED' });
 });
 app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;

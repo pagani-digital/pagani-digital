@@ -36,6 +36,23 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at    TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- ── EMAIL VERIFICATIONS ───────────────────────────────────
+CREATE TABLE IF NOT EXISTS email_verifications (
+  email         TEXT PRIMARY KEY,
+  name          TEXT        NOT NULL,
+  password_hash TEXT        NOT NULL,
+  ref_code      TEXT        DEFAULT '',
+  mm_phone      TEXT        NOT NULL,
+  mm_operator   TEXT        DEFAULT 'MVola',
+  mm_name       TEXT        DEFAULT '',
+  code_hash     TEXT        NOT NULL,
+  expires_at    TIMESTAMPTZ NOT NULL,
+  attempts      INTEGER     DEFAULT 0,
+  last_sent_at  TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_email_verifications_exp ON email_verifications(expires_at);
+
 -- ── VIDEOS ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS videos (
   id           SERIAL PRIMARY KEY,

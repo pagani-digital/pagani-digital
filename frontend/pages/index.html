@@ -212,151 +212,30 @@
         <a href="plans.html" style="font-size:0.75rem;color:var(--accent);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:0.3rem"><i class="fas fa-tag"></i> Offres</a>
       </div>
 
+      <!-- COMPOSER RAPIDE (style Facebook) -->
+      <div id="userPostComposer" class="composer-card" style="display:none">
+        <div class="composer-top">
+          <div class="avatar-circle avatar-sm" id="userPostComposerAvatar"></div>
+          <button type="button" class="composer-input" id="userPostComposerInput" onclick="openUserPostModal()">Quoi de neuf ?</button>
+          <button type="button" class="composer-photo-btn" onclick="openUserPostModal('photo')" aria-label="Ajouter une photo"><i class="fas fa-image"></i></button>
+        </div>
+      </div>
+
+        <!-- COMPOSER ADMIN -->
+        <div id="adminComposer" class="composer-card admin-composer" style="display:none">
+          <div class="composer-top">
+            <div class="admin-composer-icon"><i class="fas fa-shield-alt"></i></div>
+            <button type="button" class="composer-input" id="adminComposerInput" onclick="openAdminPostModal()">Publier une actualite</button>
+            <button type="button" class="composer-photo-btn" onclick="openAdminPostModal()" aria-label="Ouvrir l'editeur"><i class="fas fa-pen"></i></button>
+          </div>
+        </div>
+
       <!-- STORIES -->
       <div class="stories-bar-wrap" id="storiesBarWrap">
         <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
         <div id="storiesBar" class="stories-bar" style="display:none"></div>
         <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
       </div>
-
-      <!-- PANNEAU PUBLICATION UTILISATEUR -->
-        <div id="userPostPanel" class="user-post-panel" style="display:none">
-          <div class="user-post-header">
-            <div class="avatar-circle avatar-sm" id="userPostAvatar"></div>
-            <textarea id="userPostContent" placeholder="Quoi de neuf ? Partagez avec la communauté..." rows="3" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
-          </div>
-          <div id="userPostImagePreview" class="post-image-preview" style="display:none">
-            <img id="userPostPreviewImg" src="" alt="" />
-            <button type="button" class="post-image-remove" onclick="removeUserPostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="user-post-actions">
-            <label class="admin-media-btn" for="userPostImageInput" title="Ajouter une photo">
-              <i class="fas fa-image"></i> Photo
-            </label>
-            <input type="file" id="userPostImageInput" accept="image/*" style="display:none" onchange="previewUserPostImage(this)" />
-            <span id="userPostCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
-            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitUserPost()" id="userPostBtn">
-              <i class="fas fa-paper-plane"></i> Publier
-            </button>
-          </div>
-          <div id="userPostStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
-        </div>
-
-        <!-- PANNEAU ADMIN -->
-        <div id="adminPanel" class="admin-panel" style="display:none">
-          <div class="admin-panel-header">
-            <div style="display:flex;align-items:center;gap:0.6rem">
-              <i class="fas fa-shield-alt"></i>
-              <h3>Publier une actualité</h3>
-            </div>
-            <div class="admin-panel-tabs">
-              <button type="button" class="admin-tab-btn active" onclick="switchEditorTab('write',this)"><i class="fas fa-pen"></i> Écrire</button>
-              <button type="button" class="admin-tab-btn" onclick="switchEditorTab('preview',this)"><i class="fas fa-eye"></i> Aperçu</button>
-            </div>
-          </div>
-
-          <form id="newsForm" onsubmit="publishNews(event)">
-            <!-- LIGNE TITRE + CATÉGORIE -->
-            <div class="admin-form-row">
-              <input type="text" id="newsTitle" placeholder="Titre du post..." required />
-              <select id="newsCategory">
-                <option value="Annonce">Annonce</option>
-                <option value="Formation">Formation</option>
-                <option value="Affiliation">Affiliation</option>
-                <option value="Crypto">Crypto</option>
-                <option value="Contenu">Contenu</option>
-                <option value="Facebook">Facebook</option>
-              </select>
-            </div>
-
-            <!-- ONGLET ÉCRIRE -->
-            <div id="editorWrite">
-              <!-- BARRE D'OUTILS -->
-              <div class="editor-toolbar">
-                <button type="button" class="editor-btn" onclick="editorFormat('bold')" title="Gras"><i class="fas fa-bold"></i></button>
-                <button type="button" class="editor-btn" onclick="editorFormat('italic')" title="Italique"><i class="fas fa-italic"></i></button>
-                <div class="editor-separator"></div>
-                <button type="button" class="editor-btn" onclick="editorInsertLink()" title="Insérer un lien"><i class="fas fa-link"></i> Lien</button>
-                <button type="button" class="editor-btn" onclick="editorInsertEmoji()" title="Emoji"><i class="fas fa-smile"></i></button>
-                <div class="editor-separator"></div>
-                <button type="button" class="editor-btn" onclick="editorInsertLine()" title="Séparateur"><i class="fas fa-minus"></i></button>
-              </div>
-
-              <!-- ZONE DE TEXTE -->
-              <div class="editor-wrap">
-                <textarea id="newsContent" placeholder="Écrivez votre publication...
-
-Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquable." rows="5" required
-                  oninput="updateEditorPreview()"></textarea>
-                <div class="editor-char-count" id="editorCharCount">0 caractères</div>
-              </div>
-
-              <!-- PHOTO -->
-              <div class="admin-media-row">
-                <label class="admin-media-btn" for="newsImageInput">
-                  <i class="fas fa-image"></i> Photo
-                </label>
-                <label class="admin-media-btn" for="newsLinkInput" onclick="toggleLinkInput()">
-                  <i class="fas fa-external-link-alt"></i> Bouton lien
-                </label>
-                <input type="file" id="newsImageInput" accept="image/*" style="display:none" onchange="previewPostImage(this)" />
-                <div id="newsImagePreview" class="post-image-preview" style="display:none">
-                  <img id="newsImagePreviewImg" src="" alt="" />
-                  <button type="button" class="post-image-remove" onclick="removePostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
-                </div>
-              </div>
-
-              <!-- LIEN BOUTON (masqué par défaut) -->
-              <div class="admin-link-row" id="linkInputRow" style="display:none">
-                <i class="fas fa-link"></i>
-                <input type="url" id="newsLink" placeholder="https://..." />
-                <input type="text" id="newsLinkLabel" placeholder="Texte du bouton" />
-                <button type="button" class="editor-btn" onclick="toggleLinkInput()" style="padding:0.3rem 0.6rem"><i class="fas fa-times"></i></button>
-              </div>
-            </div>
-
-            <!-- ONGLET APERCu -->
-            <div id="editorPreview" style="display:none">
-              <div class="editor-preview-box" id="editorPreviewContent">
-                <p style="color:var(--text2);font-style:italic">Aperçu vide — écrivez quelque chose d'abord.</p>
-              </div>
-            </div>
-
-            <!-- MODAL LIEN -->
-            <div id="linkModal" class="link-modal" style="display:none">
-              <div class="link-modal-box">
-                <p><strong><i class="fas fa-link"></i> Insérer un lien</strong></p>
-                <input type="text" id="linkModalText" placeholder="Texte affiché (optionnel)" />
-                <input type="url" id="linkModalUrl" placeholder="https://..." />
-                <div style="display:flex;gap:0.6rem;margin-top:0.6rem">
-                  <button type="button" class="btn-primary" style="flex:1;padding:0.5rem" onclick="confirmInsertLink()"><i class="fas fa-check"></i> Insérer</button>
-                  <button type="button" class="editor-btn" style="flex:1;justify-content:center" onclick="closeLinkModal()"><i class="fas fa-times"></i> Annuler</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- MODAL EMOJI -->
-            <div id="emojiModal" class="link-modal" style="display:none">
-              <div class="link-modal-box emoji-grid">
-                <p style="grid-column:1/-1;margin:0 0 0.5rem"><strong>Choisir un emoji</strong></p>
-                <button type="button" onclick="insertEmoji(this)">🚀</button><button type="button" onclick="insertEmoji(this)">🎯</button>
-                <button type="button" onclick="insertEmoji(this)">💡</button><button type="button" onclick="insertEmoji(this)">💰</button>
-                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🔥</button>
-                <button type="button" onclick="insertEmoji(this)">🎯</button><button type="button" onclick="insertEmoji(this)">📈</button>
-                <button type="button" onclick="insertEmoji(this)">🎉</button><button type="button" onclick="insertEmoji(this)">👍</button>
-                <button type="button" onclick="insertEmoji(this)">💎</button><button type="button" onclick="insertEmoji(this)">🏆</button>
-                <button type="button" onclick="insertEmoji(this)">📢</button><button type="button" onclick="insertEmoji(this)">📈 </button>
-                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🌟</button>
-                <button type="button" class="editor-btn" style="grid-column:1/-1;justify-content:center" onclick="closeEmojiModal()">Fermer</button>
-              </div>
-            </div>
-
-            <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.6rem;flex-wrap:wrap">
-              <button type="submit" class="btn-primary" id="publishBtn"><i class="fas fa-paper-plane"></i> Publier</button>
-              <span id="publishStatus" style="font-size:0.82rem;color:var(--accent2)"></span>
-            </div>
-          </form>
-        </div>
 
         <div id="feedPosts"></div>
       </main>
@@ -394,6 +273,167 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
 
   <div id="notifOverlay" onclick="PaganiNotif.togglePanel()" style="display:none;position:fixed;inset:0;z-index:499"></div>
   <div id="notifPanel" class="notif-panel"></div>
+
+  <!-- MODAL CREATION POST UTILISATEUR -->
+  <div id="userPostModal" class="composer-modal" style="display:none">
+    <div class="composer-modal-backdrop" onclick="closeUserPostModal()"></div>
+    <div class="composer-modal-card" role="dialog" aria-modal="true" aria-labelledby="composerModalTitle">
+      <div class="composer-modal-head">
+        <h3 id="composerModalTitle"><i class="fas fa-pen"></i> Creer une publication</h3>
+        <button type="button" class="composer-modal-close" onclick="closeUserPostModal()" aria-label="Fermer"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="composer-modal-body">
+        <div id="userPostPanel" class="user-post-panel" style="display:none">
+          <div class="user-post-header">
+            <div class="avatar-circle avatar-sm" id="userPostAvatar"></div>
+            <textarea id="userPostContent" placeholder="Quoi de neuf ? Partagez avec la communaute..." rows="4" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
+          </div>
+          <div id="userPostImagePreview" class="post-image-preview" style="display:none">
+            <img id="userPostPreviewImg" src="" alt="" />
+            <button type="button" class="post-image-remove" onclick="removeUserPostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="user-post-actions">
+            <label class="admin-media-btn" for="userPostImageInput" title="Ajouter une photo">
+              <i class="fas fa-image"></i> Photo
+            </label>
+            <input type="file" id="userPostImageInput" accept="image/*" style="display:none" onchange="previewUserPostImage(this)" />
+            <span id="userPostCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
+            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitUserPost()" id="userPostBtn">
+              <i class="fas fa-paper-plane"></i> Publier
+            </button>
+          </div>
+          <div id="userPostStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CREATION POST ADMIN -->
+  <div id="adminPostModal" class="composer-modal" style="display:none">
+    <div class="composer-modal-backdrop" onclick="closeAdminPostModal()"></div>
+    <div class="composer-modal-card" role="dialog" aria-modal="true" aria-labelledby="adminComposerTitle">
+      <div class="composer-modal-head">
+        <h3 id="adminComposerTitle"><i class="fas fa-shield-alt"></i> Publier une actualite</h3>
+        <button type="button" class="composer-modal-close" onclick="closeAdminPostModal()" aria-label="Fermer"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="composer-modal-body">
+        <div id="adminPanel" class="admin-panel" style="display:none">
+          <div class="admin-panel-header">
+            <div style="display:flex;align-items:center;gap:0.6rem">
+              <i class="fas fa-shield-alt"></i>
+              <h3>Publier une actualite</h3>
+            </div>
+            <div class="admin-panel-tabs">
+              <button type="button" class="admin-tab-btn active" onclick="switchEditorTab('write',this)"><i class="fas fa-pen"></i> Ecrire</button>
+              <button type="button" class="admin-tab-btn" onclick="switchEditorTab('preview',this)"><i class="fas fa-eye"></i> Apercu</button>
+            </div>
+          </div>
+
+          <form id="newsForm" onsubmit="publishNews(event)">
+            <!-- LIGNE TITRE + CATEGORIE -->
+            <div class="admin-form-row">
+              <input type="text" id="newsTitle" placeholder="Titre du post..." required />
+              <select id="newsCategory">
+                <option value="Annonce">Annonce</option>
+                <option value="Formation">Formation</option>
+                <option value="Affiliation">Affiliation</option>
+                <option value="Crypto">Crypto</option>
+                <option value="Contenu">Contenu</option>
+                <option value="Facebook">Facebook</option>
+              </select>
+            </div>
+
+            <!-- ONGLET ECRIRE -->
+            <div id="editorWrite">
+              <!-- BARRE D'OUTILS -->
+              <div class="editor-toolbar">
+                <button type="button" class="editor-btn" onclick="editorFormat('bold')" title="Gras"><i class="fas fa-bold"></i></button>
+                <button type="button" class="editor-btn" onclick="editorFormat('italic')" title="Italique"><i class="fas fa-italic"></i></button>
+                <div class="editor-separator"></div>
+                <button type="button" class="editor-btn" onclick="editorInsertLink()" title="Inserer un lien"><i class="fas fa-link"></i> Lien</button>
+                <button type="button" class="editor-btn" onclick="editorInsertEmoji()" title="Emoji"><i class="fas fa-smile"></i></button>
+                <div class="editor-separator"></div>
+                <button type="button" class="editor-btn" onclick="editorInsertLine()" title="Separateur"><i class="fas fa-minus"></i></button>
+              </div>
+
+              <!-- ZONE DE TEXTE -->
+              <div class="editor-wrap">
+                <textarea id="newsContent" placeholder="Ecrivez votre publication...
+
+Astuce : selectionnez du texte et cliquez sur Lien pour creer un lien cliquable." rows="5" required
+                  oninput="updateEditorPreview()"></textarea>
+                <div class="editor-char-count" id="editorCharCount">0 caracteres</div>
+              </div>
+
+              <!-- PHOTO -->
+              <div class="admin-media-row">
+                <label class="admin-media-btn" for="newsImageInput">
+                  <i class="fas fa-image"></i> Photo
+                </label>
+                <label class="admin-media-btn" for="newsLinkInput" onclick="toggleLinkInput()">
+                  <i class="fas fa-external-link-alt"></i> Bouton lien
+                </label>
+                <input type="file" id="newsImageInput" accept="image/*" style="display:none" onchange="previewPostImage(this)" />
+                <div id="newsImagePreview" class="post-image-preview" style="display:none">
+                  <img id="newsImagePreviewImg" src="" alt="" />
+                  <button type="button" class="post-image-remove" onclick="removePostImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+                </div>
+              </div>
+
+              <!-- LIEN BOUTON (masque par defaut) -->
+              <div class="admin-link-row" id="linkInputRow" style="display:none">
+                <i class="fas fa-link"></i>
+                <input type="url" id="newsLink" placeholder="https://..." />
+                <input type="text" id="newsLinkLabel" placeholder="Texte du bouton" />
+                <button type="button" class="editor-btn" onclick="toggleLinkInput()" style="padding:0.3rem 0.6rem"><i class="fas fa-times"></i></button>
+              </div>
+            </div>
+
+            <!-- ONGLET APERCU -->
+            <div id="editorPreview" style="display:none">
+              <div class="editor-preview-box" id="editorPreviewContent">
+                <p style="color:var(--text2);font-style:italic">Apercu vide — ecrivez quelque chose d'abord.</p>
+              </div>
+            </div>
+
+            <!-- MODAL LIEN -->
+            <div id="linkModal" class="link-modal" style="display:none">
+              <div class="link-modal-box">
+                <p><strong><i class="fas fa-link"></i> Inserer un lien</strong></p>
+                <input type="text" id="linkModalText" placeholder="Texte affiche (optionnel)" />
+                <input type="url" id="linkModalUrl" placeholder="https://..." />
+                <div style="display:flex;gap:0.6rem;margin-top:0.6rem">
+                  <button type="button" class="btn-primary" style="flex:1;padding:0.5rem" onclick="confirmInsertLink()"><i class="fas fa-check"></i> Inserer</button>
+                  <button type="button" class="editor-btn" style="flex:1;justify-content:center" onclick="closeLinkModal()"><i class="fas fa-times"></i> Annuler</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODAL EMOJI -->
+            <div id="emojiModal" class="link-modal" style="display:none">
+              <div class="link-modal-box emoji-grid">
+                <p style="grid-column:1/-1;margin:0 0 0.5rem"><strong>Choisir un emoji</strong></p>
+                <button type="button" onclick="insertEmoji(this)">🚀</button><button type="button" onclick="insertEmoji(this)">🎯</button>
+                <button type="button" onclick="insertEmoji(this)">💡</button><button type="button" onclick="insertEmoji(this)">💰</button>
+                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🔥</button>
+                <button type="button" onclick="insertEmoji(this)">🎯</button><button type="button" onclick="insertEmoji(this)">📈</button>
+                <button type="button" onclick="insertEmoji(this)">🎉</button><button type="button" onclick="insertEmoji(this)">👍</button>
+                <button type="button" onclick="insertEmoji(this)">💎</button><button type="button" onclick="insertEmoji(this)">🏆</button>
+                <button type="button" onclick="insertEmoji(this)">📢</button><button type="button" onclick="insertEmoji(this)">📈 </button>
+                <button type="button" onclick="insertEmoji(this)">📈</button><button type="button" onclick="insertEmoji(this)">🌟</button>
+                <button type="button" class="editor-btn" style="grid-column:1/-1;justify-content:center" onclick="closeEmojiModal()">Fermer</button>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:0.8rem;margin-top:0.6rem;flex-wrap:wrap">
+              <button type="submit" class="btn-primary" id="publishBtn"><i class="fas fa-paper-plane"></i> Publier</button>
+              <span id="publishStatus" style="font-size:0.82rem;color:var(--accent2)"></span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL MODIFIER POST -->
   <div id="editPostModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;padding:1rem">
@@ -501,6 +541,49 @@ Astuce : sélectionnez du texte et cliquez sur Lien pour créer un lien cliquabl
       next.style.opacity  = atEnd ? '0' : '1';
       next.style.pointerEvents = atEnd ? 'none' : 'auto';
     }
+
+    function openUserPostModal(action) {
+      var modal = document.getElementById('userPostModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      document.body.classList.add('composer-modal-open');
+      setTimeout(function() {
+        var ta = document.getElementById('userPostContent');
+        if (ta) ta.focus();
+      }, 0);
+      if (action === 'photo') {
+        var input = document.getElementById('userPostImageInput');
+        if (input) input.click();
+      }
+    }
+
+    function closeUserPostModal() {
+      var modal = document.getElementById('userPostModal');
+      if (!modal) return;
+      modal.style.display = 'none';
+      document.body.classList.remove('composer-modal-open');
+    }
+
+    function openAdminPostModal() {
+      var modal = document.getElementById('adminPostModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      document.body.classList.add('composer-modal-open');
+    }
+
+    function closeAdminPostModal() {
+      var modal = document.getElementById('adminPostModal');
+      if (!modal) return;
+      modal.style.display = 'none';
+      document.body.classList.remove('composer-modal-open');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        closeUserPostModal();
+        closeAdminPostModal();
+      }
+    });
   </script>
   <script src="/js/back-handler.js"></script>
 </body>

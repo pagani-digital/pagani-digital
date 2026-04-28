@@ -120,7 +120,16 @@
           <input type="text" id="regRef" placeholder="PAG-XXXXXX" />
         </div>
         <p id="regError" class="error-msg"></p>
-        <button type="submit" class="btn-primary" style="width:100%">Créer mon compte</button>
+        <div id="regVerifyBlock" class="form-group" style="display:none">
+          <label>Code de verification</label>
+          <input type="text" id="regCode" placeholder="Entrez le code a 6 chiffres" inputmode="numeric" maxlength="6" />
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-top:0.5rem">
+            <button type="button" class="btn-outline" onclick="verifyRegisterCode()">Verifier le code</button>
+            <button type="button" class="btn-outline" onclick="resendRegisterCode()">Renvoyer le code</button>
+          </div>
+          <p id="regVerifyMsg" class="error-msg" style="color:var(--accent2)"></p>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%" id="regSubmitBtn">Recevoir le code</button>
       </form>
       <p class="auth-switch">Déjà un compte ? <a href="#" onclick="event.preventDefault();showLogin()">Se connecter</a></p>
     </div>
@@ -157,12 +166,6 @@
     </div>
     <!-- TAB : MES PUBLICATIONS -->
     <div id="tab-myposts">
-      <!-- STORIES BAR -->
-      <div class="stories-bar-wrap" id="storiesBarWrap">
-        <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
-        <div id="storiesBar" style="display:none"></div>
-        <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
-      </div>
       <div class="dash-section">
         <div class="sub-user-header">
           <div>
@@ -173,27 +176,19 @@
             <i class="fas fa-sync-alt"></i> Actualiser
           </button>
         </div>
-        <!-- Panneau de publication réutilisé -->
-        <div class="user-post-panel" id="myPostsPublishPanel" style="display:none">
-          <div class="user-post-header">
-            <div class="avatar-circle avatar-sm" id="myPostsAvatar"></div>
-            <textarea id="myPostsContent" placeholder="Quoi de neuf ? Partagez avec la communauté..." rows="3" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
+        <!-- COMPOSER RAPIDE (style Facebook) -->
+        <div id="myPostsComposer" class="composer-card" style="display:none">
+          <div class="composer-top">
+            <div class="avatar-circle avatar-sm" id="myPostsComposerAvatar"></div>
+            <button type="button" class="composer-input" id="myPostsComposerInput" onclick="openMyPostsModal()">Quoi de neuf ?</button>
+            <button type="button" class="composer-photo-btn" onclick="openMyPostsModal('photo')" aria-label="Ajouter une photo"><i class="fas fa-image"></i></button>
           </div>
-          <div id="myPostsImagePreview" class="post-image-preview" style="display:none">
-            <img id="myPostsPreviewImg" src="" alt="" />
-            <button type="button" class="post-image-remove" onclick="removeMyPostsImage()" title="Supprimer"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="user-post-actions">
-            <label class="admin-media-btn" for="myPostsImageInput" title="Ajouter une photo">
-              <i class="fas fa-image"></i> Photo
-            </label>
-            <input type="file" id="myPostsImageInput" accept="image/*" style="display:none" onchange="previewMyPostsImage(this)" />
-            <span id="myPostsCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
-            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitMyPostsDashboard()" id="myPostsBtn">
-              <i class="fas fa-paper-plane"></i> Publier
-            </button>
-          </div>
-          <div id="myPostsStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
+        </div>
+        <!-- STORIES BAR -->
+        <div class="stories-bar-wrap" id="storiesBarWrap">
+          <button class="stories-nav-btn stories-nav-prev" id="storiesNavPrev" onclick="_scrollStories(-1)" aria-label="Précédent"><i class="fas fa-chevron-left"></i></button>
+          <div id="storiesBar" style="display:none"></div>
+          <button class="stories-nav-btn stories-nav-next" id="storiesNavNext" onclick="_scrollStories(1)" aria-label="Suivant"><i class="fas fa-chevron-right"></i></button>
         </div>
         <div id="myPostsList"></div>
       </div>
@@ -525,7 +520,10 @@
         <!-- EN-TÊTE ADMIN -->
         <div class="admin-section-header">
           <h2><i class="fas fa-shield-alt"></i> Tableau de bord Admin</h2>
-          <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadAdminStats()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap">
+            <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="switchTab('myposts', document.getElementById('myPostsTabBtn'))"><i class="fas fa-newspaper"></i> Mes publications</button>
+            <button class="btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem" onclick="loadAdminStats()"><i class="fas fa-sync-alt"></i> Actualiser</button>
+          </div>
         </div>
         <!-- KPI FINANCE -->
         
@@ -1228,6 +1226,39 @@
       </div>
     </div>
   </div> <!-- fin dashboardSection -->
+  <!-- MODAL CREATION POST (MES PUBLICATIONS) -->
+  <div id="myPostsModal" class="composer-modal" style="display:none">
+    <div class="composer-modal-backdrop" onclick="closeMyPostsModal()"></div>
+    <div class="composer-modal-card" role="dialog" aria-modal="true" aria-labelledby="myPostsModalTitle">
+      <div class="composer-modal-head">
+        <h3 id="myPostsModalTitle"><i class="fas fa-pen"></i> Creer une publication</h3>
+        <button type="button" class="composer-modal-close" onclick="closeMyPostsModal()" aria-label="Fermer"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="composer-modal-body">
+        <div class="user-post-panel" id="myPostsPublishPanel" style="display:none">
+          <div class="user-post-header">
+            <div class="avatar-circle avatar-sm" id="myPostsAvatar"></div>
+            <textarea id="myPostsContent" placeholder="Quoi de neuf ? Partagez avec la communaute..." rows="4" maxlength="1000" oninput="_userPostCharCount(this)"></textarea>
+          </div>
+          <div id="myPostsImagePreview" class="post-image-preview" style="display:none">
+            <img id="myPostsPreviewImg" src="" alt="" />
+            <button type="button" class="post-image-remove" onclick="removeMyPostsImage()" title="Supprimer"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="user-post-actions">
+            <label class="admin-media-btn" for="myPostsImageInput" title="Ajouter une photo">
+              <i class="fas fa-image"></i> Photo
+            </label>
+            <input type="file" id="myPostsImageInput" accept="image/*" style="display:none" onchange="previewMyPostsImage(this)" />
+            <span id="myPostsCharInfo" style="font-size:0.78rem;color:var(--text2);margin-left:auto">0/1000</span>
+            <button class="btn-primary" style="padding:0.45rem 1.2rem;font-size:0.88rem" onclick="submitMyPostsDashboard()" id="myPostsBtn">
+              <i class="fas fa-paper-plane"></i> Publier
+            </button>
+          </div>
+          <div id="myPostsStatus" style="font-size:0.82rem;color:var(--accent2);min-height:1.2rem"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- MODAL AJOUT / ÉDITION EBOOK -->
   <div id="ebookModalOverlay" class="crop-modal-overlay" style="display:none" onclick="if(event.target===this)closeEbookModal()">
     <div class="crop-modal" style="max-width:480px" onclick="event.stopPropagation()">
@@ -2008,6 +2039,32 @@ Ex: Découvrez https://exemple.com dans cette formation."></textarea>
         setTimeout(() => msg.textContent = '', 3000);
       });
     }
+
+    function openMyPostsModal(action) {
+      const modal = document.getElementById('myPostsModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      document.body.classList.add('composer-modal-open');
+      setTimeout(function() {
+        const ta = document.getElementById('myPostsContent');
+        if (ta) ta.focus();
+      }, 0);
+      if (action === 'photo') {
+        const input = document.getElementById('myPostsImageInput');
+        if (input) input.click();
+      }
+    }
+
+    function closeMyPostsModal() {
+      const modal = document.getElementById('myPostsModal');
+      if (!modal) return;
+      modal.style.display = 'none';
+      document.body.classList.remove('composer-modal-open');
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeMyPostsModal();
+    });
 
     // Auto-login si token JWT présent
     (async function initDashboard() {

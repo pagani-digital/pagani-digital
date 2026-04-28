@@ -714,8 +714,11 @@ function _storyAdjustForKeyboard() {
   var _update = function() {
     var vv = window.visualViewport;
     var kb = window.innerHeight - vv.height - vv.offsetTop;
-    bar.style.bottom = Math.max(0, kb) + 'px';
+    // When the viewer height tracks the visual viewport, keep the bar pinned to the bottom.
+    bar.style.bottom = Math.max(0, kb) > 0 ? '0px' : '';
     bar.style.transition = 'bottom 0.15s ease';
+    // Keep story viewport height in sync with the visual viewport when the keyboard opens.
+    document.documentElement.style.setProperty('--story-vh', vv.height + 'px');
   };
   _storyVVHandler = _update;
   window.visualViewport.addEventListener('resize', _update);
@@ -731,6 +734,7 @@ function _storyResetKeyboard() {
     window.visualViewport.removeEventListener('scroll', _storyVVHandler);
     _storyVVHandler = null;
   }
+  document.documentElement.style.setProperty('--story-vh', window.innerHeight + 'px');
 }
 
 function closeStoryViewer() {
@@ -1496,8 +1500,11 @@ async function renderFeed() {
   updateNavbar(user);
   const adminPanel = document.getElementById('adminPanel');
   if (adminPanel) adminPanel.style.display = isAdmin ? 'block' : 'none';
+  const adminComposer = document.getElementById('adminComposer');
+  if (adminComposer) adminComposer.style.display = isAdmin ? 'block' : 'none';
   // Panneau publication utilisateur
   const userPostPanel = document.getElementById('userPostPanel');
+  const userPostComposer = document.getElementById('userPostComposer');
   if (userPostPanel) {
     userPostPanel.style.display = (user && !isAdmin) ? 'block' : 'none';
     if (user && !isAdmin) {
@@ -1510,6 +1517,26 @@ async function renderFeed() {
           av.textContent = getInitials(user.name);
           av.style.background = getAvatarColor(user);
         }
+      }
+    }
+  }
+  if (userPostComposer) {
+    userPostComposer.style.display = (user && !isAdmin) ? 'block' : 'none';
+    if (user && !isAdmin) {
+      const cav = document.getElementById('userPostComposerAvatar');
+      if (cav) {
+        if (user.avatarPhoto) {
+          cav.innerHTML = `<img src="${user.avatarPhoto}" class="avatar-photo avatar-sm" />`;
+          cav.style.background = 'transparent';
+        } else {
+          cav.textContent = getInitials(user.name);
+          cav.style.background = getAvatarColor(user);
+        }
+      }
+      const ci = document.getElementById('userPostComposerInput');
+      if (ci && user.name) {
+        const firstName = user.name.split(' ')[0];
+        ci.textContent = `Quoi de neuf, ${firstName} ?`;
       }
     }
   }
@@ -2243,6 +2270,10 @@ async function publishNews(e) {
     const newPost = await PaganiAPI.createPost({ title, content, category, image: _postImageBase64, link, linkLabel: linkLabel||'En savoir plus' });
     document.getElementById('newsForm').reset();
     removePostImage();
+    if (typeof closeAdminPostModal === 'function') {
+      const modal = document.getElementById('adminPostModal');
+      if (modal && modal.style.display !== 'none') closeAdminPostModal();
+    }
     // Injecter directement le post dans le feed sans reset
     if (newPost && newPost.id) {
       // Normaliser le post (meme format que getPosts)
@@ -3198,12 +3229,31 @@ async function register(e) {
   const mmOperator = mmOpEl ? mmOpEl.value : 'MVola';
   const err = document.getElementById("regError");
   if (err) err.textContent = "";
+  const mmDigits = (mmPhone || '').replace(/\D/g, '');
+  const emailNorm = email.toLowerCase();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailNorm);
+  if (name.length < 2 || name.length > 60) {
+    if (err) err.textContent = "Le nom doit contenir entre 2 et 60 caracteres.";
+    return;
+  }
   if (pass.length < 6) {
     if (err) err.textContent = "Le mot de passe doit contenir au moins 6 caractères.";
     return;
   }
+  if (!emailOk) {
+    if (err) err.textContent = "Veuillez saisir un email valide.";
+    return;
+  }
+  if (emailNorm.length > 100) {
+    if (err) err.textContent = "L'email est trop long.";
+    return;
+  }
   if (!mmPhone) {
     if (err) err.textContent = "Le numero Mobile Money est obligatoire.";
+    return;
+  }
+  if (mmDigits.length !== 10) {
+    if (err) err.textContent = "Le numero Mobile Money doit contenir exactement 10 chiffres.";
     return;
   }
   if (!mmName) {
@@ -3211,13 +3261,94 @@ async function register(e) {
     return;
   }
   try {
-    const user = await PaganiAPI.register({ name, email, password: pass, refCode: ref, mmPhone, mmOperator, mmName });
+    window._pendingRegister = {
+      name,
+      email: emailNorm,
+      password: pass,
+      refCode: ref,
+      mmPhone: mmDigits,
+      mmOperator,
+      mmName
+    };
+    await PaganiAPI.registerStart(window._pendingRegister);
+    _setRegisterStep('verify');
+  } catch (ex) {
+    const msgs = {
+      EMAIL_TAKEN: "Cet email est deja utilise.",
+      EMAIL_INVALIDE: "Veuillez saisir un email valide.",
+      EMAIL_JETABLE: "Les emails jetables ne sont pas acceptes.",
+      MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire.",
+      MM_PHONE_INVALIDE: "Le numero Mobile Money doit contenir exactement 10 chiffres.",
+      EMAIL_SERVICE_INDISPONIBLE: "Service email indisponible. Reessayez plus tard.",
+      CODE_COOLDOWN: "Veuillez patienter avant de demander un nouveau code."
+    };
+    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";
+  }
+}
+
+function _setRegisterStep(step) {
+  const block = document.getElementById('regVerifyBlock');
+  const btn = document.getElementById('regSubmitBtn');
+  const msg = document.getElementById('regVerifyMsg');
+  if (msg) msg.textContent = '';
+  if (step === 'verify') {
+    if (block) block.style.display = 'block';
+    if (btn) btn.textContent = 'Code envoye';
+  } else {
+    if (block) block.style.display = 'none';
+    if (btn) btn.textContent = 'Recevoir le code';
+  }
+}
+
+async function verifyRegisterCode() {
+  const code = document.getElementById('regCode')?.value.trim();
+  const err = document.getElementById('regError');
+  const msg = document.getElementById('regVerifyMsg');
+  if (err) err.textContent = '';
+  if (msg) msg.textContent = '';
+  if (!code || !/^[0-9]{6}$/.test(code)) {
+    if (err) err.textContent = "Entrez le code a 6 chiffres.";
+    return;
+  }
+  if (!window._pendingRegister?.email) {
+    if (err) err.textContent = "Veuillez recommencer l'inscription.";
+    _setRegisterStep('start');
+    return;
+  }
+  try {
+    const user = await PaganiAPI.registerVerify({ email: window._pendingRegister.email, code });
     window._currentUser = user;
-    if (window.PaganiNotif) await PaganiNotif.newUser(name);
+    if (window.PaganiNotif) await PaganiNotif.newUser(user.name);
     window.location.href = 'index.html';
   } catch (ex) {
-    const msgs = { EMAIL_TAKEN: "Cet email est deja utilise.", MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire." };
-    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";
+    const msgs = {
+      CODE_INVALIDE: "Code invalide.",
+      CODE_EXPIRE: "Code expire. Renvoyez un nouveau code.",
+      CODE_BLOQUE: "Trop d'essais. Recommencez l'inscription.",
+    };
+    if (err) err.textContent = msgs[ex.message] || "Erreur de verification.";
+  }
+}
+
+async function resendRegisterCode() {
+  const err = document.getElementById('regError');
+  const msg = document.getElementById('regVerifyMsg');
+  if (err) err.textContent = '';
+  if (msg) msg.textContent = '';
+  if (!window._pendingRegister) {
+    if (err) err.textContent = "Veuillez recommencer l'inscription.";
+    _setRegisterStep('start');
+    return;
+  }
+  try {
+    await PaganiAPI.registerStart(window._pendingRegister);
+    if (msg) msg.textContent = "Nouveau code envoye.";
+  } catch (ex) {
+    const msgs = {
+      EMAIL_JETABLE: "Les emails jetables ne sont pas acceptes.",
+      CODE_COOLDOWN: "Veuillez patienter avant de demander un nouveau code."
+    };
+    if (err) err.textContent = msgs[ex.message] || "Erreur lors de l'envoi du code.";
   }
 }
 async function logout() {
@@ -3234,6 +3365,11 @@ function showLogin() {
 function showRegister() {
   document.getElementById("loginSection").style.display = "none";
   document.getElementById("registerSection").style.display = "flex";
+  _setRegisterStep('start');
+  const err = document.getElementById('regError');
+  const msg = document.getElementById('regVerifyMsg');
+  if (err) err.textContent = '';
+  if (msg) msg.textContent = '';
 }
 function showDashboard(user) {
   document.getElementById("loginSection").style.display = "none";
@@ -3269,6 +3405,8 @@ function showDashboard(user) {
     if (profileTab)  profileTab.style.display  = "flex";
     if (adminTabBtn)  adminTabBtn.style.display  = "flex";
     if (videosTabBtn) videosTabBtn.style.display = "flex";
+    const myPostsTabBtn = document.getElementById('myPostsTabBtn');
+    if (myPostsTabBtn) myPostsTabBtn.style.display = 'flex';
     const ebooksTabBtn2 = document.getElementById('ebooksTabBtn');
     if (ebooksTabBtn2) ebooksTabBtn2.style.display = "flex";
     const myVideosTabBtn = document.getElementById('myVideosTabBtn');
@@ -9831,6 +9969,10 @@ async function submitUserPost() {
     if (ta) ta.value = '';
     removeUserPostImage();
     if (status) { status.style.color = 'var(--green)'; status.textContent = 'Publie !'; setTimeout(() => status.textContent = '', 3000); }
+    if (typeof closeUserPostModal === 'function') {
+      const modal = document.getElementById('userPostModal');
+      if (modal && modal.style.display !== 'none') closeUserPostModal();
+    }
     // Injecter dans le feed
     if (newPost && newPost.id) {
       const normalized = {
@@ -9905,7 +10047,9 @@ function _initMyPostsPanel() {
   const user = getUser();
   if (!user) return;
   const panel = document.getElementById('myPostsPublishPanel');
+  const composer = document.getElementById('myPostsComposer');
   if (panel) panel.style.display = 'block';
+  if (composer) composer.style.display = 'block';
   const av = document.getElementById('myPostsAvatar');
   if (av) {
     if (user.avatarPhoto) {
@@ -9915,6 +10059,21 @@ function _initMyPostsPanel() {
       av.textContent = getInitials(user.name);
       av.style.background = getAvatarColor(user);
     }
+  }
+  const cav = document.getElementById('myPostsComposerAvatar');
+  if (cav) {
+    if (user.avatarPhoto) {
+      cav.innerHTML = `<img src="${user.avatarPhoto}" class="avatar-photo avatar-sm" />`;
+      cav.style.background = 'transparent';
+    } else {
+      cav.textContent = getInitials(user.name);
+      cav.style.background = getAvatarColor(user);
+    }
+  }
+  const ci = document.getElementById('myPostsComposerInput');
+  if (ci && user.name) {
+    const firstName = user.name.split(' ')[0];
+    ci.textContent = `Quoi de neuf, ${firstName} ?`;
   }
 }
 function previewMyPostsImage(input) {
@@ -9954,6 +10113,10 @@ async function submitMyPostsDashboard() {
     if (charInfo) charInfo.textContent = '0/1000';
     removeMyPostsImage();
     if (status) { status.style.color = 'var(--green)'; status.textContent = 'Publie !'; setTimeout(() => status.textContent = '', 3000); }
+    if (typeof closeMyPostsModal === 'function') {
+      const modal = document.getElementById('myPostsModal');
+      if (modal && modal.style.display !== 'none') closeMyPostsModal();
+    }
     // Injecter dans la liste sans recharger
     if (newPost && newPost.id) {
       const normalized = {

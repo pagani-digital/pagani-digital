@@ -78,6 +78,38 @@ async function createUser({ name, email, password, refCode, mmPhone, mmOperator,
   return rowToCamel(result.rows[0]);
 }
 
+async function createUserFromHash({ name, email, passwordHash, refCode, mmPhone, mmOperator, mmName }) {
+  const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
+  if (existing.rows.length) throw new Error('EMAIL_TAKEN');
+
+  const now = new Date();
+  let referredById = null;
+  if (refCode) {
+    const parrain = await query('SELECT id FROM users WHERE ref_code = $1', [refCode]);
+    if (parrain.rows.length) referredById = parrain.rows[0].id;
+  }
+
+  const result = await query(
+    `INSERT INTO users
+    (name, email, password_hash, role, plan, ref_code, mm_phone, mm_operator, mm_name, referred_by, created_at, updated_at)
+    VALUES ($1,$2,$3,'user','Starter',$4,$5,$6,$7,$8,$9,$9)
+    RETURNING *`,
+    [name, email, passwordHash, generateRefCode(), mmPhone || '', mmOperator || 'MVola', mmName || name, referredById, now]
+  );
+
+  if (referredById) {
+    await query('UPDATE users SET refs = refs + 1 WHERE id = $1', [referredById]);
+    await query(
+      `INSERT INTO monthly_refs (user_id, month, refs_count)
+       VALUES ($1, TO_CHAR(NOW(),'YYYY-MM'), 1)
+       ON CONFLICT (user_id, month) DO UPDATE SET refs_count = monthly_refs.refs_count + 1`,
+      [referredById]
+    );
+  }
+
+  return rowToCamel(result.rows[0]);
+}
+
 async function login(email, password) {
   const res = await query('SELECT * FROM users WHERE email = $1', [email]);
   if (!res.rows.length) throw new Error('USER_NOT_FOUND');
@@ -90,6 +122,48 @@ async function login(email, password) {
 async function getUserById(id) {
   const res = await query('SELECT * FROM users WHERE id = $1', [id]);
   return rowToCamel(res.rows[0]) || null;
+}
+
+async function getUserByEmail(email) {
+  const res = await query('SELECT * FROM users WHERE email = $1', [email]);
+  return rowToCamel(res.rows[0]) || null;
+}
+
+async function upsertEmailVerification({ email, name, passwordHash, refCode, mmPhone, mmOperator, mmName, codeHash, expiresAt }) {
+  await query(
+    `INSERT INTO email_verifications
+     (email, name, password_hash, ref_code, mm_phone, mm_operator, mm_name, code_hash, expires_at, attempts, last_sent_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,NULL)
+     ON CONFLICT (email) DO UPDATE SET
+       name = EXCLUDED.name,
+       password_hash = EXCLUDED.password_hash,
+       ref_code = EXCLUDED.ref_code,
+       mm_phone = EXCLUDED.mm_phone,
+       mm_operator = EXCLUDED.mm_operator,
+       mm_name = EXCLUDED.mm_name,
+       code_hash = EXCLUDED.code_hash,
+       expires_at = EXCLUDED.expires_at,
+       attempts = 0,
+       created_at = NOW()`,
+    [email, name, passwordHash, refCode || '', mmPhone, mmOperator || 'MVola', mmName || '', codeHash, expiresAt]
+  );
+}
+
+async function getEmailVerification(email) {
+  const res = await query('SELECT * FROM email_verifications WHERE email = $1', [email]);
+  return res.rows[0] || null;
+}
+
+async function updateEmailVerificationLastSent(email) {
+  await query('UPDATE email_verifications SET last_sent_at = NOW() WHERE email = $1', [email]);
+}
+
+async function incrementEmailVerificationAttempts(email) {
+  await query('UPDATE email_verifications SET attempts = attempts + 1 WHERE email = $1', [email]);
+}
+
+async function deleteEmailVerification(email) {
+  await query('DELETE FROM email_verifications WHERE email = $1', [email]);
 }
 
 async function getAllUsers() {
@@ -1825,8 +1899,10 @@ async function getPublicMembers() {
 module.exports = {
   pool,
   createUser,
+  createUserFromHash,
   login,
   getUserById,
+  getUserByEmail,
   getAllUsers,
   updateUser,
   adminUpdateUser,
@@ -1929,6 +2005,12 @@ module.exports = {
   getShareStats,
   insertPostEvents,
   refreshPostEventStats,
+
+  upsertEmailVerification,
+  getEmailVerification,
+  updateEmailVerificationLastSent,
+  incrementEmailVerificationAttempts,
+  deleteEmailVerification,
 
   getEbooks,
   getAllEbooksAdmin,

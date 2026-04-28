@@ -7818,6 +7818,130 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 
 
 /* ===== PANNEAU PUBLICATION UTILISATEUR ===== */
+.composer-card {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 14px 34px rgba(0,0,0,0.22);
+}
+.composer-top {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.composer-input {
+  flex: 1;
+  background: rgba(0,0,0,0.12);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 0.62rem 1rem;
+  color: var(--text2);
+  font-size: 0.92rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: text;
+  transition: border-color 0.2s, background 0.2s;
+}
+.composer-input:hover { background: rgba(255,255,255,0.04); }
+.composer-input:focus { outline: none; border-color: var(--accent); }
+.composer-photo-btn {
+  background: rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--accent2);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, background 0.2s, color 0.2s;
+}
+.composer-photo-btn:hover { background: rgba(108,99,255,0.14); color: var(--accent); transform: translateY(-1px); }
+.composer-photo-btn i { font-size: 0.95rem; }
+.admin-composer .composer-input { font-weight: 600; }
+.admin-composer-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(108,99,255,0.15);
+  border: 1px solid rgba(108,99,255,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.composer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+}
+.composer-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+}
+.composer-modal-card {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  width: min(720px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 25px 80px rgba(0,0,0,0.5);
+  animation: postFadeIn 0.2s ease both;
+}
+.composer-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(108,99,255,0.12), transparent);
+}
+.composer-modal-head h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.composer-modal-head h3 i { color: var(--accent); }
+.composer-modal-close {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.composer-modal-close:hover { background: rgba(255,77,109,0.12); color: var(--red); }
+.composer-modal-body { padding: 1rem 1.2rem 1.2rem; }
+.composer-modal .user-post-panel {
+  margin: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+.composer-modal .user-post-header textarea { min-height: 140px; }
+
+body.composer-modal-open { overflow: hidden; }
+
 .user-post-panel {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -7858,6 +7982,13 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
   margin-top: 0.7rem;
   padding-top: 0.6rem;
   border-top: 1px solid var(--border);
+}
+
+@media (max-width: 600px) {
+  .composer-card { padding: 0.6rem 0.7rem; border-radius: 14px; }
+  .composer-top { gap: 0.5rem; }
+  .composer-input { padding: 0.56rem 0.85rem; font-size: 0.88rem; }
+  .composer-photo-btn { width: 34px; height: 34px; border-radius: 10px; }
 }
 
 /* ===== PUBLICATIONS PROFIL PUBLIC ===== */

@@ -75,6 +75,26 @@ async function runMigrations(pool) {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_event_stats_calc ON post_event_stats(last_calc_at)`);
   });
 
+  // email_verifications (inscription par code)
+  await run('email_verifications', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS email_verifications (
+      email         TEXT PRIMARY KEY,
+      name          TEXT NOT NULL,
+      password_hash TEXT NOT NULL,
+      ref_code      TEXT DEFAULT '',
+      mm_phone      TEXT NOT NULL,
+      mm_operator   TEXT DEFAULT 'MVola',
+      mm_name       TEXT DEFAULT '',
+      code_hash     TEXT NOT NULL,
+      expires_at    TIMESTAMPTZ NOT NULL,
+      attempts      INTEGER DEFAULT 0,
+      last_sent_at  TIMESTAMPTZ,
+      created_at    TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`ALTER TABLE email_verifications ADD COLUMN IF NOT EXISTS last_sent_at TIMESTAMPTZ`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_email_verifications_exp ON email_verifications(expires_at)`);
+  });
+
   // users : colonne last_seen (présence persistante)
   await run('users.last_seen', async () => {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen BIGINT DEFAULT NULL`);
