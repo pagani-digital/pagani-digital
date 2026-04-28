@@ -73,8 +73,8 @@ function _initNavbarIcons() {
 }
 
 // ===== SIDEBAR GAUCHE FIXE =====
-var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
-var _RIGHT_SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
+var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html', 'profil.html'];
+var _RIGHT_SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html', 'profil.html'];
 
 function _initLeftSidebar() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
@@ -176,6 +176,7 @@ async function _fillRightSidebar() {
   var joinBtn = document.getElementById('rsbJoinBtn');
   var plansEl = document.getElementById('rsbPlansOrMembers');
   if (!plansEl) return;
+  plansEl.classList.toggle('rsb-bottom', !!user);
 
   if (user) {
     if (joinBtn) joinBtn.style.display = 'none';
@@ -196,7 +197,10 @@ async function _loadRsbActiveMembers() {
     var members = await fetch(API + '/members').then(function(r) { return r.json(); });
     var recent = members.filter(function(m) { return m.lastSeen; })
       .sort(function(a, b) { return b.lastSeen - a.lastSeen; }).slice(0, 6);
-    if (!recent.length) { list.closest('.rsb-card').style.display = 'none'; return; }
+    if (!recent.length) {
+      list.innerHTML = '<div class="sb-active-member" style="justify-content:center;cursor:default"><div class="sb-active-info" style="align-items:center"><strong style="font-size:0.82rem">Aucun actif récent</strong><span>Revenez plus tard</span></div></div>';
+      return;
+    }
     list.innerHTML = recent.map(function(m) {
       var initials = (m.name || '?').split(' ').map(function(w) { return w[0]; }).join('').toUpperCase().slice(0, 2);
       var av = m.avatarPhoto ? '<img src="' + m.avatarPhoto + '" />' : '<span>' + initials + '</span>';
@@ -205,7 +209,9 @@ async function _loadRsbActiveMembers() {
       var online = diff < 5;
       return '<a href="profil.html?id=' + m.id + '" class="sb-active-member"><div class="sb-active-av" style="background:' + (m.avatarColor || '#6c63ff') + '">' + av + '<span class="sb-active-dot' + (online ? ' online' : '') + '"></span></div><div class="sb-active-info"><strong>' + m.name.split(' ')[0] + '</strong><span>' + when + '</span></div></a>';
     }).join('');
-  } catch(e) {}
+  } catch(e) {
+    list.innerHTML = '<div class="sb-active-member" style="justify-content:center;cursor:default"><div class="sb-active-info" style="align-items:center"><strong style="font-size:0.82rem">Actifs indisponibles</strong><span>Essayez plus tard</span></div></div>';
+  }
 }
 
 // ===== DASHBOARD SIDEBAR VERTICALE =====
@@ -1298,6 +1304,49 @@ let _pendingComments = new Map(); // postId -> [commentaires en attente de confi
 const _commentSort  = {}; // postId -> 'recent' | 'oldest' | 'top'
 const _commentPage  = {}; // postId -> nombre de commentaires affichés
 const COMMENTS_PER_PAGE = 3;
+const _postEventQueue = [];
+const _postEventSeen = new Set();
+let _postEventFlushTimer = null;
+let _postImpressionObserver = null;
+
+function _queuePostEvent(postId, type, meta) {
+  if (!postId || !type) return;
+  const key = `${postId}:${type}`;
+  if (type === 'impression' && _postEventSeen.has(key)) return;
+  _postEventSeen.add(key);
+  _postEventQueue.push({ postId, type, meta: meta || {}, ts: new Date().toISOString() });
+  if (_postEventQueue.length >= 20) {
+    _flushPostEvents();
+  } else if (!_postEventFlushTimer) {
+    _postEventFlushTimer = setTimeout(_flushPostEvents, 4000);
+  }
+}
+
+function _flushPostEvents() {
+  if (!_postEventQueue.length) { _postEventFlushTimer = null; return; }
+  const batch = _postEventQueue.splice(0, 50);
+  _postEventFlushTimer = null;
+  if (!window.PaganiAPI || !PaganiAPI.postEvents) return;
+  PaganiAPI.postEvents(batch).catch(() => {});
+}
+
+function _observePostImpressions(root) {
+  if (!_postImpressionObserver) {
+    _postImpressionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const postId = Number(entry.target.dataset.postid);
+        if (postId) _queuePostEvent(postId, 'impression', { ratio: Number(entry.intersectionRatio.toFixed(2)) });
+        _postImpressionObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.6 });
+  }
+  (root || document).querySelectorAll('.post-card[data-postid]').forEach(el => _postImpressionObserver.observe(el));
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') _flushPostEvents();
+});
 function getNews() {
   return _postsCache.length ? _postsCache : DEFAULT_NEWS;
 }
@@ -1613,6 +1662,7 @@ function buildPostCard(post, user, isAdmin) {
   const article = document.createElement("article");
   article.className = "post-card";
   article.id = `post-${post.id}`;
+  article.dataset.postid = post.id;
   article.innerHTML = `
     <div class="post-header">
       <div class="post-author" style="cursor:pointer" onclick="openPublicProfile(${JSON.stringify(post.author === 'Admin' ? null : post.authorId)})">
@@ -1712,6 +1762,13 @@ function buildPostCard(post, user, isAdmin) {
            </div>`
       }
     </div>`;
+  article.addEventListener('click', (e) => {
+    if (e.target.closest('.post-link-btn')) {
+      _queuePostEvent(post.id, 'click', { action: 'link' });
+    } else if (e.target.closest('.post-image')) {
+      _queuePostEvent(post.id, 'click', { action: 'image' });
+    }
+  });
   // Attacher les listeners touch pour le hold-press (picker réactions)
   if (!isGuest) {
     setTimeout(() => {
@@ -1719,6 +1776,7 @@ function buildPostCard(post, user, isAdmin) {
       if (reactionBtn) _attachReactionTouchListeners(post.id, reactionBtn);
     }, 0);
   }
+  setTimeout(() => _observePostImpressions(article), 0);
   return article;
 }
 async function toggleLike(postId) {
@@ -1746,6 +1804,7 @@ function shareOnFacebook(postId) {
   if (user && window.PaganiAPI) {
     PaganiAPI.recordShare(postId).catch(() => {});
   }
+  _queuePostEvent(postId, 'share', { source: 'facebook' });
 }
 // ── Rendu paginé + trié des commentaires ──────────────────────────────────
 function _sortComments(comments, sort) {
@@ -1836,6 +1895,7 @@ function toggleComments(postId) {
     const isOpen = section.style.display !== 'none';
     section.style.display = isOpen ? 'none' : 'block';
     if (!isOpen) {
+      _queuePostEvent(postId, 'click', { action: 'comment' });
       section.style.animation = 'slideDown 0.25s ease';
       _renderCommentsList(postId, true);
       const input = document.getElementById('comment-input-' + postId);
@@ -1851,6 +1911,7 @@ function toggleComments(postId) {
     section.style.display = 'none';
     section.style.animation = '';
   } else {
+    _queuePostEvent(postId, 'click', { action: 'comment' });
     // Masquer la liste de commentaires — on ne veut que le champ de saisie
     const list = document.getElementById('comments-list-' + postId);
     if (list) list.style.display = 'none';
@@ -1878,6 +1939,7 @@ async function submitComment(postId) {
   try {
     await PaganiAPI.addComment(pid, text);
   } catch(e) {}
+  _queuePostEvent(pid, 'comment', { source: window.location.pathname.includes('post.html') ? 'post' : 'feed' });
   // Sur post.html : rester sur la page et rafraîchir
   if (window.location.pathname.includes('post.html')) {
     const post = _postsCache.find(p => p.id === pid);
@@ -2447,7 +2509,7 @@ async function _loadPostImage(postId, imgEl) {
     const r = await fetch(url);
     const data = await r.json();
     if (!data.image) return;
-    const post = _postsCache.find(p => p.id == postId);
+    const post = _postsCache.find(p => p.id == postId) || (_profilePostsCache && _profilePostsCache.find(p => p.id == postId));
     if (post) post.image = data.image;
     imgEl.src = data.image;
     imgEl.style.minHeight = '';
@@ -2470,6 +2532,13 @@ function _observeLazyImages(root) {
 function openPostImage(postId) {
   const post = _postsCache.find(n => n.id == postId) || (_profilePostsCache && _profilePostsCache.find(n => n.id == postId));
   if (!post || !post.image || post.image === '__HAS_IMAGE__') return;
+  openImageOverlay(post.image);
+}
+
+function openImageOverlay(url) {
+  if (!url) return;
+  const existing = document.getElementById('postImageOverlay');
+  if (existing) existing.remove();
   const overlay = document.createElement("div");
   overlay.id = "postImageOverlay";
   overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:3000;display:flex;align-items:center;justify-content:center;padding:1rem;cursor:zoom-out;animation:fadeIn 0.2s ease";
@@ -2483,14 +2552,12 @@ function openPostImage(postId) {
     " onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
       <i class="fas fa-times"></i>
     </button>
-    <img src="${post.image}" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.6)" />
+    <img src="${url}" style="max-width:100%;max-height:90vh;border-radius:12px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,0.6)" />
     <p style="position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.4);font-size:0.78rem;white-space:nowrap">Cliquez n'importe ou ou appuyez sur Echap pour fermer</p>
   `;
-  // Fermer au clic sur l'overlay (pas sur l\'image)
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay || e.target.tagName === "P") overlay.remove();
   });
-  // Fermer avec Escape
   const onKey = (e) => {
     if (e.key === "Escape") { overlay.remove(); document.removeEventListener("keydown", onKey); }
   };
@@ -2518,10 +2585,18 @@ async function loadUserPostsForProfile(userId) {
     } catch(e) {}
     const user = getUser();
     list.innerHTML = '';
+    _profilePostsCache = [];
     posts.forEach((post, i) => {
       post.likes    = post.likes    || [];
       post.comments = post.comments || [];
-      const el = buildPostCard(post, user, false);
+      const normalized = {
+        ...post,
+        likes:    Array.isArray(post.likes)    ? post.likes    : [],
+        comments: Array.isArray(post.comments) ? post.comments : [],
+        date:     post.date || post.createdAt  || new Date().toISOString(),
+      };
+      _profilePostsCache.push(normalized);
+      const el = buildPostCard(normalized, user, false);
       el.style.animationDelay = (i * 40) + 'ms';
       el.classList.add('post-animate');
       list.appendChild(el);
@@ -2886,6 +2961,8 @@ async function selectReaction(postId, emoji, btn) {
   _updateReactionUI(postId, cache, newEmoji);
   _updateReactionCount(postId, cache);
 
+  if (newEmoji) _queuePostEvent(postId, 'reaction', { emoji: newEmoji });
+
   // Appel API
   try {
     if (window.PaganiAPI) {
@@ -3099,7 +3176,7 @@ async function login(e) {
   try {
     const user = await PaganiAPI.login(email, pass);
     window._currentUser = user;
-    showDashboard(user);
+    window.location.href = 'index.html';
   } catch (ex) {
     const msgs = {
       USER_NOT_FOUND:   "Aucun compte trouve avec cet email.",
@@ -3137,7 +3214,7 @@ async function register(e) {
     const user = await PaganiAPI.register({ name, email, password: pass, refCode: ref, mmPhone, mmOperator, mmName });
     window._currentUser = user;
     if (window.PaganiNotif) await PaganiNotif.newUser(name);
-    showDashboard(user);
+    window.location.href = 'index.html';
   } catch (ex) {
     const msgs = { EMAIL_TAKEN: "Cet email est deja utilise.", MM_PHONE_REQUIS: "Le numero Mobile Money est obligatoire." };
     if (err) err.textContent = msgs[ex.message] || "Erreur lors de l\'inscription. Verifiez que le serveur est demarr.";

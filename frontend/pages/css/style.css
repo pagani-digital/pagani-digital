@@ -121,6 +121,13 @@
   border-radius: 16px;
   padding: 1.2rem;
 }
+.rsb-bottom {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 @media (min-width: 1101px) {
   body.has-left-sidebar { padding-left: 260px; }
@@ -1022,17 +1029,21 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
 
 /* ===== DASHBOARD ===== */
 .dashboard-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   justify-content: space-between;
   padding: 2.5rem 5% 1rem;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
 }
 .dashboard-header h1 { font-size: 1.8rem; font-weight: 800; }
 .dashboard-header h1 span { color: var(--accent); }
 .dashboard-header p { color: var(--text2); }
-.user-plan { display: flex; align-items: center; gap: 1rem; }
+.user-plan { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; justify-self: end; }
 .plan-badge {
   background: linear-gradient(135deg, var(--accent), #8b5cf6);
   color: #fff;
@@ -1048,6 +1059,15 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
   gap: 1rem;
   padding: 1rem 5%;
 }
+.dash-tabs {
+  display: flex;
+  gap: 0.3rem;
+  padding: 1rem 5% 0;
+  border-bottom: 1px solid var(--border);
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
 .dash-stat {
   background: var(--bg3);
   border: 1px solid var(--border);
@@ -1062,7 +1082,7 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
 .dash-stat span { font-size: 0.8rem; color: var(--text2); }
 
 .dash-section { padding: 1.5rem 5%; }
-#tab-myposts .dash-section { padding: 1.5rem 2%; max-width: 900px; margin-left: auto; margin-right: auto; }
+#tab-myposts .dash-section { padding: 1.5rem 2%; max-width: 820px; margin-left: auto; margin-right: auto; }
 #tab-myposts .user-post-panel,
 #tab-myposts #myPostsList .post-card { width: 100%; max-width: 100%; box-sizing: border-box; }
 
@@ -1139,7 +1159,7 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
 }
 .feed-layout > .feed-main {
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* SIDEBAR */
@@ -2372,7 +2392,18 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
 .sb-elite   { background: rgba(245,158,11,0.15);  color: var(--gold); }
 
 /* Sidebar membres actifs */
-.sb-active-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
+.sb-active-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.sb-active-list::-webkit-scrollbar { width: 4px; }
+.sb-active-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; }
 .sb-active-member {
   display: flex; align-items: center; gap: 0.7rem;
   text-decoration: none; padding: 0.35rem 0.4rem; border-radius: 10px;
@@ -2992,7 +3023,12 @@ body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: a
   .comm-header span:nth-child(3), .comm-row span:nth-child(3) { display: none; }
 
   /* ── Dashboard ── */
-  .dashboard-header { flex-direction: column; align-items: flex-start; padding: 1.5rem 4% 0.8rem; }
+  .dashboard-header {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    padding: 1.5rem 4% 0.8rem;
+  }
+  .user-plan { justify-self: start; }
   .dashboard-header h1 { font-size: 1.4rem; }
   .user-plan { flex-wrap: wrap; gap: 0.6rem; }
   .dash-stats { padding: 0.8rem 4%; grid-template-columns: repeat(2, 1fr); gap: 0.7rem; }
@@ -7832,10 +7868,8 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 }
 
 /* ===== CONTENEURS POSTS (dashboard + profil) ===== */
-#myPostsList,
-#profilePostsList {
-  max-width: 680px;
-}
+#myPostsList { max-width: 820px; }
+#profilePostsList { max-width: 680px; }
 
 /* Assurer que les post-cards dans ces contextes ont le même rendu que le feed */
 #myPostsList .post-card,
@@ -7845,8 +7879,14 @@ a.mpx-chat-info:hover .mpx-chat-name { color: var(--accent); }
 
 /* Panneau publication dans le dashboard — fond correct */
 #tab-myposts .user-post-panel {
-  max-width: 680px;
+  max-width: 820px;
   background: var(--bg3);
+}
+
+#tab-myposts .stories-bar-wrap {
+  max-width: 820px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 

@@ -44,6 +44,37 @@ async function runMigrations(pool) {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_shares_user ON post_shares(user_id)`);
   });
 
+  // post_events (signals feed)
+  await run('post_events', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS post_events (
+      id         BIGSERIAL PRIMARY KEY,
+      post_id    INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+      user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      event_type TEXT NOT NULL,
+      meta       JSONB DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_events_post ON post_events(post_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_events_user ON post_events(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_events_type ON post_events(event_type)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_events_created ON post_events(created_at)`);
+  });
+
+  // post_event_stats (aggregats 7 jours pour le feed)
+  await run('post_event_stats', async () => {
+    await pool.query(`CREATE TABLE IF NOT EXISTS post_event_stats (
+      post_id        INTEGER PRIMARY KEY REFERENCES posts(id) ON DELETE CASCADE,
+      impressions_7d INTEGER DEFAULT 0,
+      clicks_7d      INTEGER DEFAULT 0,
+      reactions_7d   INTEGER DEFAULT 0,
+      comments_7d    INTEGER DEFAULT 0,
+      shares_7d      INTEGER DEFAULT 0,
+      ctr_7d         DOUBLE PRECISION DEFAULT 0,
+      last_calc_at   TIMESTAMPTZ DEFAULT NOW()
+    )`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_post_event_stats_calc ON post_event_stats(last_calc_at)`);
+  });
+
   // users : colonne last_seen (présence persistante)
   await run('users.last_seen', async () => {
     await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen BIGINT DEFAULT NULL`);

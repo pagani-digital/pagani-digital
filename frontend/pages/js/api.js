@@ -94,6 +94,7 @@ async function apiToggleLike(postId) { return _fetch(`/posts/${postId}/like`, { 
 async function apiAddComment(postId, text) { return _fetch(`/posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text }) }); }
 async function apiAddReply(postId, commentId, text, replyTo) { return _fetch(`/posts/${postId}/comments/${commentId}/replies`, { method: 'POST', body: JSON.stringify({ text, replyTo }) }); }
 async function apiRecordShare(postId) { return _fetch(`/posts/${postId}/share`, { method: 'POST' }); }
+async function apiPostEvents(events) { return _fetch('/posts/events', { method: 'POST', body: JSON.stringify({ events }) }); }
 
 // ???? NOTIFICATIONS ????????????????????????????????????????????????????????????????????????????????????
 async function apiGetNotifications()    { return _fetch('/notifications'); }
@@ -206,6 +207,7 @@ window.PaganiAPI = {
   addComment:   apiAddComment,
   addReply:     apiAddReply,
   recordShare:  apiRecordShare,
+  postEvents:   apiPostEvents,
   // Notifications
   getNotifications: apiGetNotifications,
   getUnreadCount:   apiGetUnreadCount,

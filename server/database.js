@@ -1210,6 +1210,76 @@ async function recordShare({ postId, userId, refCode }) {
   );
 }
 
+async function insertPostEvents(events, userId) {
+  if (!events || !events.length) return 0;
+  const values = [];
+  const placeholders = events.map((e, i) => {
+    const base = i * 5;
+    values.push(e.postId, userId || null, e.eventType, JSON.stringify(e.meta || {}), e.createdAt || new Date());
+    return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`;
+  });
+  await query(
+    `INSERT INTO post_events (post_id, user_id, event_type, meta, created_at)
+     VALUES ${placeholders.join(', ')}`,
+    values
+  );
+  return events.length;
+}
+
+async function refreshPostEventStats() {
+  await query(`
+    WITH recent AS (
+      SELECT
+        post_id,
+        COUNT(*) FILTER (WHERE event_type = 'impression') AS impressions_7d,
+        COUNT(*) FILTER (WHERE event_type = 'click') AS clicks_7d,
+        COUNT(*) FILTER (WHERE event_type = 'reaction') AS reactions_7d,
+        COUNT(*) FILTER (WHERE event_type = 'comment') AS comments_7d,
+        COUNT(*) FILTER (WHERE event_type = 'share') AS shares_7d
+      FROM post_events
+      WHERE created_at > NOW() - INTERVAL '7 days'
+      GROUP BY post_id
+    )
+    INSERT INTO post_event_stats (
+      post_id, impressions_7d, clicks_7d, reactions_7d, comments_7d, shares_7d, ctr_7d, last_calc_at
+    )
+    SELECT
+      post_id,
+      impressions_7d,
+      clicks_7d,
+      reactions_7d,
+      comments_7d,
+      shares_7d,
+      CASE WHEN impressions_7d > 0 THEN clicks_7d::double precision / impressions_7d ELSE 0 END,
+      NOW()
+    FROM recent
+    ON CONFLICT (post_id) DO UPDATE SET
+      impressions_7d = EXCLUDED.impressions_7d,
+      clicks_7d      = EXCLUDED.clicks_7d,
+      reactions_7d   = EXCLUDED.reactions_7d,
+      comments_7d    = EXCLUDED.comments_7d,
+      shares_7d      = EXCLUDED.shares_7d,
+      ctr_7d         = EXCLUDED.ctr_7d,
+      last_calc_at   = EXCLUDED.last_calc_at
+  `);
+
+  await query(`
+    UPDATE post_event_stats s
+    SET impressions_7d = 0,
+        clicks_7d      = 0,
+        reactions_7d   = 0,
+        comments_7d    = 0,
+        shares_7d      = 0,
+        ctr_7d         = 0,
+        last_calc_at   = NOW()
+    WHERE NOT EXISTS (
+      SELECT 1 FROM post_events e
+      WHERE e.post_id = s.post_id
+        AND e.created_at > NOW() - INTERVAL '7 days'
+    )
+  `);
+}
+
 async function getShareStats() {
   const res = await query(
     `SELECT ps.post_id, p.title, u.name AS user_name, ps.ref_code, ps.created_at
@@ -1643,6 +1713,29 @@ async function getPostsAlgo(userId) {
         p._score += viralBonus;
       }
     });
+
+    const statsRes = await query(
+      `SELECT post_id, impressions_7d, clicks_7d, reactions_7d, comments_7d, shares_7d, ctr_7d
+       FROM post_event_stats WHERE post_id = ANY($1)`,
+      [ids]
+    );
+    const statsMap = {};
+    statsRes.rows.forEach(r => { statsMap[r.post_id] = r; });
+    posts.forEach(p => {
+      const s = statsMap[p.id];
+      if (!s) return;
+      const impressions = parseInt(s.impressions_7d) || 0;
+      const clicks      = parseInt(s.clicks_7d) || 0;
+      const reactions   = parseInt(s.reactions_7d) || 0;
+      const comments    = parseInt(s.comments_7d) || 0;
+      const shares      = parseInt(s.shares_7d) || 0;
+      const ctr         = Math.max(0, Math.min(1, Number(s.ctr_7d) || 0));
+      const eventScore = (reactions * 2) + (comments * 2.5) + (shares * 4) + (ctr * 8) + (clicks * 0.5);
+      p._score += Math.min(25, eventScore);
+      if (impressions === 0 && (reactions + comments + shares) > 0) {
+        p._score += 1;
+      }
+    });
   }
 
   // Trier par score décroissant
@@ -1723,7 +1816,7 @@ async function getPostsAlgo(userId) {
 // Version légère pour /api/members — sans données sensibles/lourdes
 async function getPublicMembers() {
   const res = await query(
-    `SELECT id, name, plan, avatar_color, avatar_photo, bio, created_at, is_active
+    `SELECT id, name, plan, avatar_color, avatar_photo, bio, created_at, is_active, last_seen
      FROM users WHERE is_active = true ORDER BY created_at DESC`
   );
   return rowsToCamel(res.rows);
@@ -1834,6 +1927,8 @@ module.exports = {
 
   recordShare,
   getShareStats,
+  insertPostEvents,
+  refreshPostEventStats,
 
   getEbooks,
   getAllEbooksAdmin,

@@ -408,6 +408,30 @@ app.get('/api/posts', optionalAuth, async (req, res) => {
     res.json(_guestFeedCache);
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+
+// Signaux d'engagement (batch)
+app.post('/api/posts/events', optionalAuth, async (req, res) => {
+  try {
+    const rawEvents = Array.isArray(req.body?.events) ? req.body.events : [];
+    if (!rawEvents.length) return res.json({ ok: true, inserted: 0 });
+
+    const allowedTypes = new Set(['impression', 'view', 'click', 'reaction', 'comment', 'share']);
+    const events = rawEvents.slice(0, 100).map(e => {
+      const postId = parseId(e?.postId);
+      if (!postId) return null;
+      const type = String(e?.type || '').toLowerCase();
+      if (!allowedTypes.has(type)) return null;
+      const meta = e?.meta && typeof e.meta === 'object' ? e.meta : {};
+      const createdAt = e?.ts ? new Date(e.ts) : new Date();
+      return { postId, eventType: type, meta, createdAt };
+    }).filter(Boolean);
+
+    if (!events.length) return res.json({ ok: true, inserted: 0 });
+    const inserted = await db.insertPostEvents(events, req.user ? req.user.id : null);
+    res.json({ ok: true, inserted });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
 // Réactions sur les posts
 app.post('/api/posts/:id/react', requireAuth, async (req, res) => {
   try {
@@ -1554,7 +1578,7 @@ app.get('/api/members', async (req, res) => {
     res.json(users.map(u => ({
       id: u.id, name: u.name, plan: u.plan,
       avatarColor: u.avatarColor, avatarPhoto: u.avatarPhoto || '',
-      bio: u.bio || '', createdAt: u.createdAt
+      bio: u.bio || '', createdAt: u.createdAt, lastSeen: u.lastSeen || null
     })));
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -2439,6 +2463,12 @@ app.post('/api/admin/run-trainer-migrations', requireAuth, requireAdmin, async (
 
 app.listen(PORT, '0.0.0.0', async () => {
   await runMigrations();
+  // Agrégation périodique des signaux feed (7 jours)
+  try { await db.refreshPostEventStats(); } catch(e) { if (!IS_PROD) console.error('refreshPostEventStats:', e.message); }
+  setInterval(async () => {
+    try { await db.refreshPostEventStats(); }
+    catch(e) { if (!IS_PROD) console.error('refreshPostEventStats:', e.message); }
+  }, 5 * 60 * 1000);
   console.log('');
   console.log('╔══════════════════════════════════════════════╗');
   console.log(`║  ✅  Pagani Digital — Serveur demarre        ║`);
