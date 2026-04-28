@@ -881,6 +881,8 @@ ul { list-style: none; }
 
 /* ===== AFFILIATION ===== */
 .affiliation-section { padding: 2rem 5% 5rem; max-width: 1000px; margin: 0 auto; }
+body.has-right-sidebar .affiliation-section { margin-right: auto; margin-left: auto; }
+body.has-left-sidebar .affiliation-section  { margin-left: auto; margin-right: auto; }
 
 .how-it-works { margin-bottom: 4rem; text-align: center; }
 .how-it-works h2, .commission-table-section h2, .affiliate-link-section h2, .aff-stats h2 {

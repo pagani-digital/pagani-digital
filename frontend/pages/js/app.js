@@ -74,7 +74,7 @@ function _initNavbarIcons() {
 
 // ===== SIDEBAR GAUCHE FIXE =====
 var _SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
-var _RIGHT_SIDEBAR_PAGES = ['index.html'];
+var _RIGHT_SIDEBAR_PAGES = ['index.html', 'affiliation.html', 'explore.html', 'notifications.html'];
 
 function _initLeftSidebar() {
   var page = window.location.pathname.split('/').pop() || 'index.html';
@@ -342,7 +342,7 @@ function _buildSidebarHTML(currentPage) {
     { href: 'ebooks.html',      icon: 'fas fa-book-open',      label: 'Ebooks' },
     { href: 'affiliation.html', icon: 'fas fa-link',           label: 'Affiliation' },
     { href: 'explore.html',     icon: 'fas fa-compass',        label: 'Explorer' },
-    { href: 'groups-chat.html', icon: 'fas fa-users',          label: 'Groupes' },
+    { href: 'messages.html?tab=groups', icon: 'fas fa-users',   label: 'Groupes' },
   ];
 
   var navHTML = NAV_ITEMS.map(function(item) {
