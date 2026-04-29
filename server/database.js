@@ -524,13 +524,63 @@ async function getCommissions(affiliateId) {
 async function requestWithdraw({ userId, montant, phone, operator }) {
   const user = await getUserById(userId);
   if (!user) throw new Error('USER_NOT_FOUND');
-  if (montant > user.earningsAr) throw new Error('SOLDE_INSUFFISANT');
+  const solde = parseFloat(user.earningsAr || user.earnings_ar || 0);
+  if (solde <= 0) throw new Error('AUCUNE_COMMISSION');
+  if (!montant || isNaN(montant) || montant <= 0) throw new Error('MONTANT_INVALIDE');
+  if (montant > solde) throw new Error('SOLDE_INSUFFISANT');
+  // Vérification du minimum de retrait
+  const pricing = await (typeof getPricing === 'function' ? getPricing() : require('./database').getPricing());
+  const withdrawMin = parseFloat(pricing.withdrawMin || pricing.withdraw_min || 0) || 0;
+  if (withdrawMin > 0 && montant < withdrawMin) throw new Error('MONTANT_MIN');
   const res = await query(
     `INSERT INTO withdraws (user_id, montant, phone, operator) VALUES ($1,$2,$3,$4) RETURNING *`,
     [userId, montant, phone || '', operator || '']
   );
   await query('UPDATE users SET earnings_ar = earnings_ar - $1, pending_ar = pending_ar + $1, updated_at = NOW() WHERE id = $2', [montant, userId]);
   return rowToCamel(res.rows[0]);
+}
+
+async function getWithdrawsByUser(userId) {
+  const res = await query('SELECT * FROM withdraws WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+  return rowsToCamel(res.rows);
+}
+
+async function getAllWithdraws() {
+  const res = await query(`
+    SELECT w.*, u.name AS user_name, u.email AS user_email, u.avatar_photo, u.avatar_color
+    FROM withdraws w
+    JOIN users u ON u.id = w.user_id
+    ORDER BY w.created_at DESC
+  `);
+  return rowsToCamel(res.rows);
+}
+
+async function updateWithdrawStatus(id, { statut, rejectReason }) {
+  const res = await query(
+    `UPDATE withdraws SET statut = $1 WHERE id = $2 RETURNING *`,
+    [statut, id]
+  );
+  const w = rowToCamel(res.rows[0]);
+  if (!w) throw new Error('WITHDRAW_NOT_FOUND');
+  if (statut === 'Versé') {
+    await query('UPDATE users SET pending_ar = pending_ar - $1, paid_ar = paid_ar + $1, updated_at = NOW() WHERE id = $2', [w.montant, w.userId]);
+    await createNotification({
+      userId: w.userId,
+      type: 'WITHDRAW_APPROVED',
+      message: `Votre retrait de ${Number(w.montant).toLocaleString('fr-FR')} AR a ete approuve.`,
+      link: 'affiliation.html'
+    });
+  } else if (statut === 'Rejeté') {
+    await query('UPDATE users SET earnings_ar = earnings_ar + $1, pending_ar = pending_ar - $1, updated_at = NOW() WHERE id = $2', [w.montant, w.userId]);
+    const reason = rejectReason ? ` Raison : ${rejectReason}` : '';
+    await createNotification({
+      userId: w.userId,
+      type: 'WITHDRAW_REJECTED',
+      message: `Votre retrait de ${Number(w.montant).toLocaleString('fr-FR')} AR a ete rejete.${reason}`,
+      link: 'affiliation.html'
+    });
+  }
+  return w;
 }
 
 // ═══════════════════════════════════════════════
@@ -1932,6 +1982,9 @@ module.exports = {
 
   getCommissions,
   requestWithdraw,
+  getWithdrawsByUser,
+  getAllWithdraws,
+  updateWithdrawStatus,
 
   createUpgradeRequest,
   getUpgradeRequests,

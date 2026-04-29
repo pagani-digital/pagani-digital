@@ -379,6 +379,11 @@ app.post('/api/auth/register/start', authLimiter, async (req, res) => {
     await db.updateEmailVerificationLastSent(emailNorm);
     res.json({ ok: true, ttlMinutes: ttlMin });
   } catch(e) {
+    console.error('[REGISTER_START_ERROR]', e && e.message ? e.message : e, {
+      email: emailNorm,
+      hasMmPhone: !!mmPhone,
+      mmDigitsLen: String(mmPhone || '').replace(/\D/g, '').length
+    });
     if (e.message === 'EMAIL_SERVICE_INDISPONIBLE')
       return res.status(500).json({ error: 'EMAIL_SERVICE_INDISPONIBLE' });
     res.status(400).json({ error: e.message });
@@ -961,6 +966,10 @@ app.get('/api/commissions', requireAuth, async (req, res) => {
   try { res.json(await db.getCommissions(req.user.id)); }
   catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
+app.get('/api/withdraws', requireAuth, async (req, res) => {
+  try { res.json(await db.getWithdrawsByUser(req.user.id)); }
+  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
 app.post('/api/withdraws', requireAuth, async (req, res) => {
   try {
     const { montant, phone, operator } = req.body;
@@ -973,13 +982,45 @@ app.post('/api/withdraws', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'OPERATEUR_INVALIDE' });
     if (!phone || phone.trim().length < 7)
       return res.status(400).json({ error: 'TELEPHONE_INVALIDE' });
-    const w    = await db.requestWithdraw({ userId: req.user.id, ...req.body });
+    let w;
+    try {
+      w = await db.requestWithdraw({ userId: req.user.id, ...req.body });
+    } catch (err) {
+      const errorMap = {
+        'AUCUNE_COMMISSION': 'AUCUNE_COMMISSION',
+        'MONTANT_INVALIDE': 'MONTANT_INVALIDE',
+        'SOLDE_INSUFFISANT': 'SOLDE_INSUFFISANT',
+        'MONTANT_MIN': 'MONTANT_MIN',
+        'USER_NOT_FOUND': 'USER_NOT_FOUND'
+      };
+      return res.status(400).json({ error: errorMap[err.message] || 'ERREUR_RETRAIT' });
+    }
     const user = await db.getUserById(req.user.id);
-    await db.createNotification({ userId: 0, type: 'WITHDRAW_REQUEST',
-      message: `${user?.name} demande un retrait de ${w.montant.toLocaleString('fr-FR')} AR`,
-      link: 'dashboard.html' });
-    sendPushToAdmin('Demande de retrait', user?.name + ' demande un retrait', 'dashboard.html');
+    await db.createNotification({
+      userId: 0,
+      type: 'WITHDRAW_REQUEST',
+      message: ((user && user.name ? user.name : '') + ' demande un retrait de ' + w.montant.toLocaleString('fr-FR') + ' AR'),
+      link: 'dashboard.html'
+    });
+    sendPushToAdmin('Demande de retrait', user && user.name ? user.name + ' demande un retrait' : 'Demande de retrait', 'dashboard.html');
     res.json(w);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+
+app.get('/api/admin/withdraws', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const rows = await db.getAllWithdraws();
+    res.json(rows);
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
+});
+app.patch('/api/admin/withdraws/:id', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
+    const { statut, rejectReason } = req.body;
+    if (!['Versé','Rejeté'].includes(statut))
+      return res.status(400).json({ error: 'STATUT_INVALIDE' });
+    res.json(await db.updateWithdrawStatus(id, { statut, rejectReason }));
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
 // ══════════════════════════════════════════════════════════
@@ -1052,58 +1093,16 @@ app.put('/api/admin/upgrade-requests/:id', requireAuth, requireAdmin, async (req
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     const req2 = await db.updateUpgradeRequest(id, req.body);
     if (req2.statut === 'Approuvé') {
-      await db.createNotification({ userId: req2.userId, type: 'SUB_CONFIRMED',
+      await db.createNotification({
+        userId: req2.userId,
+        type: 'SUB_CONFIRMED',
         message: `Votre abonnement ${req2.plan} est maintenant actif !`,
-        link: `dashboard.html?tab=subscription&sub=${req2.id}` });
+        link: `dashboard.html?tab=subscription&sub=${req2.id}`
+      });
     }
-    // Rejet : depossession + notification gerees dans db.updateUpgradeRequest
     res.json(req2);
   } catch(e) { res.status(400).json({ error: e.message }); }
 });
-// ══════════════════════════════════════════════════════════
-//  MODULES VIDÉO
-// ══════════════════════════════════════════════════════════
-app.get('/api/video-modules', async (req, res) => {
-  try {
-    const modules = await db.getVideoModules();
-    const r = await _migPool.query('SELECT id, type, owner_id FROM video_modules');
-    const meta = {};
-    r.rows.forEach(function(row) { meta[row.id] = { type: row.type || 'public', ownerId: row.owner_id }; });
-    res.json(modules.map(function(m) { return Object.assign({}, m, { type: (meta[m.id] && meta[m.id].type) || 'public', ownerId: (meta[m.id] && meta[m.id].ownerId) || null }); }));
-  }
-  catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-});
-app.post('/api/admin/video-modules', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const mod = await db.createVideoModule(req.body);
-    const type = req.body.type || 'public';
-    await _migPool.query('UPDATE video_modules SET type=$1 WHERE id=$2', [type, mod.id]);
-    res.json({ ...mod, type });
-  }
-  catch(e) { res.status(400).json({ error: e.message }); }
-});
-app.put('/api/admin/video-modules/:id', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    const mod = await db.updateVideoModule(id, req.body);
-    if (req.body.type) await _migPool.query('UPDATE video_modules SET type=$1 WHERE id=$2', [req.body.type, id]);
-    res.json({ ...mod, type: req.body.type || mod.type });
-  }
-  catch(e) { res.status(400).json({ error: e.message }); }
-});
-app.delete('/api/admin/video-modules/:id', requireAuth, requireAdmin, async (req, res) => {
-  try {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
-    await db.deleteVideoModule(id);
-    res.json({ ok: true });
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
-});
-// ══════════════════════════════════════════════════════════
-//  MODULES FORMATEUR PARTENAIRE
-// ══════════════════════════════════════════════════════════
-
 app.post('/api/trainer/modules', requireAuth, async (req, res) => {
   if (req.user.role !== 'formateur' && req.user.role !== 'admin')
     return res.status(403).json({ error: 'FORMATEUR_REQUIS' });
@@ -1227,60 +1226,28 @@ app.put('/api/admin/module-purchases/:id', requireAuth, requireAdmin, async (req
 app.get('/api/admin/finance-summary', requireAuth, requireAdmin, async (req, res) => {
   try {
     const [sales, trainerEarnings, withdraws, commissions] = await Promise.all([
-      // Toutes les ventes approuvées (vidéos + modules + ebooks)
+      // Toutes les ventes approuvees (videos + modules + ebooks)
       _migPool.query(`
         SELECT
-          COALESCE(SUM(amount) FILTER (WHERE statut IN ('Approuvé','Approuve')), 0) AS total,
-          COUNT(*)            FILTER (WHERE statut IN ('Approuvé','Approuve'))      AS count
+          COALESCE(SUM(amount) FILTER (WHERE statut IN ('Approuve','Approuvé')), 0) AS total,
+          COUNT(*)            FILTER (WHERE statut IN ('Approuve','Approuvé'))      AS count
         FROM (
           SELECT amount, statut FROM video_purchases
-          UNION ALL
-          SELECT amount, statut FROM module_purchases
-          UNION ALL
-          SELECT amount, statut FROM ebook_purchases
-        ) t
+          UNION ALL SELECT amount, statut FROM module_purchases
+          UNION ALL SELECT amount, statut FROM ebook_purchases
+        ) s
       `),
-      // Commissions dues aux formateurs (en attente + payées)
-      _migPool.query(`
-        SELECT
-          COALESCE(SUM(commission_amount), 0)                                    AS total_brut,
-          COALESCE(SUM(commission_amount) FILTER (WHERE statut='En attente'), 0) AS pending,
-          COALESCE(SUM(commission_amount) FILTER (WHERE statut='Payé'),       0) AS paid
-        FROM trainer_earnings
-      `),
-      // Retraits utilisateurs en attente
-      _migPool.query(`
-        SELECT
-          COALESCE(SUM(montant) FILTER (WHERE statut='En attente'), 0) AS pending,
-          COALESCE(SUM(montant) FILTER (WHERE statut='Versé'),      0) AS paid
-        FROM withdraws
-      `),
-      // Commissions affiliés en attente
-      _migPool.query(`
-        SELECT COALESCE(SUM(montant) FILTER (WHERE statut!='Versé'), 0) AS pending
-        FROM commissions
-      `)
+      _migPool.query(`SELECT COALESCE(SUM(commission_amount),0) AS total FROM trainer_earnings`),
+      _migPool.query(`SELECT COALESCE(SUM(montant) FILTER (WHERE statut='En attente'),0) AS pending FROM withdraws`),
+      _migPool.query(`SELECT COALESCE(SUM(montant),0) AS total FROM commissions`)
     ]);
-
-    const totalSales       = parseFloat(sales.rows[0].total);
-    const salesCount       = parseInt(sales.rows[0].count);
-    const trainerBrut      = parseFloat(trainerEarnings.rows[0].total_brut);
-    const trainerPending   = parseFloat(trainerEarnings.rows[0].pending);
-    const trainerPaid      = parseFloat(trainerEarnings.rows[0].paid);
-    const withdrawPending  = parseFloat(withdraws.rows[0].pending);
-    const withdrawPaid     = parseFloat(withdraws.rows[0].paid);
-    const commPending      = parseFloat(commissions.rows[0].pending);
-    // Net admin = ventes totales - commissions formateurs - commissions affiliés versées
-    const netAdmin = totalSales - trainerBrut - (withdrawPaid + withdrawPending);
-
-    res.json({
-      totalSales, salesCount,
-      trainerBrut, trainerPending, trainerPaid,
-      withdrawPending, withdrawPaid,
-      commPending,
-      netAdmin: Math.max(0, netAdmin)
-    });
-  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR', detail: e.message }); }
+    const totalSales = Number(sales.rows[0].total || 0);
+    const trainerBrut = Number(trainerEarnings.rows[0].total || 0);
+    const withdrawPending = Number(withdraws.rows[0].pending || 0);
+    const commissionsTotal = Number(commissions.rows[0].total || 0);
+    const netAdmin = Math.max(0, totalSales - trainerBrut - commissionsTotal);
+    res.json({ totalSales, trainerBrut, withdrawPending, netAdmin });
+  } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
 
 // ══════════════════════════════════════════════════════════
@@ -1332,9 +1299,12 @@ app.put('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
     Object.keys(allowed).forEach(k => allowed[k] === undefined && delete allowed[k]);
     const updated = await db.adminUpdateUser(id, allowed);
     if (allowed.plan) {
-      await db.createNotification({ userId: id, type: 'SUB_CONFIRMED',
-        message: `Votre plan a ete mis a jour : ${allowed.plan}.`,
-        link: 'formations.html' });
+      await db.createNotification({ 
+        userId: id, 
+        type: 'SUB_CONFIRMED',
+        message: 'Votre plan a ete mis a jour : ' + allowed.plan + '.',
+        link: 'formations.html'
+      });
     }
     res.json(safeUser(updated));
   } catch(e) {
@@ -1395,8 +1365,9 @@ app.post('/api/video-purchase', requireAuth, purchaseLimiter, async (req, res) =
       mmName: req.body.mmName || '', txRef: txRef || '', proof
     });
     await db.createNotification({
-      userId: 0, type: 'NEW_FORMATION',
-      message: `${user.name} a achete la video "${video.title}" - ${purchase.amount.toLocaleString('fr-FR')} AR`,
+      userId: 0,
+      type: 'NEW_FORMATION',
+      message: user.name + ' a achete la video "' + video.title + '" - ' + purchase.amount.toLocaleString('fr-FR') + ' AR',
       link: 'dashboard.html?tab=admin&section=videopurchases'
     });
     sendPushToAdmin('Achat video', user.name + ' a acheté une vidéo', 'dashboard.html?tab=admin&section=videopurchases');
@@ -1442,16 +1413,13 @@ app.get('/api/admin/shares', requireAuth, requireAdmin, async (req, res) => {
 // GET toutes les stories actives (non expirées) groupées par user
 app.get('/api/stories', requireAuth, async (req, res) => {
   try {
-    const result = await _migPool.query(`
-      SELECT s.id, s.user_id, s.content, s.image, s.bg_color, s.expires_at, s.created_at,
-             u.name as user_name, u.avatar_color, u.avatar_photo,
-             EXISTS(SELECT 1 FROM story_views sv WHERE sv.story_id=s.id AND sv.user_id=$1) as viewed,
-             (SELECT COUNT(*) FROM story_views sv2 WHERE sv2.story_id=s.id) as view_count
-      FROM stories s
-      JOIN users u ON u.id = s.user_id
-      WHERE s.expires_at > NOW()
-      ORDER BY s.created_at DESC
-    `, [req.user.id]);
+    const result = await _migPool.query(
+      'SELECT s.id, s.user_id, s.content, s.image, s.bg_color, s.expires_at, s.created_at, u.name as user_name, u.avatar_color, u.avatar_photo, ' +
+      'EXISTS(SELECT 1 FROM story_views sv WHERE sv.story_id=s.id AND sv.user_id=$1) as viewed, ' +
+      '(SELECT COUNT(*) FROM story_views sv2 WHERE sv2.story_id=s.id) as view_count ' +
+      'FROM stories s JOIN users u ON u.id = s.user_id WHERE s.expires_at > NOW() ORDER BY s.created_at DESC',
+      [req.user.id]
+    );
     // Grouper par user
     const map = new Map();
     result.rows.forEach(s => {
@@ -1479,7 +1447,7 @@ app.post('/api/stories', requireAuth, async (req, res) => {
   if (image && image.length > 5 * 1024 * 1024 * 1.37) return res.status(400).json({ error: 'IMAGE_TROP_GRANDE' });
   try {
     const r = await _migPool.query(
-      `INSERT INTO stories (user_id, content, image, bg_color) VALUES ($1,$2,$3,$4) RETURNING *`,
+      'INSERT INTO stories (user_id, content, image, bg_color) VALUES ($1,$2,$3,$4) RETURNING *',
       [req.user.id, content || '', image || '', bgColor || '#6c63ff']
     );
     res.json(r.rows[0]);
@@ -1492,7 +1460,7 @@ app.post('/api/stories/:id/view', requireAuth, async (req, res) => {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     await _migPool.query(
-      `INSERT INTO story_views (story_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+      'INSERT INTO story_views (story_id, user_id) VALUES ($1,$2) ON CONFLICT DO NOTHING',
       [id, req.user.id]
     );
     res.json({ ok: true });
@@ -1505,25 +1473,24 @@ app.get('/api/stories/:id/views-count', requireAuth, async (req, res) => {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     // Vérifier que c'est bien la story du demandeur
-    const storyCheck = await _migPool.query(`SELECT user_id FROM stories WHERE id=$1`, [id]);
+    const storyCheck = await _migPool.query('SELECT user_id FROM stories WHERE id=$1', [id]);
     if (!storyCheck.rows.length || storyCheck.rows[0].user_id !== req.user.id)
       return res.status(403).json({ error: 'INTERDIT' });
     // Récupérer les viewers avec info conditionnelle
-    const r = await _migPool.query(`
-      SELECT
-        sv.user_id,
-        sv.viewed_at,
-        CASE WHEN f.follower_id IS NOT NULL THEN u.name ELSE NULL END AS name,
-        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_photo ELSE NULL END AS avatar_photo,
-        CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_color ELSE NULL END AS avatar_color,
-        sr.emoji
-      FROM story_views sv
-      JOIN users u ON u.id = sv.user_id
-      LEFT JOIN follows f ON f.follower_id = sv.user_id AND f.following_id = $2
-      LEFT JOIN story_reactions sr ON sr.story_id = sv.story_id AND sr.user_id = sv.user_id
-      WHERE sv.story_id = $1
-      ORDER BY sv.viewed_at DESC
-    `, [id, req.user.id]);
+    const r = await _migPool.query(
+      'SELECT sv.user_id, sv.viewed_at, ' +
+      'CASE WHEN f.follower_id IS NOT NULL THEN u.name ELSE NULL END AS name, ' +
+      'CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_photo ELSE NULL END AS avatar_photo, ' +
+      'CASE WHEN f.follower_id IS NOT NULL THEN u.avatar_color ELSE NULL END AS avatar_color, ' +
+      'sr.emoji ' +
+      'FROM story_views sv ' +
+      'JOIN users u ON u.id = sv.user_id ' +
+      'LEFT JOIN follows f ON f.follower_id = sv.user_id AND f.following_id = $2 ' +
+      'LEFT JOIN story_reactions sr ON sr.story_id = sv.story_id AND sr.user_id = sv.user_id ' +
+      'WHERE sv.story_id = $1 ' +
+      'ORDER BY sv.viewed_at DESC',
+      [id, req.user.id]
+    );
     res.json({ count: r.rows.length, viewers: r.rows });
   } catch(e) { res.status(500).json({ error: 'ERREUR_SERVEUR' }); }
 });
@@ -1534,7 +1501,7 @@ app.get('/api/stories/:id/my-reaction', requireAuth, async (req, res) => {
     const id = parseId(req.params.id);
     if (!id) return res.status(400).json({ error: 'ID_INVALIDE' });
     const r = await _migPool.query(
-      `SELECT emoji FROM story_reactions WHERE story_id=$1 AND user_id=$2`,
+      'SELECT emoji FROM story_reactions WHERE story_id=$1 AND user_id=$2',
       [id, req.user.id]
     );
     res.json({ emoji: r.rows[0]?.emoji || null });
@@ -1549,25 +1516,22 @@ app.post('/api/stories/:id/react', requireAuth, async (req, res) => {
     const { emoji } = req.body;
     if (!emoji) return res.status(400).json({ error: 'EMOJI_REQUIS' });
     // Vérifier que la story existe
-    const storyCheck = await _migPool.query(`SELECT user_id FROM stories WHERE id=$1 AND expires_at > NOW()`, [id]);
+    const storyCheck = await _migPool.query('SELECT user_id FROM stories WHERE id=$1 AND expires_at > NOW()', [id]);
     if (!storyCheck.rows.length) return res.status(404).json({ error: 'STORY_INTROUVABLE' });
     const storyOwnerId = storyCheck.rows[0].user_id;
     // Toggle : si déjà réagi avec le même emoji, supprimer
     const existing = await _migPool.query(
-      `SELECT id FROM story_reactions WHERE story_id=$1 AND user_id=$2`,
+      'SELECT id, emoji FROM story_reactions WHERE story_id=$1 AND user_id=$2',
       [id, req.user.id]
     );
     if (existing.rows.length) {
       if (existing.rows[0].emoji === emoji) {
-        await _migPool.query(`DELETE FROM story_reactions WHERE story_id=$1 AND user_id=$2`, [id, req.user.id]);
+        await _migPool.query('DELETE FROM story_reactions WHERE story_id=$1 AND user_id=$2', [id, req.user.id]);
         return res.json({ action: 'removed', emoji });
       }
-      await _migPool.query(`UPDATE story_reactions SET emoji=$3, created_at=NOW() WHERE story_id=$1 AND user_id=$2`, [id, req.user.id, emoji]);
+      await _migPool.query('UPDATE story_reactions SET emoji=$3, created_at=NOW() WHERE story_id=$1 AND user_id=$2', [id, req.user.id, emoji]);
     } else {
-      await _migPool.query(
-        `INSERT INTO story_reactions (story_id, user_id, emoji) VALUES ($1,$2,$3)`,
-        [id, req.user.id, emoji]
-      );
+      await _migPool.query('INSERT INTO story_reactions (story_id, user_id, emoji) VALUES ($1,$2,$3)', [id, req.user.id, emoji]);
       // Notifier le créateur — reactor déclaré ici dans le bon scope
       if (storyOwnerId !== req.user.id) {
         const reactor = await db.getUserById(req.user.id);

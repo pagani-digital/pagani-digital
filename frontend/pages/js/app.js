@@ -6008,7 +6008,7 @@ function copyLink() {
   const input = document.getElementById("affiliateLink");
   if (!input) return;
   const user = getUser();
-  if (user) input.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
+  if (user) input.value = `https://pagani-digital.vercel.app/dashboard.html?ref=${user.refCode}`;
   navigator.clipboard.writeText(input.value).then(() => {
     const msg = document.getElementById("copyMsg");
     msg.textContent = "✅ Lien copié dans le presse-papiers !";
@@ -6018,6 +6018,16 @@ function copyLink() {
 function formatAR(n) {
   return Number(n).toLocaleString("fr-FR") + " AR";
 }
+let _withdrawMinCache = null;
+async function _getWithdrawMin() {
+  if (_withdrawMinCache !== null) return _withdrawMinCache;
+  try {
+    const pricing = await PaganiAPI.getPricing();
+    const raw = pricing.withdrawMin || pricing.withdraw_min || 0;
+    _withdrawMinCache = parseInt(raw) || 0;
+  } catch(e) { _withdrawMinCache = 0; }
+  return _withdrawMinCache;
+}
 async function updateAffiliateStats(user) {
   const refs    = document.getElementById("totalRefs");
   const earned  = document.getElementById("totalEarned");
@@ -6025,14 +6035,23 @@ async function updateAffiliateStats(user) {
   const paid    = document.getElementById("paidOut");
   const balance = document.getElementById("withdrawBalance");
   const affLink = document.getElementById("affiliateLink");
+  const amountInput = document.getElementById("withdrawAmount");
+  const minHint = document.getElementById("withdrawMinHint");
   if (refs)    refs.textContent    = user.refs || 0;
   if (earned)  earned.textContent  = formatAR(user.earningsAR || 0);
   if (pending) pending.textContent = formatAR(user.pendingAR  || 0);
   if (paid)    paid.textContent    = formatAR(user.paidAR     || 0);
-  if (balance) balance.textContent = formatAR(user.pendingAR  || 0);
-  if (affLink) affLink.value = `https://pagani-digital.vercel.app /dashboard.html?ref=${user.refCode}`;
+  if (balance) balance.textContent = formatAR(user.earningsAR || 0);
+  if (affLink) affLink.value = `https://pagani-digital.vercel.app/dashboard.html?ref=${user.refCode}`;
+  const min = await _getWithdrawMin();
+  if (amountInput && min > 0) {
+    amountInput.min = String(min);
+    if (!amountInput.value) amountInput.placeholder = "Ex: " + min;
+  }
+  if (minHint) minHint.textContent = min > 0 ? `Minimum: ${formatAR(min)}` : '';
   _renderWithdrawMmSelector(user);
   await renderCommissionHistory(user);
+  await renderWithdrawHistory(user);
 }
 async function renderCommissionHistory(user) {
   const container = document.getElementById("commissionHistory");
@@ -6053,6 +6072,25 @@ async function renderCommissionHistory(user) {
       <span><span class="status-badge ${h.statut === 'Verse' ? 'status-paid' : 'status-pending'}">${h.statut}</span></span>
     </div>`).join("");
 }
+async function renderWithdrawHistory(user) {
+  const container = document.getElementById("withdrawHistory");
+  if (!container) return;
+  let history = [];
+  try { history = await PaganiAPI.getWithdraws(); }
+  catch(e) { history = []; }
+  if (history.length === 0) {
+    container.innerHTML = '<div class="history-empty"><i class="fas fa-inbox"></i><p>Aucun retrait pour le moment.</p></div>';
+    return;
+  }
+  const statusClass = s => s === 'Versé' ? 'status-paid' : s === 'Rejeté' ? 'status-rejected' : 'status-pending';
+  container.innerHTML = history.map(w => `
+    <div class="history-row">
+      <span>${new Date(w.createdAt).toLocaleDateString("fr-FR")}</span>
+      <span class="green">${formatAR(w.montant)}</span>
+      <span>${esc(w.operator || '—')} ${w.phone ? '(' + esc(w.phone) + ')' : ''}</span>
+      <span><span class="status-badge ${statusClass(w.statut)}">${w.statut}</span></span>
+    </div>`).join("");
+}
 async function requestWithdrawAR(e) {
   e.preventDefault();
   const amount   = parseInt(document.getElementById("withdrawAmount").value);
@@ -6061,16 +6099,38 @@ async function requestWithdrawAR(e) {
   const msg      = document.getElementById("withdrawMsg");
   const user     = getUser();
   if (!user) { msg.textContent = "Connectez-vous pour faire une demande."; return; }
+  const solde = parseInt(user.earningsAR || user.earnings_ar || 0);
+  const min = await _getWithdrawMin();
+  if (!amount || isNaN(amount) || amount <= 0) {
+    msg.style.color = "var(--red)";
+    msg.textContent = "Saisissez un montant valide.";
+    return;
+  }
+  if (solde <= 0) {
+    msg.style.color = "var(--red)";
+    msg.textContent = "Aucune commission disponible pour le retrait.";
+    return;
+  }
+  if (amount > solde) {
+    msg.style.color = "var(--red)";
+    msg.textContent = `Vous ne pouvez pas retirer plus que votre solde disponible (${formatAR(solde)}).`;
+    return;
+  }
+  if (min > 0 && amount < min) {
+    msg.style.color = "var(--red)";
+    msg.textContent = `Montant minimum : ${formatAR(min)}.`;
+    return;
+  }
   if (!phone) { msg.style.color = "var(--red)"; msg.textContent = "Sélectionnez un compte Mobile Money."; return; }
   try {
     await PaganiAPI.requestWithdraw({ montant: amount, phone, operator });
     const updated = await PaganiAPI.getMe();
     if (updated) { window._currentUser = updated; updateAffiliateStats(updated); }
     msg.style.color = "var(--green)";
-    msg.textContent = `Demande de ${formatAR(amount)} envoyee vers ${operator} (${phone}). Traitement sous 24-72h.`;
+    msg.textContent = `Demande de ${formatAR(amount)} envoyée vers ${operator} (${phone}). Traitement sous 24-72h.`;
   } catch(ex) {
     msg.style.color = "var(--red)";
-    const errs = { MONTANT_MIN: "Montant minimum : 5 000 AR.", SOLDE_INSUFFISANT: "Solde insuffisant." };
+    const errs = { MONTANT_MIN: "Montant minimum non atteint.", SOLDE_INSUFFISANT: "Solde insuffisant." };
     msg.textContent = errs[ex.message] || "Erreur lors de la demande.";
   }
   setTimeout(() => msg.textContent = "", 6000);
@@ -8247,9 +8307,12 @@ async function loadAdminPricingSubscriptions() {
           <input type="number" id="priceVideo" class="upgrade-input" value="${p.video}" min="0" step="500" />
         </div>
         <div class="pricing-admin-row">
-          <label>Retrait minimum <small>(AR)</small></label>
+          <label>Retrait minimum (affiliation) <small>(AR)</small></label>
           <input type="number" id="priceWithdrawMin" class="upgrade-input" value="${p.withdrawMin}" min="0" step="500" />
         </div>
+        <p style="font-size:0.72rem;color:var(--text2);margin:0.2rem 0 0">
+          Ce montant s'applique aux demandes de retrait des commissions d'affiliation.
+        </p>
       </div>
       <!-- Commissions Starter -->
       <div class="pricing-admin-card">
@@ -8562,6 +8625,9 @@ async function loadAdminCommissions() {
           <input type="number" id="commWithdrawMinC" class="upgrade-input" value="${p.withdrawMin||5000}" min="0" step="500" style="max-width:200px" />
         </div>
       </div>
+      <p style="font-size:0.72rem;color:var(--text2);margin:0.5rem 0 0">
+        Ce parametre s'applique aux demandes de retrait d'affiliation.
+      </p>
     </div>
     <div style="display:flex;align-items:center;gap:1rem;margin-top:1.2rem;flex-wrap:wrap">
       <button class="btn-primary" style="padding:0.6rem 1.6rem" onclick="saveAdminCommissions()">
@@ -10865,35 +10931,71 @@ async function loadFinanceWithdraws() {
   wrap.innerHTML = '<div class="feed-loader"><span></span><span></span><span></span></div>';
   const token = localStorage.getItem('pd_jwt');
   try {
-    const w = await fetch(API_URL + '/admin/users', {
+    const w = await fetch(API_URL + '/admin/withdraws', {
       headers: { 'Authorization': 'Bearer ' + token }
     }).then(r => r.json());
-    const withPending = w.filter(u => parseFloat(u.pendingAR || u.pending_ar || 0) > 0);
-    if (!withPending.length) {
+    if (!w.length) {
       wrap.innerHTML = '<div class="history-empty"><i class="fas fa-check-circle" style="color:var(--accent2)"></i><p>Aucun retrait en attente.</p></div>';
       return;
     }
     const fmt = n => Number(n).toLocaleString('fr-FR') + ' AR';
     const planColors = { Starter: 'var(--text2)', Pro: 'var(--accent)', Elite: 'var(--gold)' };
+    const statusClass = s => s === 'Versé' ? 'status-paid' : s === 'Rejeté' ? 'status-rejected' : 'status-pending';
     wrap.innerHTML = `
-      <div class="video-admin-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
-        <span>Membre</span><span>Plan</span><span>En attente</span><span>Déjà versé</span>
+      <div class="video-admin-header" style="grid-template-columns:1.6fr 1fr 1.2fr 1fr 0.9fr 0.9fr">
+        <span>Membre</span><span>Montant</span><span>Mobile Money</span><span>Statut</span><span>Date</span><span>Action</span>
       </div>
-      ${withPending.map(u => {
-        const av = u.avatarPhoto
-          ? `<img src="${u.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
-          : `<div class="avatar-circle avatar-sm" style="background:${u.avatarColor||'#6c63ff'}">${getInitials(u.name)}</div>`;
+      ${w.map(row => {
+        const av = row.avatarPhoto
+          ? `<img src="${row.avatarPhoto}" style="width:32px;height:32px;border-radius:50%;object-fit:cover" />`
+          : `<div class="avatar-circle avatar-sm" style="background:${row.avatarColor||'#6c63ff'}">${getInitials(row.userName || row.name || '?')}</div>`;
+        const mm = `${esc(row.operator || '—')} ${row.phone ? '(' + esc(row.phone) + ')' : ''}`;
+        const actionHtml = row.statut === 'En attente'
+          ? `<button onclick="markWithdrawPaid(${row.id},this)" style="font-size:0.72rem;background:rgba(0,212,170,0.1);color:var(--accent2);border:1px solid rgba(0,212,170,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit">Payer</button>
+             <button onclick="rejectWithdraw(${row.id},this)" style="font-size:0.72rem;background:rgba(255,77,109,0.1);color:var(--red);border:1px solid rgba(255,77,109,0.3);padding:0.2rem 0.6rem;border-radius:50px;cursor:pointer;font-family:inherit;margin-left:0.3rem">Rejeter</button>`
+          : '<i class="fas fa-check" style="color:var(--accent2)"></i>';
         return `
-          <div class="video-admin-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
-            <span class="admin-user-name">${av}<span>${esc(u.name)}<small>${esc(u.email||'')}</small></span></span>
-            <span><span class="admin-plan-badge" style="background:${planColors[u.plan]||'var(--accent)'}">${u.plan}</span></span>
-            <span style="color:var(--gold);font-weight:700">${fmt(u.pendingAR || u.pending_ar || 0)}</span>
-            <span style="color:var(--text2)">${fmt(u.paidAR || u.paid_ar || 0)}</span>
+          <div class="video-admin-row" style="grid-template-columns:1.6fr 1fr 1.2fr 1fr 0.9fr 0.9fr">
+            <span class="admin-user-name">${av}<span>${esc(row.userName || row.name || '')}<small>${esc(row.userEmail || row.email || '')}</small></span></span>
+            <span class="green" style="font-weight:700">${fmt(row.montant)}</span>
+            <span style="color:var(--text2)">${mm}</span>
+            <span><span class="status-badge ${statusClass(row.statut)}">${row.statut}</span></span>
+            <span style="color:var(--text2)">${new Date(row.createdAt).toLocaleDateString('fr-FR')}</span>
+            <span>${actionHtml}</span>
           </div>`;
       }).join('')}`;
   } catch(e) {
     wrap.innerHTML = '<p style="color:var(--red);padding:1rem">Erreur de chargement.</p>';
   }
+}
+
+async function markWithdrawPaid(id, btn) {
+  btn.disabled = true;
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/withdraws/' + id, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statut: 'Versé' })
+    });
+    await loadFinanceWithdraws();
+    await loadAdminFinance();
+  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
+}
+
+async function rejectWithdraw(id, btn) {
+  const reason = prompt('Raison du rejet (optionnel)') || '';
+  btn.disabled = true;
+  const token = localStorage.getItem('pd_jwt');
+  try {
+    await fetch(API_URL + '/admin/withdraws/' + id, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ statut: 'Rejeté', rejectReason: reason })
+    });
+    await loadFinanceWithdraws();
+    await loadAdminFinance();
+  } catch(e) { btn.disabled = false; alert('Erreur : ' + e.message); }
 }
 
 async function loadFinanceCommissions() {
@@ -11004,6 +11106,8 @@ window.loadFinanceCommissions    = loadFinanceCommissions;
 window.loadFinanceTrainerEarnings= loadFinanceTrainerEarnings;
 window.markTrainerEarningPaid    = markTrainerEarningPaid;
 window.switchFinanceTab          = switchFinanceTab;
+window.markWithdrawPaid          = markWithdrawPaid;
+window.rejectWithdraw            = rejectWithdraw;
 
 
 

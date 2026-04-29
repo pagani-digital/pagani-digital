@@ -354,6 +354,7 @@
           <div class="form-group">
             <label>Montant a retirer (AR)</label>
             <input type="number" id="withdrawAmount" placeholder="Ex: 10000" min="5000" />
+            <small id="withdrawMinHint" style="color:var(--text2);font-size:0.78rem"></small>
           </div>
           <div class="form-group">
             <label>Compte Mobile Money de reception</label>
@@ -369,6 +370,17 @@
           <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Envoyer la demande</button>
         </form>
         <p id="withdrawMsg" class="copy-msg" style="margin-top:0.8rem"></p>
+      </div>
+    </div>
+
+    <!-- HISTORIQUE DES RETRAITS -->
+    <div class="commission-history-section" style="margin-top:2rem">
+      <h2>Historique des Retraits</h2>
+      <div class="history-table">
+        <div class="history-header">
+          <span>Date</span><span>Montant</span><span>Mobile Money</span><span>Statut</span>
+        </div>
+        <div id="withdrawHistory"></div>
       </div>
     </div>
     <!-- FIN SECTIONS PRIVÉES -->
