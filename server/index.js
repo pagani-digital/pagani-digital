@@ -7,6 +7,7 @@ const path      = require('path');
 const rateLimit = require('express-rate-limit');
 const crypto    = require('crypto');
 const bcrypt    = require('bcryptjs');
+const dns       = require('dns');
 const nodemailer = require('nodemailer');
 const db        = require('./database');
 const webpush   = require('web-push');
@@ -40,6 +41,9 @@ const PORT       = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 const VIDEO_TTL  = parseInt(process.env.VIDEO_TOKEN_TTL) || 7200;
 const IS_PROD    = process.env.NODE_ENV === 'production';
+if (process.env.SMTP_FAMILY === '4' && typeof dns.setDefaultResultOrder === 'function') {
+  dns.setDefaultResultOrder('ipv4first');
+}
 // Limite : 10 tentatives par IP toutes les 15 minutes sur les routes auth
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -290,7 +294,9 @@ function _getSmtpTransport() {
   if (!host || !user || !pass) return null;
   const port = parseInt(process.env.SMTP_PORT || '587', 10);
   const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465;
-  _smtpTransport = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  const smtpFamily = parseInt(process.env.SMTP_FAMILY || '0', 10);
+  const family = smtpFamily === 4 || smtpFamily === 6 ? smtpFamily : undefined;
+  _smtpTransport = nodemailer.createTransport({ host, port, secure, auth: { user, pass }, family });
   return _smtpTransport;
 }
 async function sendVerificationEmail(toEmail, code) {
